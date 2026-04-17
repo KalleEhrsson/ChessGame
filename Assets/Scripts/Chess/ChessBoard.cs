@@ -8,6 +8,7 @@ public class ChessBoard : MonoBehaviour
 {
     const string BoardObjectName = "ChessBoard";
     const int BoardSize = 8;
+    const string PieceResourceFolder = "ChessPieces";
 
     public static ChessBoard Instance { get; private set; }
 
@@ -25,6 +26,16 @@ public class ChessBoard : MonoBehaviour
         RegisterInstance();
         RenameBoardObject();
         AutoSetupBoard();
+    }
+
+    void Start()
+    {
+        if (!Application.isPlaying)
+        {
+            return;
+        }
+
+        SpawnStartingPosition();
     }
 
     void OnValidate()
@@ -108,6 +119,103 @@ public class ChessBoard : MonoBehaviour
                 tilesByName[tile.TileName] = tile;
             }
         }
+    }
+
+    void SpawnStartingPosition()
+    {
+        AutoSetupBoard();
+        ClearAllPieces();
+
+        SpawnBackRank(PieceTeam.White, "A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1");
+        SpawnPawns(PieceTeam.White, 2);
+
+        SpawnBackRank(PieceTeam.Black, "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8");
+        SpawnPawns(PieceTeam.Black, 7);
+    }
+
+    void SpawnBackRank(PieceTeam team, string a, string b, string c, string d, string e, string f, string g, string h)
+    {
+        SpawnPiece(team, PieceType.Rook, a);
+        SpawnPiece(team, PieceType.Knight, b);
+        SpawnPiece(team, PieceType.Bishop, c);
+        SpawnPiece(team, PieceType.Queen, d);
+        SpawnPiece(team, PieceType.King, e);
+        SpawnPiece(team, PieceType.Bishop, f);
+        SpawnPiece(team, PieceType.Knight, g);
+        SpawnPiece(team, PieceType.Rook, h);
+    }
+
+    void SpawnPawns(PieceTeam team, int rank)
+    {
+        for (char file = 'A'; file <= 'H'; file++)
+        {
+            SpawnPiece(team, PieceType.Pawn, $"{file}{rank}");
+        }
+    }
+
+    ChessPiece SpawnPiece(PieceTeam team, PieceType type, string tileName)
+    {
+        ChessTile tile = GetTile(tileName);
+        if (tile == null)
+        {
+            Debug.LogWarning($"ChessBoard could not find tile {tileName} for {team} {type}.");
+            return null;
+        }
+
+        GameObject prefab = LoadPiecePrefab(team, type);
+        if (prefab == null)
+        {
+            return null;
+        }
+
+        GameObject pieceObject = Instantiate(prefab, transform);
+        pieceObject.name = $"{team}_{type}_{tileName}";
+
+        ChessPiece piece = pieceObject.GetComponent<ChessPiece>();
+        if (piece == null)
+        {
+            piece = pieceObject.AddComponent<ChessPiece>();
+        }
+
+        piece.SetIdentity(team, type);
+        piece.SetTile(tile);
+
+        return piece;
+    }
+
+    GameObject LoadPiecePrefab(PieceTeam team, PieceType type)
+    {
+        string prefabName = BuildPiecePrefabName(team, type);
+        string resourcePath = $"{PieceResourceFolder}/{prefabName}";
+
+        GameObject prefab = Resources.Load<GameObject>(resourcePath);
+        if (prefab == null)
+        {
+            Debug.LogWarning($"Missing chess piece prefab at Resources/{resourcePath}.prefab");
+        }
+
+        return prefab;
+    }
+
+    static string BuildPiecePrefabName(PieceTeam team, PieceType type)
+    {
+        return $"{team}_{type}";
+    }
+
+    void ClearAllPieces()
+    {
+#if UNITY_2023_1_OR_NEWER
+        ChessPiece[] pieces = FindObjectsByType<ChessPiece>(FindObjectsSortMode.None);
+#else
+        ChessPiece[] pieces = FindObjectsOfType<ChessPiece>();
+#endif
+        for (int i = 0; i < pieces.Length; i++)
+        {
+            ChessPiece piece = pieces[i];
+            if (piece == null)
+            {
+                continue;
+            }
 
         OrganizeTileHierarchy(boardSpaceRoot);
         LogBoardMapping();
@@ -330,9 +438,39 @@ public class ChessBoard : MonoBehaviour
         return tilesByName.TryGetValue(tileName, out ChessTile tile) ? tile : null;
     }
 
+    public ChessPiece GetPieceAt(int x, int y)
+    {
+        ChessTile tile = GetTile(x, y);
+        return tile != null ? tile.CurrentPiece : null;
+    }
+
     public ChessTile GetTileFromRaycast(RaycastHit hit)
     {
         return hit.collider != null ? hit.collider.GetComponentInParent<ChessTile>() : null;
+    }
+
+    public bool MovePiece(ChessTile from, ChessTile to)
+    {
+        if (from == null || to == null)
+        {
+            return false;
+        }
+
+        ChessPiece movingPiece = from.CurrentPiece;
+        if (movingPiece == null)
+        {
+            return false;
+        }
+
+        if (to.CurrentPiece != null && to.CurrentPiece != movingPiece)
+        {
+            ChessPiece capturedPiece = to.CurrentPiece;
+            capturedPiece.SetTile(null);
+            Destroy(capturedPiece.gameObject);
+        }
+
+        movingPiece.SetTile(to);
+        return true;
     }
 
     #endregion

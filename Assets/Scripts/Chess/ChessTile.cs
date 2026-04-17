@@ -9,12 +9,14 @@ public class ChessTile : MonoBehaviour
     [field: SerializeField] public int X { get; private set; } = -1;
     [field: SerializeField] public int Y { get; private set; } = -1;
     [field: SerializeField] public string TileName { get; private set; } = string.Empty;
+    public ChessPiece CurrentPiece => currentPiece;
 
     #endregion
 
     #region Variables
 
     [SerializeField] bool autoCreateMissingComponents = true;
+    [SerializeField] ChessPiece currentPiece;
 
     Renderer cachedRenderer;
     MaterialPropertyBlock propertyBlock;
@@ -46,6 +48,11 @@ public class ChessTile : MonoBehaviour
     #endregion
 
     #region Setup
+
+    public void SetCurrentPiece(ChessPiece piece)
+    {
+        currentPiece = piece;
+    }
 
     public void SetCoordinates(int x, int y)
     {
