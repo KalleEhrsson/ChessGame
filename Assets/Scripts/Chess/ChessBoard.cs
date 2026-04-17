@@ -6,11 +6,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class ChessBoard : MonoBehaviour
 {
-    #region Singleton
-
+    const string BoardObjectName = "ChessBoard";
     public static ChessBoard Instance { get; private set; }
-
-    #endregion
 
     #region Variables
 
@@ -26,12 +23,14 @@ public class ChessBoard : MonoBehaviour
     void Awake()
     {
         RegisterInstance();
+        RenameBoardObject();
         AutoSetupBoard();
     }
 
     void OnValidate()
     {
         RegisterInstance();
+        RenameBoardObject();
         AutoSetupBoard();
     }
 
@@ -44,6 +43,14 @@ public class ChessBoard : MonoBehaviour
         if (Instance == null || Instance == this)
         {
             Instance = this;
+        }
+    }
+
+    void RenameBoardObject()
+    {
+        if (gameObject.name != BoardObjectName)
+        {
+            gameObject.name = BoardObjectName;
         }
     }
 
@@ -159,6 +166,11 @@ public class ChessBoard : MonoBehaviour
         if (string.IsNullOrWhiteSpace(tileName))
         {
             return null;
+        }
+
+        if (tileName.StartsWith(ChessTile.TileObjectPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            tileName = tileName.Substring(ChessTile.TileObjectPrefix.Length);
         }
 
         return tilesByName.TryGetValue(tileName, out ChessTile tile) ? tile : null;

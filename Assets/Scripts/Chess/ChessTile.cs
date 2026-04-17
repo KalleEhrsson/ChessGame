@@ -6,6 +6,8 @@ public class ChessTile : MonoBehaviour
 {
     #region Properties
 
+    public const string TileObjectPrefix = "Tile";
+
     public int X { get; private set; } = -1;
     public int Y { get; private set; } = -1;
     public string TileName { get; private set; } = string.Empty;
@@ -51,7 +53,7 @@ public class ChessTile : MonoBehaviour
         X = x;
         Y = y;
         TileName = BuildTileName(x, y);
-        gameObject.name = TileName;
+        RenameTileObject();
     }
 
     static string BuildTileName(int x, int y)
@@ -59,6 +61,16 @@ public class ChessTile : MonoBehaviour
         char file = (char)('A' + x);
         int rank = y + 1;
         return $"{file}{rank}";
+    }
+
+    void RenameTileObject()
+    {
+        if (string.IsNullOrEmpty(TileName))
+        {
+            return;
+        }
+
+        gameObject.name = $"{TileObjectPrefix}{TileName}";
     }
 
     void EnsureRequiredComponents()
