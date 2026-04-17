@@ -99,7 +99,12 @@ public class ChessBoard : MonoBehaviour
 
     ChessTile[] DiscoverTiles()
     {
-        ChessTile[] directTiles = FindObjectsByType<ChessTile>(FindObjectsSortMode.None);
+        ChessTile[] directTiles =
+#if UNITY_2023_1_OR_NEWER
+            FindObjectsByType<ChessTile>(FindObjectsSortMode.None);
+#else
+            FindObjectsOfType<ChessTile>();
+#endif
 
         GameObject[] taggedObjects;
         try

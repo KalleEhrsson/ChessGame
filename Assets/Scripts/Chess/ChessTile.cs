@@ -19,6 +19,7 @@ public class ChessTile : MonoBehaviour
     [SerializeField] bool autoCreateMissingComponents = true;
 
     Renderer cachedRenderer;
+    MaterialPropertyBlock propertyBlock;
     Color originalColor;
     bool hasOriginalColor;
 
@@ -179,11 +180,9 @@ public class ChessTile : MonoBehaviour
         if (cachedRenderer == null)
         {
             cachedRenderer = GetComponent<Renderer>();
-            if (cachedRenderer != null)
+            if (cachedRenderer != null && TryGetRendererColor(cachedRenderer, out Color color))
             {
-                originalColor = cachedRenderer.sharedMaterial != null
-                    ? cachedRenderer.sharedMaterial.color
-                    : Color.white;
+                originalColor = color;
                 hasOriginalColor = true;
             }
         }
@@ -201,7 +200,7 @@ public class ChessTile : MonoBehaviour
             return;
         }
 
-        cachedRenderer.material.color = color;
+        SetRendererColor(cachedRenderer, color);
     }
 
     public void ResetColor()
@@ -212,7 +211,61 @@ public class ChessTile : MonoBehaviour
             return;
         }
 
-        cachedRenderer.material.color = originalColor;
+        SetRendererColor(cachedRenderer, originalColor);
+    }
+
+    static bool TryGetRendererColor(Renderer renderer, out Color color)
+    {
+        color = Color.white;
+        Material material = renderer.sharedMaterial;
+        if (material == null)
+        {
+            return false;
+        }
+
+        if (material.HasProperty("_BaseColor"))
+        {
+            color = material.GetColor("_BaseColor");
+            return true;
+        }
+
+        if (material.HasProperty("_Color"))
+        {
+            color = material.color;
+            return true;
+        }
+
+        return false;
+    }
+
+    void SetRendererColor(Renderer renderer, Color color)
+    {
+        Material material = renderer.sharedMaterial;
+        if (material == null)
+        {
+            return;
+        }
+
+        if (propertyBlock == null)
+        {
+            propertyBlock = new MaterialPropertyBlock();
+        }
+
+        renderer.GetPropertyBlock(propertyBlock);
+        if (material.HasProperty("_BaseColor"))
+        {
+            propertyBlock.SetColor("_BaseColor", color);
+        }
+        else if (material.HasProperty("_Color"))
+        {
+            propertyBlock.SetColor("_Color", color);
+        }
+        else
+        {
+            return;
+        }
+
+        renderer.SetPropertyBlock(propertyBlock);
     }
 
     #endregion
