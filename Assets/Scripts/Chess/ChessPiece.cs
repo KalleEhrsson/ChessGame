@@ -29,8 +29,8 @@ public class ChessPiece : MonoBehaviour
 
     #region Variables
 
-    [SerializeField] bool faceOpponentSide = true;
-    [SerializeField] float rotationYawOffset;
+    readonly bool faceOpponentSide = true;
+    readonly float rotationYawOffset = 90f;
 
     #endregion
 
@@ -70,7 +70,7 @@ public class ChessPiece : MonoBehaviour
         SnapToTile();
     }
 
-    public void SnapToTile()
+    private void SnapToTile()
     {
         if (CurrentTile == null)
         {
@@ -87,7 +87,7 @@ public class ChessPiece : MonoBehaviour
         }
     }
 
-    public void ClearTileReference()
+    private void ClearTileReference()
     {
         CurrentTile = null;
     }
