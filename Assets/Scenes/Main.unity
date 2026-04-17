@@ -548,13 +548,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 237088142039771999}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 3
   <Y>k__BackingField: 5
   <TileName>k__BackingField: D6
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &3102252821707729127
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -585,13 +586,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 712734275562965294}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 2
   <Y>k__BackingField: 2
   <TileName>k__BackingField: C3
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &3153012877067459912 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8213780873411745193, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -969,394 +971,394 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 207590796924922982, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 9184347460798079019}
+      addedObject: {fileID: 9184347460798079018}
     - targetCorrespondingSourceObject: {fileID: 207590796924922982, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 9184347460798079018}
-    - targetCorrespondingSourceObject: {fileID: 9006963343996635215, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5193598873976517373}
-    - targetCorrespondingSourceObject: {fileID: 9006963343996635215, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5193598873976517372}
-    - targetCorrespondingSourceObject: {fileID: 5035685239812911947, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8452635446031015689}
-    - targetCorrespondingSourceObject: {fileID: 5035685239812911947, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8452635446031015688}
-    - targetCorrespondingSourceObject: {fileID: 8213780873411745193, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6703166034795617184}
-    - targetCorrespondingSourceObject: {fileID: 8213780873411745193, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6703166034795617183}
-    - targetCorrespondingSourceObject: {fileID: 4284131315726746507, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5836243408294602844}
-    - targetCorrespondingSourceObject: {fileID: 4284131315726746507, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5836243408294602843}
-    - targetCorrespondingSourceObject: {fileID: 3654371263806465339, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6394511342347557380}
-    - targetCorrespondingSourceObject: {fileID: 3654371263806465339, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6394511342347557379}
-    - targetCorrespondingSourceObject: {fileID: 6571417589441563530, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8147685071075599359}
-    - targetCorrespondingSourceObject: {fileID: 6571417589441563530, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8147685071075599358}
-    - targetCorrespondingSourceObject: {fileID: 7230867229974558742, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8848757593603374554}
-    - targetCorrespondingSourceObject: {fileID: 7230867229974558742, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8848757593603374553}
-    - targetCorrespondingSourceObject: {fileID: 4958568517704176121, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7358128430173427746}
-    - targetCorrespondingSourceObject: {fileID: 4958568517704176121, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7358128430173427745}
-    - targetCorrespondingSourceObject: {fileID: 477677284470858495, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6017088689816966733}
-    - targetCorrespondingSourceObject: {fileID: 477677284470858495, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6017088689816966732}
-    - targetCorrespondingSourceObject: {fileID: 7138752970415857450, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6579541274179013515}
-    - targetCorrespondingSourceObject: {fileID: 7138752970415857450, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6579541274179013514}
-    - targetCorrespondingSourceObject: {fileID: 2535538641171272362, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7317624728975138290}
-    - targetCorrespondingSourceObject: {fileID: 2535538641171272362, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7317624728975138289}
-    - targetCorrespondingSourceObject: {fileID: 756709565724755282, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7453254108508109410}
-    - targetCorrespondingSourceObject: {fileID: 756709565724755282, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7453254108508109409}
-    - targetCorrespondingSourceObject: {fileID: 4553254523920199656, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8641238183124962339}
-    - targetCorrespondingSourceObject: {fileID: 4553254523920199656, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8641238183124962338}
-    - targetCorrespondingSourceObject: {fileID: 3301135007536431415, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7639431249890127089}
-    - targetCorrespondingSourceObject: {fileID: 3301135007536431415, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7639431249890127088}
-    - targetCorrespondingSourceObject: {fileID: 245834596013160765, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8665083121051539034}
-    - targetCorrespondingSourceObject: {fileID: 245834596013160765, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8665083121051539033}
-    - targetCorrespondingSourceObject: {fileID: 8078197563823504497, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6823306165017666183}
-    - targetCorrespondingSourceObject: {fileID: 8078197563823504497, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6823306165017666182}
-    - targetCorrespondingSourceObject: {fileID: 2263600827740076650, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8589166832645065521}
-    - targetCorrespondingSourceObject: {fileID: 2263600827740076650, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8589166832645065520}
-    - targetCorrespondingSourceObject: {fileID: 6779136632238008980, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7251297290969286780}
-    - targetCorrespondingSourceObject: {fileID: 6779136632238008980, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7251297290969286779}
-    - targetCorrespondingSourceObject: {fileID: 8232005992657355798, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 9149753400142848517}
-    - targetCorrespondingSourceObject: {fileID: 8232005992657355798, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 9149753400142848516}
-    - targetCorrespondingSourceObject: {fileID: 3515060122874814504, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8483269990523970441}
-    - targetCorrespondingSourceObject: {fileID: 3515060122874814504, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8483269990523970440}
-    - targetCorrespondingSourceObject: {fileID: 3993431320545591630, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7120646069657220554}
-    - targetCorrespondingSourceObject: {fileID: 3993431320545591630, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7120646069657220553}
-    - targetCorrespondingSourceObject: {fileID: 318044954263012785, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8351477096929641965}
-    - targetCorrespondingSourceObject: {fileID: 318044954263012785, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8351477096929641964}
-    - targetCorrespondingSourceObject: {fileID: 7812152299821457730, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7435290030342636306}
-    - targetCorrespondingSourceObject: {fileID: 7812152299821457730, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7435290030342636305}
-    - targetCorrespondingSourceObject: {fileID: 435025118207310418, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7523764940575770392}
-    - targetCorrespondingSourceObject: {fileID: 435025118207310418, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7523764940575770391}
-    - targetCorrespondingSourceObject: {fileID: 7463669999413193468, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7230351793056104174}
-    - targetCorrespondingSourceObject: {fileID: 7463669999413193468, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7230351793056104173}
-    - targetCorrespondingSourceObject: {fileID: 4321995140441512611, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7727416833515726659}
-    - targetCorrespondingSourceObject: {fileID: 4321995140441512611, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7727416833515726658}
-    - targetCorrespondingSourceObject: {fileID: 4680448867930510071, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7592385455667620043}
-    - targetCorrespondingSourceObject: {fileID: 4680448867930510071, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7592385455667620042}
-    - targetCorrespondingSourceObject: {fileID: 3496400762094892572, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7290331672771974249}
-    - targetCorrespondingSourceObject: {fileID: 3496400762094892572, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7290331672771974248}
-    - targetCorrespondingSourceObject: {fileID: 6548809342184627278, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7790410402893070883}
+      addedObject: {fileID: 9184347460798079019}
     - targetCorrespondingSourceObject: {fileID: 6548809342184627278, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7790410402893070882}
-    - targetCorrespondingSourceObject: {fileID: 581682882994656093, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+    - targetCorrespondingSourceObject: {fileID: 6548809342184627278, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 8706959841575663802}
-    - targetCorrespondingSourceObject: {fileID: 581682882994656093, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8706959841575663801}
-    - targetCorrespondingSourceObject: {fileID: 6754093736566242692, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 4899158528993814795}
-    - targetCorrespondingSourceObject: {fileID: 6754093736566242692, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 4899158528993814794}
-    - targetCorrespondingSourceObject: {fileID: 1344376147313248971, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 9197427021187678122}
-    - targetCorrespondingSourceObject: {fileID: 1344376147313248971, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 9197427021187678121}
-    - targetCorrespondingSourceObject: {fileID: 7089927822587987518, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8501638585304241660}
+      addedObject: {fileID: 7790410402893070883}
     - targetCorrespondingSourceObject: {fileID: 7089927822587987518, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8501638585304241659}
-    - targetCorrespondingSourceObject: {fileID: 5921995037397452659, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+    - targetCorrespondingSourceObject: {fileID: 7089927822587987518, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7778199644136831312}
-    - targetCorrespondingSourceObject: {fileID: 5921995037397452659, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      addedObject: {fileID: 8501638585304241660}
+    - targetCorrespondingSourceObject: {fileID: 581682882994656093, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7778199644136831311}
-    - targetCorrespondingSourceObject: {fileID: 4549046377968379930, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      addedObject: {fileID: 8706959841575663801}
+    - targetCorrespondingSourceObject: {fileID: 581682882994656093, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 8786786516635853534}
-    - targetCorrespondingSourceObject: {fileID: 4549046377968379930, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8786786516635853533}
-    - targetCorrespondingSourceObject: {fileID: 411279161962474188, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7438317119900579330}
-    - targetCorrespondingSourceObject: {fileID: 411279161962474188, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7438317119900579329}
-    - targetCorrespondingSourceObject: {fileID: 5896384700713677832, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6325231414426871187}
-    - targetCorrespondingSourceObject: {fileID: 5896384700713677832, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6325231414426871186}
-    - targetCorrespondingSourceObject: {fileID: 7360449565009027623, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6552688983962259228}
-    - targetCorrespondingSourceObject: {fileID: 7360449565009027623, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6552688983962259227}
-    - targetCorrespondingSourceObject: {fileID: 562948875911438072, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8896241211320259036}
-    - targetCorrespondingSourceObject: {fileID: 562948875911438072, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8896241211320259035}
-    - targetCorrespondingSourceObject: {fileID: 4196111947268813710, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7166672962848797945}
-    - targetCorrespondingSourceObject: {fileID: 4196111947268813710, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7166672962848797944}
-    - targetCorrespondingSourceObject: {fileID: 5287830106225973427, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6092588390792800526}
-    - targetCorrespondingSourceObject: {fileID: 5287830106225973427, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6092588390792800525}
-    - targetCorrespondingSourceObject: {fileID: 8633833705018128924, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8074919868001212683}
-    - targetCorrespondingSourceObject: {fileID: 8633833705018128924, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8074919868001212682}
-    - targetCorrespondingSourceObject: {fileID: 614508965612082954, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6054256735918296519}
-    - targetCorrespondingSourceObject: {fileID: 614508965612082954, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6054256735918296518}
-    - targetCorrespondingSourceObject: {fileID: 1991612005594176375, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6642834559815971299}
-    - targetCorrespondingSourceObject: {fileID: 1991612005594176375, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6642834559815971298}
-    - targetCorrespondingSourceObject: {fileID: 1559272318189501705, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3102252821707729128}
-    - targetCorrespondingSourceObject: {fileID: 1559272318189501705, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3102252821707729127}
-    - targetCorrespondingSourceObject: {fileID: 9147745672749820148, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8033284536133728891}
-    - targetCorrespondingSourceObject: {fileID: 9147745672749820148, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8033284536133728890}
-    - targetCorrespondingSourceObject: {fileID: 4866864732897132705, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7330170051572015253}
-    - targetCorrespondingSourceObject: {fileID: 4866864732897132705, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7330170051572015252}
-    - targetCorrespondingSourceObject: {fileID: 153985059628568971, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7584838650225048900}
-    - targetCorrespondingSourceObject: {fileID: 153985059628568971, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7584838650225048899}
-    - targetCorrespondingSourceObject: {fileID: 9199367984963195232, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8841270365763564930}
-    - targetCorrespondingSourceObject: {fileID: 9199367984963195232, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8841270365763564929}
-    - targetCorrespondingSourceObject: {fileID: 1060280618408417510, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7692976510763357948}
-    - targetCorrespondingSourceObject: {fileID: 1060280618408417510, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7692976510763357947}
-    - targetCorrespondingSourceObject: {fileID: 1593148460393639352, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7751757619945187177}
-    - targetCorrespondingSourceObject: {fileID: 1593148460393639352, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7751757619945187176}
-    - targetCorrespondingSourceObject: {fileID: 5761854906715226498, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7684221606820505016}
-    - targetCorrespondingSourceObject: {fileID: 5761854906715226498, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7684221606820505015}
-    - targetCorrespondingSourceObject: {fileID: 1646069594328884224, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6015606696962785508}
-    - targetCorrespondingSourceObject: {fileID: 1646069594328884224, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6015606696962785507}
-    - targetCorrespondingSourceObject: {fileID: 6182491482973036423, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8953845181484988482}
-    - targetCorrespondingSourceObject: {fileID: 6182491482973036423, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8953845181484988481}
-    - targetCorrespondingSourceObject: {fileID: 8950175072073115978, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5050029444998098510}
-    - targetCorrespondingSourceObject: {fileID: 8950175072073115978, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5050029444998098509}
-    - targetCorrespondingSourceObject: {fileID: 5014699986294053211, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8928194004744121145}
-    - targetCorrespondingSourceObject: {fileID: 5014699986294053211, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8928194004744121144}
-    - targetCorrespondingSourceObject: {fileID: 4004550922973817278, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2907404712273850263}
-    - targetCorrespondingSourceObject: {fileID: 4004550922973817278, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2907404712273850262}
-    - targetCorrespondingSourceObject: {fileID: 2947753126755682265, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6994780630231978252}
-    - targetCorrespondingSourceObject: {fileID: 2947753126755682265, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6994780630231978251}
-    - targetCorrespondingSourceObject: {fileID: 2972574118425703509, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5744784853432578113}
-    - targetCorrespondingSourceObject: {fileID: 2972574118425703509, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5744784853432578112}
-    - targetCorrespondingSourceObject: {fileID: 2709553857731057800, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6010685831465451001}
-    - targetCorrespondingSourceObject: {fileID: 2709553857731057800, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6010685831465451000}
-    - targetCorrespondingSourceObject: {fileID: 553224841972191688, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8762752479257254757}
-    - targetCorrespondingSourceObject: {fileID: 553224841972191688, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8762752479257254756}
-    - targetCorrespondingSourceObject: {fileID: 6692396567871536535, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5535645909854626289}
-    - targetCorrespondingSourceObject: {fileID: 6692396567871536535, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5535645909854626288}
-    - targetCorrespondingSourceObject: {fileID: 6795985501629741660, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6230449541694103145}
-    - targetCorrespondingSourceObject: {fileID: 6795985501629741660, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6230449541694103144}
-    - targetCorrespondingSourceObject: {fileID: 6998234872928518252, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5859509202448384427}
+      addedObject: {fileID: 8706959841575663802}
     - targetCorrespondingSourceObject: {fileID: 6998234872928518252, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5859509202448384426}
+    - targetCorrespondingSourceObject: {fileID: 6998234872928518252, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5859509202448384427}
+    - targetCorrespondingSourceObject: {fileID: 6754093736566242692, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4899158528993814794}
+    - targetCorrespondingSourceObject: {fileID: 6754093736566242692, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4899158528993814795}
+    - targetCorrespondingSourceObject: {fileID: 6795985501629741660, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6230449541694103144}
+    - targetCorrespondingSourceObject: {fileID: 6795985501629741660, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6230449541694103145}
+    - targetCorrespondingSourceObject: {fileID: 1344376147313248971, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9197427021187678121}
+    - targetCorrespondingSourceObject: {fileID: 1344376147313248971, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9197427021187678122}
+    - targetCorrespondingSourceObject: {fileID: 6692396567871536535, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5535645909854626288}
+    - targetCorrespondingSourceObject: {fileID: 6692396567871536535, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5535645909854626289}
+    - targetCorrespondingSourceObject: {fileID: 5921995037397452659, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7778199644136831311}
+    - targetCorrespondingSourceObject: {fileID: 5921995037397452659, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7778199644136831312}
+    - targetCorrespondingSourceObject: {fileID: 3496400762094892572, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7290331672771974248}
+    - targetCorrespondingSourceObject: {fileID: 3496400762094892572, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7290331672771974249}
+    - targetCorrespondingSourceObject: {fileID: 5014699986294053211, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8928194004744121144}
+    - targetCorrespondingSourceObject: {fileID: 5014699986294053211, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8928194004744121145}
+    - targetCorrespondingSourceObject: {fileID: 4680448867930510071, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7592385455667620042}
+    - targetCorrespondingSourceObject: {fileID: 4680448867930510071, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7592385455667620043}
+    - targetCorrespondingSourceObject: {fileID: 2947753126755682265, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6994780630231978251}
+    - targetCorrespondingSourceObject: {fileID: 2947753126755682265, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6994780630231978252}
+    - targetCorrespondingSourceObject: {fileID: 4321995140441512611, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7727416833515726658}
+    - targetCorrespondingSourceObject: {fileID: 4321995140441512611, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7727416833515726659}
+    - targetCorrespondingSourceObject: {fileID: 2709553857731057800, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6010685831465451000}
+    - targetCorrespondingSourceObject: {fileID: 2709553857731057800, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6010685831465451001}
+    - targetCorrespondingSourceObject: {fileID: 7463669999413193468, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7230351793056104173}
+    - targetCorrespondingSourceObject: {fileID: 7463669999413193468, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7230351793056104174}
+    - targetCorrespondingSourceObject: {fileID: 3993431320545591630, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7120646069657220553}
+    - targetCorrespondingSourceObject: {fileID: 3993431320545591630, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7120646069657220554}
+    - targetCorrespondingSourceObject: {fileID: 8950175072073115978, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5050029444998098509}
+    - targetCorrespondingSourceObject: {fileID: 8950175072073115978, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5050029444998098510}
+    - targetCorrespondingSourceObject: {fileID: 318044954263012785, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8351477096929641964}
+    - targetCorrespondingSourceObject: {fileID: 318044954263012785, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8351477096929641965}
+    - targetCorrespondingSourceObject: {fileID: 4004550922973817278, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2907404712273850262}
+    - targetCorrespondingSourceObject: {fileID: 4004550922973817278, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2907404712273850263}
+    - targetCorrespondingSourceObject: {fileID: 7812152299821457730, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7435290030342636305}
+    - targetCorrespondingSourceObject: {fileID: 7812152299821457730, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7435290030342636306}
+    - targetCorrespondingSourceObject: {fileID: 2972574118425703509, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5744784853432578112}
+    - targetCorrespondingSourceObject: {fileID: 2972574118425703509, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5744784853432578113}
+    - targetCorrespondingSourceObject: {fileID: 435025118207310418, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7523764940575770391}
+    - targetCorrespondingSourceObject: {fileID: 435025118207310418, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7523764940575770392}
+    - targetCorrespondingSourceObject: {fileID: 553224841972191688, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8762752479257254756}
+    - targetCorrespondingSourceObject: {fileID: 553224841972191688, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8762752479257254757}
+    - targetCorrespondingSourceObject: {fileID: 6182491482973036423, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8953845181484988481}
+    - targetCorrespondingSourceObject: {fileID: 6182491482973036423, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8953845181484988482}
+    - targetCorrespondingSourceObject: {fileID: 3515060122874814504, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8483269990523970440}
+    - targetCorrespondingSourceObject: {fileID: 3515060122874814504, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8483269990523970441}
+    - targetCorrespondingSourceObject: {fileID: 1646069594328884224, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6015606696962785507}
+    - targetCorrespondingSourceObject: {fileID: 1646069594328884224, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6015606696962785508}
+    - targetCorrespondingSourceObject: {fileID: 8232005992657355798, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9149753400142848516}
+    - targetCorrespondingSourceObject: {fileID: 8232005992657355798, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9149753400142848517}
+    - targetCorrespondingSourceObject: {fileID: 5761854906715226498, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7684221606820505015}
+    - targetCorrespondingSourceObject: {fileID: 5761854906715226498, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7684221606820505016}
+    - targetCorrespondingSourceObject: {fileID: 6779136632238008980, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7251297290969286779}
+    - targetCorrespondingSourceObject: {fileID: 6779136632238008980, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7251297290969286780}
+    - targetCorrespondingSourceObject: {fileID: 1593148460393639352, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7751757619945187176}
+    - targetCorrespondingSourceObject: {fileID: 1593148460393639352, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7751757619945187177}
+    - targetCorrespondingSourceObject: {fileID: 2263600827740076650, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8589166832645065520}
+    - targetCorrespondingSourceObject: {fileID: 2263600827740076650, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8589166832645065521}
+    - targetCorrespondingSourceObject: {fileID: 4553254523920199656, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8641238183124962338}
+    - targetCorrespondingSourceObject: {fileID: 4553254523920199656, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8641238183124962339}
+    - targetCorrespondingSourceObject: {fileID: 4866864732897132705, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7330170051572015252}
+    - targetCorrespondingSourceObject: {fileID: 4866864732897132705, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7330170051572015253}
+    - targetCorrespondingSourceObject: {fileID: 3301135007536431415, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7639431249890127088}
+    - targetCorrespondingSourceObject: {fileID: 3301135007536431415, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7639431249890127089}
+    - targetCorrespondingSourceObject: {fileID: 153985059628568971, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7584838650225048899}
+    - targetCorrespondingSourceObject: {fileID: 153985059628568971, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7584838650225048900}
+    - targetCorrespondingSourceObject: {fileID: 245834596013160765, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8665083121051539033}
+    - targetCorrespondingSourceObject: {fileID: 245834596013160765, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8665083121051539034}
+    - targetCorrespondingSourceObject: {fileID: 9199367984963195232, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8841270365763564929}
+    - targetCorrespondingSourceObject: {fileID: 9199367984963195232, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8841270365763564930}
+    - targetCorrespondingSourceObject: {fileID: 8078197563823504497, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6823306165017666182}
+    - targetCorrespondingSourceObject: {fileID: 8078197563823504497, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6823306165017666183}
+    - targetCorrespondingSourceObject: {fileID: 1060280618408417510, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7692976510763357947}
+    - targetCorrespondingSourceObject: {fileID: 1060280618408417510, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7692976510763357948}
+    - targetCorrespondingSourceObject: {fileID: 9147745672749820148, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8033284536133728890}
+    - targetCorrespondingSourceObject: {fileID: 9147745672749820148, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8033284536133728891}
+    - targetCorrespondingSourceObject: {fileID: 756709565724755282, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7453254108508109409}
+    - targetCorrespondingSourceObject: {fileID: 756709565724755282, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7453254108508109410}
+    - targetCorrespondingSourceObject: {fileID: 1559272318189501705, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3102252821707729127}
+    - targetCorrespondingSourceObject: {fileID: 1559272318189501705, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3102252821707729128}
+    - targetCorrespondingSourceObject: {fileID: 2535538641171272362, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7317624728975138289}
+    - targetCorrespondingSourceObject: {fileID: 2535538641171272362, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7317624728975138290}
+    - targetCorrespondingSourceObject: {fileID: 1991612005594176375, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6642834559815971298}
+    - targetCorrespondingSourceObject: {fileID: 1991612005594176375, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6642834559815971299}
+    - targetCorrespondingSourceObject: {fileID: 7138752970415857450, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6579541274179013514}
+    - targetCorrespondingSourceObject: {fileID: 7138752970415857450, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6579541274179013515}
+    - targetCorrespondingSourceObject: {fileID: 614508965612082954, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6054256735918296518}
+    - targetCorrespondingSourceObject: {fileID: 614508965612082954, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6054256735918296519}
+    - targetCorrespondingSourceObject: {fileID: 477677284470858495, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6017088689816966732}
+    - targetCorrespondingSourceObject: {fileID: 477677284470858495, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6017088689816966733}
+    - targetCorrespondingSourceObject: {fileID: 3654371263806465339, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6394511342347557379}
+    - targetCorrespondingSourceObject: {fileID: 3654371263806465339, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6394511342347557380}
+    - targetCorrespondingSourceObject: {fileID: 562948875911438072, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8896241211320259035}
+    - targetCorrespondingSourceObject: {fileID: 562948875911438072, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8896241211320259036}
+    - targetCorrespondingSourceObject: {fileID: 6571417589441563530, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8147685071075599358}
+    - targetCorrespondingSourceObject: {fileID: 6571417589441563530, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8147685071075599359}
+    - targetCorrespondingSourceObject: {fileID: 4196111947268813710, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7166672962848797944}
+    - targetCorrespondingSourceObject: {fileID: 4196111947268813710, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7166672962848797945}
+    - targetCorrespondingSourceObject: {fileID: 7230867229974558742, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8848757593603374553}
+    - targetCorrespondingSourceObject: {fileID: 7230867229974558742, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8848757593603374554}
+    - targetCorrespondingSourceObject: {fileID: 5287830106225973427, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6092588390792800525}
+    - targetCorrespondingSourceObject: {fileID: 5287830106225973427, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6092588390792800526}
+    - targetCorrespondingSourceObject: {fileID: 4958568517704176121, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7358128430173427745}
+    - targetCorrespondingSourceObject: {fileID: 4958568517704176121, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7358128430173427746}
+    - targetCorrespondingSourceObject: {fileID: 8633833705018128924, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8074919868001212682}
+    - targetCorrespondingSourceObject: {fileID: 8633833705018128924, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8074919868001212683}
+    - targetCorrespondingSourceObject: {fileID: 7360449565009027623, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6552688983962259227}
+    - targetCorrespondingSourceObject: {fileID: 7360449565009027623, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6552688983962259228}
+    - targetCorrespondingSourceObject: {fileID: 4284131315726746507, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5836243408294602843}
+    - targetCorrespondingSourceObject: {fileID: 4284131315726746507, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5836243408294602844}
+    - targetCorrespondingSourceObject: {fileID: 5896384700713677832, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6325231414426871186}
+    - targetCorrespondingSourceObject: {fileID: 5896384700713677832, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6325231414426871187}
+    - targetCorrespondingSourceObject: {fileID: 8213780873411745193, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6703166034795617183}
+    - targetCorrespondingSourceObject: {fileID: 8213780873411745193, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6703166034795617184}
+    - targetCorrespondingSourceObject: {fileID: 411279161962474188, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7438317119900579329}
+    - targetCorrespondingSourceObject: {fileID: 411279161962474188, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7438317119900579330}
+    - targetCorrespondingSourceObject: {fileID: 5035685239812911947, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8452635446031015688}
+    - targetCorrespondingSourceObject: {fileID: 5035685239812911947, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8452635446031015689}
+    - targetCorrespondingSourceObject: {fileID: 4549046377968379930, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8786786516635853533}
+    - targetCorrespondingSourceObject: {fileID: 4549046377968379930, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8786786516635853534}
+    - targetCorrespondingSourceObject: {fileID: 9006963343996635215, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5193598873976517372}
+    - targetCorrespondingSourceObject: {fileID: 9006963343996635215, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5193598873976517373}
   m_SourcePrefab: {fileID: 100100000, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
 --- !u!65 &4899158528993814794
 BoxCollider:
@@ -1388,13 +1390,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 2694439653496382506}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 4
   <Y>k__BackingField: 7
   <TileName>k__BackingField: E8
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &5050029444998098508 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8950175072073115978, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -1430,13 +1433,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 5050029444998098508}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 1
   <Y>k__BackingField: 5
   <TileName>k__BackingField: B6
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &5135681455338718742 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 411279161962474188, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -1472,13 +1476,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 2089811578411440543}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 7
   <Y>k__BackingField: 0
   <TileName>k__BackingField: H1
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &5535645909854626287 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6692396567871536535, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -1514,13 +1519,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 5535645909854626287}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 7
   <Y>k__BackingField: 7
   <TileName>k__BackingField: H8
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &5696524065584096492 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1344376147313248971, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -1561,13 +1567,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 5744784853432578111}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 5
   <Y>k__BackingField: 5
   <TileName>k__BackingField: F6
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &5836243408294602843
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1598,13 +1605,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 140276286686289239}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 1
   <Y>k__BackingField: 0
   <TileName>k__BackingField: B1
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &5859509202448384425 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6998234872928518252, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -1640,13 +1648,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 5859509202448384425}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 3
   <Y>k__BackingField: 7
   <TileName>k__BackingField: D8
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &5871251058597002234 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 581682882994656093, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -1682,13 +1691,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 885544025214224697}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 6
   <Y>k__BackingField: 6
   <TileName>k__BackingField: G7
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &6015606696962785507
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1719,13 +1729,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 3172154818053228577}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 2
   <Y>k__BackingField: 4
   <TileName>k__BackingField: C5
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &6017088689816966732
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1756,13 +1767,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 800621782201419258}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 7
   <Y>k__BackingField: 2
   <TileName>k__BackingField: H3
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &6034983027632340969 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4196111947268813710, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -1798,13 +1810,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 76806999818086722}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 6
   <Y>k__BackingField: 2
   <TileName>k__BackingField: G3
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &6092588390792800525
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1835,13 +1848,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1270671189957204009}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 5
   <Y>k__BackingField: 1
   <TileName>k__BackingField: F2
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &6230449541694103144
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1872,13 +1886,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 2742041301954847917}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 5
   <Y>k__BackingField: 7
   <TileName>k__BackingField: F8
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &6325231414426871186
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1909,13 +1924,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 4087330913109443670}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 2
   <Y>k__BackingField: 0
   <TileName>k__BackingField: C1
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &6394511342347557379
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1946,13 +1962,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 3619346298726728584}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 0
   <Y>k__BackingField: 1
   <TileName>k__BackingField: A2
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &6552688983962259227
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1983,13 +2000,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 2196568554419884016}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 0
   <Y>k__BackingField: 0
   <TileName>k__BackingField: A1
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &6579541274179013514
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2020,13 +2038,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 4154792450474063605}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 5
   <Y>k__BackingField: 2
   <TileName>k__BackingField: F3
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &6642834559815971298
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2057,13 +2076,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 711479561948114292}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 4
   <Y>k__BackingField: 2
   <TileName>k__BackingField: E3
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &6703166034795617183
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2094,13 +2114,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 3153012877067459912}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 3
   <Y>k__BackingField: 0
   <TileName>k__BackingField: D1
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &6727435615398599849 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6571417589441563530, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -2146,13 +2167,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 6823306165017666181}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 6
   <Y>k__BackingField: 3
   <TileName>k__BackingField: G4
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &6837003637164630944 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 553224841972191688, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -2198,13 +2220,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 4064815832928311603}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 4
   <Y>k__BackingField: 6
   <TileName>k__BackingField: E7
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &7087604234622387444 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 9199367984963195232, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -2240,13 +2263,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1963108878392980861}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 0
   <Y>k__BackingField: 5
   <TileName>k__BackingField: A6
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7166672962848797944
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2277,13 +2301,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 6034983027632340969}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 3
   <Y>k__BackingField: 1
   <TileName>k__BackingField: D2
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &7230351793056104172 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7463669999413193468, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -2319,13 +2344,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 7230351793056104172}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 7
   <Y>k__BackingField: 6
   <TileName>k__BackingField: H7
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7251297290969286779
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2356,13 +2382,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 72276460335985073}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 5
   <Y>k__BackingField: 4
   <TileName>k__BackingField: F5
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7290331672771974248
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2393,13 +2420,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 136733541420520089}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 1
   <Y>k__BackingField: 6
   <TileName>k__BackingField: B7
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7317624728975138289
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2430,13 +2458,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 2385953634571530071}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 3
   <Y>k__BackingField: 2
   <TileName>k__BackingField: D3
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &7330170051572015251 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4866864732897132705, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -2472,13 +2501,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 7330170051572015251}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 1
   <Y>k__BackingField: 3
   <TileName>k__BackingField: B4
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &7358128430173427744 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4958568517704176121, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -2514,13 +2544,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 7358128430173427744}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 6
   <Y>k__BackingField: 1
   <TileName>k__BackingField: G2
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7435290030342636305
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2551,13 +2582,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 4772519869232464493}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 4
   <Y>k__BackingField: 5
   <TileName>k__BackingField: E6
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7438317119900579329
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2588,13 +2620,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 5135681455338718742}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 4
   <Y>k__BackingField: 0
   <TileName>k__BackingField: E1
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &7453254108508109408 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 756709565724755282, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -2630,13 +2663,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 7453254108508109408}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 1
   <Y>k__BackingField: 2
   <TileName>k__BackingField: B3
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &7523764940575770390 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 435025118207310418, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -2672,13 +2706,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 7523764940575770390}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 6
   <Y>k__BackingField: 5
   <TileName>k__BackingField: G6
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7584838650225048899
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2709,13 +2744,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 417161910285732421}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 3
   <Y>k__BackingField: 3
   <TileName>k__BackingField: D4
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7592385455667620042
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2746,13 +2782,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 862462314370865681}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 3
   <Y>k__BackingField: 6
   <TileName>k__BackingField: D7
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7639431249890127088
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2783,13 +2820,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 160781535897761994}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 2
   <Y>k__BackingField: 3
   <TileName>k__BackingField: C4
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7684221606820505015
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2820,13 +2858,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 3714408512634812960}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 4
   <Y>k__BackingField: 4
   <TileName>k__BackingField: E5
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7692976510763357947
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2857,13 +2896,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1967958535658250347}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 7
   <Y>k__BackingField: 3
   <TileName>k__BackingField: H4
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7727416833515726658
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2894,13 +2934,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1487931104075159659}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 5
   <Y>k__BackingField: 6
   <TileName>k__BackingField: F7
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7751757619945187176
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2931,13 +2972,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1569697779673284420}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 6
   <Y>k__BackingField: 4
   <TileName>k__BackingField: G5
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7778199644136831311
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2968,13 +3010,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1873995139207083083}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 0
   <Y>k__BackingField: 6
   <TileName>k__BackingField: A7
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &7790410402893070882
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3005,13 +3048,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 116825083506338589}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 0
   <Y>k__BackingField: 7
   <TileName>k__BackingField: A8
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &8033284536133728889 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 9147745672749820148, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -3047,13 +3091,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 8033284536133728889}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 0
   <Y>k__BackingField: 2
   <TileName>k__BackingField: A3
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &8074919868001212681 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8633833705018128924, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -3089,13 +3134,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 8074919868001212681}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 7
   <Y>k__BackingField: 1
   <TileName>k__BackingField: H2
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &8126759784263741985 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2263600827740076650, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -3131,13 +3177,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 6727435615398599849}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 2
   <Y>k__BackingField: 1
   <TileName>k__BackingField: C2
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8351477096929641964
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3168,13 +3215,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1720077709481020354}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 2
   <Y>k__BackingField: 5
   <TileName>k__BackingField: C6
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8452635446031015688
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3205,13 +3253,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 4537462142325047569}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 5
   <Y>k__BackingField: 0
   <TileName>k__BackingField: F1
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8483269990523970440
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3242,13 +3291,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 6771553553533381735}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 1
   <Y>k__BackingField: 4
   <TileName>k__BackingField: B5
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8501638585304241659
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3279,13 +3329,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 998147733973543256}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 1
   <Y>k__BackingField: 7
   <TileName>k__BackingField: B8
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8589166832645065520
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3316,13 +3367,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 8126759784263741985}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 7
   <Y>k__BackingField: 4
   <TileName>k__BackingField: H5
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &8641238183124962337 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4553254523920199656, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -3358,13 +3410,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 8641238183124962337}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 0
   <Y>k__BackingField: 3
   <TileName>k__BackingField: A4
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8665083121051539033
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3395,13 +3448,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 6937354570873897018}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 4
   <Y>k__BackingField: 3
   <TileName>k__BackingField: E4
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8706959841575663801
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3432,13 +3486,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 5871251058597002234}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 2
   <Y>k__BackingField: 7
   <TileName>k__BackingField: C8
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8762752479257254756
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3469,13 +3524,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 6837003637164630944}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 7
   <Y>k__BackingField: 5
   <TileName>k__BackingField: H6
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &8786786516635853532 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4549046377968379930, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -3511,13 +3567,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 8786786516635853532}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 6
   <Y>k__BackingField: 0
   <TileName>k__BackingField: G1
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8841270365763564929
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3548,13 +3605,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 7087604234622387444}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 5
   <Y>k__BackingField: 3
   <TileName>k__BackingField: F4
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8848757593603374553
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3585,13 +3643,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 3211605197878622121}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 4
   <Y>k__BackingField: 1
   <TileName>k__BackingField: E2
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8896241211320259035
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3622,13 +3681,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 34583160694607656}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 1
   <Y>k__BackingField: 1
   <TileName>k__BackingField: B2
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &8928194004744121144
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3659,13 +3719,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 6845152137351167300}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 2
   <Y>k__BackingField: 6
   <TileName>k__BackingField: C7
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &8953845181484988480 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6182491482973036423, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -3701,13 +3762,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 8953845181484988480}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 0
   <Y>k__BackingField: 4
   <TileName>k__BackingField: A5
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!65 &9149753400142848516
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3738,13 +3800,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 3804331622388600350}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 3
   <Y>k__BackingField: 4
   <TileName>k__BackingField: D5
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1 &9184347460798079017 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 207590796924922982, guid: cd7ef6570849c894183d3a233ba1f2f6, type: 3}
@@ -3780,9 +3843,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 9184347460798079017}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ffae54750b31b4a49a3232d2093b6dad, type: 3}
+  m_Script: {fileID: 11500000, guid: fc8a7e3e4d776b14d96ca3d1e844a7a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessBoard
+  whitePiecePrefabs:
+  - {fileID: 3849443024007794893, guid: 2d9a636f38a16eb499e0390fb1dfc3cb, type: 3}
+  - {fileID: 4144670401511304948, guid: 44baac44ba715d3449aea4aa1d253691, type: 3}
+  - {fileID: 6103582246885273655, guid: 5f52ddf9ae0e501429ddb27804ee26a9, type: 3}
+  - {fileID: 8533173619447268320, guid: db65d85c06b95bd4d8e9cd79cbe0556e, type: 3}
+  - {fileID: 2436402973224421179, guid: 597e3533021685945afdc7de597c7974, type: 3}
+  - {fileID: 3869380219307735941, guid: d168c54fd1df7be48b6b4e73ffedb5fd, type: 3}
+  blackPiecePrefabs:
+  - {fileID: 4722801938961761309, guid: 5548dd50724dfee409d68c80140e34dd, type: 3}
+  - {fileID: 9115864557451125168, guid: aed69dffc42e486418cc7f7707ebe0f0, type: 3}
+  - {fileID: 5165512836897157335, guid: 0b553334cae06cb4e809721e7742e24d, type: 3}
+  - {fileID: 5577622401147843522, guid: 96ddc097941454a4486f7dd324e09133, type: 3}
+  - {fileID: 7287626031760169382, guid: 059b248e61671db45b315fb7925ea87c, type: 3}
+  - {fileID: 2989705879457890165, guid: 108c148b060531a4eb8a9955044b8d87, type: 3}
 --- !u!65 &9197427021187678121
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3813,13 +3890,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 5696524065584096492}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91c6e4e1df359f648a699c513893c889, type: 3}
+  m_Script: {fileID: 11500000, guid: 3fbca8246a2b7034c86903aad51c5043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessTile
   <X>k__BackingField: 6
   <Y>k__BackingField: 7
   <TileName>k__BackingField: G8
   autoCreateMissingComponents: 1
+  currentPiece: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

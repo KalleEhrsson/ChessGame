@@ -8,14 +8,17 @@ public class ChessBoard : MonoBehaviour
 {
     const string BoardObjectName = "ChessBoard";
     const int BoardSize = 8;
-    const string PieceResourceFolder = "ChessPieces";
+    const string BlackPieceFolder = "Assets/Prefabs/ChessPieces/Black";
+    const string WhitePieceFolder = "Assets/Prefabs/ChessPieces/White";
 
     public static ChessBoard Instance { get; private set; }
 
     #region Variables
 
     readonly ChessTile[,] tiles = new ChessTile[BoardSize, BoardSize];
-    readonly Dictionary<string, ChessTile> tilesByName = new Dictionary<string, ChessTile>(StringComparer.OrdinalIgnoreCase);
+    readonly Dictionary<string, ChessTile> tilesByName = new (StringComparer.OrdinalIgnoreCase);
+    [SerializeField] GameObject[] whitePiecePrefabs = Array.Empty<GameObject>();
+    [SerializeField] GameObject[] blackPiecePrefabs = Array.Empty<GameObject>();
 
     #endregion
 
@@ -42,6 +45,7 @@ public class ChessBoard : MonoBehaviour
     {
         RegisterInstance();
         RenameBoardObject();
+        RefreshPiecePrefabReferences();
         AutoSetupBoard();
     }
 
@@ -188,21 +192,51 @@ public class ChessBoard : MonoBehaviour
     GameObject LoadPiecePrefab(PieceTeam team, PieceType type)
     {
         string prefabName = BuildPiecePrefabName(team, type);
-        string resourcePath = $"{PieceResourceFolder}/{prefabName}";
-
-        GameObject prefab = Resources.Load<GameObject>(resourcePath);
-        if (prefab == null)
+        GameObject[] prefabs = team == PieceTeam.White ? whitePiecePrefabs : blackPiecePrefabs;
+        for (int i = 0; i < prefabs.Length; i++)
         {
-            Debug.LogWarning($"Missing chess piece prefab at Resources/{resourcePath}.prefab");
+            GameObject prefab = prefabs[i];
+            if (prefab != null && prefab.name.Equals(prefabName, StringComparison.OrdinalIgnoreCase))
+            {
+                return prefab;
+            }
         }
 
-        return prefab;
+        Debug.LogWarning($"Missing chess piece prefab reference for {prefabName}.");
+        return null;
     }
 
     static string BuildPiecePrefabName(PieceTeam team, PieceType type)
     {
         return $"{team}_{type}";
     }
+    
+    void RefreshPiecePrefabReferences()
+    {
+#if UNITY_EDITOR
+        whitePiecePrefabs = LoadPiecePrefabsFromFolder(WhitePieceFolder);
+        blackPiecePrefabs = LoadPiecePrefabsFromFolder(BlackPieceFolder);
+#endif
+    }
+
+#if UNITY_EDITOR
+    static GameObject[] LoadPiecePrefabsFromFolder(string folderPath)
+    {
+        string[] guids = UnityEditor.AssetDatabase.FindAssets("t:prefab", new[] { folderPath });
+        List<GameObject> prefabs = new List<GameObject>(guids.Length);
+        for (int i = 0; i < guids.Length; i++)
+        {
+            string assetPath = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[i]);
+            GameObject prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+            if (prefab != null)
+            {
+                prefabs.Add(prefab);
+            }
+        }
+
+        return prefabs.ToArray();
+    }
+#endif
 
     void ClearAllPieces()
     {
