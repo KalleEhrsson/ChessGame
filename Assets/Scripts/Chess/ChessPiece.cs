@@ -29,7 +29,7 @@ public class ChessPiece : MonoBehaviour
 
     #region Variables
 
-    [SerializeField] bool faceBoardCenter = true;
+    [SerializeField] bool faceOpponentSide = true;
     [SerializeField] float rotationYawOffset;
 
     #endregion
@@ -81,9 +81,9 @@ public class ChessPiece : MonoBehaviour
         targetPosition.y = ResolvePlacementY(CurrentTile, targetPosition.y);
         transform.position = targetPosition;
 
-        if (faceBoardCenter)
+        if (faceOpponentSide)
         {
-            RotateTowardBoardCenter(targetPosition);
+            RotateTowardOpponentSide();
         }
     }
 
@@ -96,19 +96,15 @@ public class ChessPiece : MonoBehaviour
 
     #region Placement
 
-    void RotateTowardBoardCenter(Vector3 piecePosition)
+    void RotateTowardOpponentSide()
     {
         ChessBoard board = ChessBoard.Instance;
-        Vector3 boardCenter = board != null ? board.GetBoardCenterWorld() : transform.parent.position;
-        Vector3 toCenter = boardCenter - piecePosition;
-        toCenter.y = 0f;
-
-        if (toCenter.sqrMagnitude <= Mathf.Epsilon)
+        if (board == null || !board.TryGetTeamFacingDirection(Team, out Vector3 facingDirection))
         {
             return;
         }
 
-        Quaternion targetRotation = Quaternion.LookRotation(toCenter.normalized, Vector3.up);
+        Quaternion targetRotation = Quaternion.LookRotation(facingDirection, Vector3.up);
         if (!Mathf.Approximately(rotationYawOffset, 0f))
         {
             targetRotation *= Quaternion.Euler(0f, rotationYawOffset, 0f);

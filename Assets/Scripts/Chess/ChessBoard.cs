@@ -450,37 +450,49 @@ public class ChessBoard : MonoBehaviour
         return hit.collider != null ? hit.collider.GetComponentInParent<ChessTile>() : null;
     }
 
-    public Vector3 GetBoardCenterWorld()
+    public bool TryGetTeamFacingDirection(PieceTeam team, out Vector3 direction)
     {
-        bool hasTile = false;
-        Vector3 min = Vector3.zero;
-        Vector3 max = Vector3.zero;
+        direction = Vector3.zero;
+        int fromRank = team == PieceTeam.White ? 1 : 6;
+        int toRank = team == PieceTeam.White ? 2 : 5;
 
-        for (int y = 0; y < BoardSize; y++)
+        Vector3 accumulatedDirection = Vector3.zero;
+        int validSamples = 0;
+
+        for (int x = 0; x < BoardSize; x++)
         {
-            for (int x = 0; x < BoardSize; x++)
+            ChessTile fromTile = GetTile(x, fromRank);
+            ChessTile toTile = GetTile(x, toRank);
+            if (fromTile == null || toTile == null)
             {
-                ChessTile tile = tiles[x, y];
-                if (tile == null)
-                {
-                    continue;
-                }
-
-                Vector3 tilePosition = tile.transform.position;
-                if (!hasTile)
-                {
-                    min = tilePosition;
-                    max = tilePosition;
-                    hasTile = true;
-                    continue;
-                }
-
-                min = Vector3.Min(min, tilePosition);
-                max = Vector3.Max(max, tilePosition);
+                continue;
             }
+
+            Vector3 sampleDirection = toTile.transform.position - fromTile.transform.position;
+            sampleDirection.y = 0f;
+            if (sampleDirection.sqrMagnitude <= Mathf.Epsilon)
+            {
+                continue;
+            }
+
+            accumulatedDirection += sampleDirection.normalized;
+            validSamples++;
         }
 
-        return hasTile ? (min + max) * 0.5f : transform.position;
+        if (validSamples == 0)
+        {
+            return false;
+        }
+
+        direction = accumulatedDirection / validSamples;
+        direction.y = 0f;
+        if (direction.sqrMagnitude <= Mathf.Epsilon)
+        {
+            return false;
+        }
+
+        direction.Normalize();
+        return true;
     }
 
     public bool MovePiece(ChessTile from, ChessTile to)
