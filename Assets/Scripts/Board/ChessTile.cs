@@ -6,11 +6,9 @@ public class ChessTile : MonoBehaviour
 {
     #region Properties
 
-    public const string TileObjectPrefix = "Tile";
-
-    public int X { get; private set; } = -1;
-    public int Y { get; private set; } = -1;
-    public string TileName { get; private set; } = string.Empty;
+    [field: SerializeField] public int X { get; private set; } = -1;
+    [field: SerializeField] public int Y { get; private set; } = -1;
+    [field: SerializeField] public string TileName { get; private set; } = string.Empty;
 
     #endregion
 
@@ -71,7 +69,7 @@ public class ChessTile : MonoBehaviour
             return;
         }
 
-        gameObject.name = $"{TileObjectPrefix}{TileName}";
+        gameObject.name = TileName;
     }
 
     void EnsureRequiredComponents()
