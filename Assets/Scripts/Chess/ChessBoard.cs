@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+[ExecuteAlways]
 [DisallowMultipleComponent]
 public class ChessBoard : MonoBehaviour
 {
@@ -13,6 +14,8 @@ public class ChessBoard : MonoBehaviour
 
     #region Variables
 
+    const string TileTag = "ChessTile";
+
     readonly ChessTile[,] tiles = new ChessTile[8, 8];
     readonly Dictionary<string, ChessTile> tilesByName = new Dictionary<string, ChessTile>(StringComparer.OrdinalIgnoreCase);
 
@@ -22,13 +25,13 @@ public class ChessBoard : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
+        RegisterInstance();
+        AutoSetupBoard();
+    }
 
-        Instance = this;
+    void OnValidate()
+    {
+        RegisterInstance();
         AutoSetupBoard();
     }
 
@@ -36,12 +39,20 @@ public class ChessBoard : MonoBehaviour
 
     #region Setup
 
+    void RegisterInstance()
+    {
+        if (Instance == null || Instance == this)
+        {
+            Instance = this;
+        }
+    }
+
     public void AutoSetupBoard()
     {
         Array.Clear(tiles, 0, tiles.Length);
         tilesByName.Clear();
 
-        ChessTile[] discoveredTiles = FindObjectsByType<ChessTile>(FindObjectsSortMode.None);
+        ChessTile[] discoveredTiles = DiscoverTiles();
 
         if (discoveredTiles.Length != 64)
         {
@@ -77,6 +88,42 @@ public class ChessBoard : MonoBehaviour
         }
 
         LogBoardMapping();
+    }
+
+    ChessTile[] DiscoverTiles()
+    {
+        ChessTile[] directTiles = FindObjectsByType<ChessTile>(FindObjectsSortMode.None);
+
+        GameObject[] taggedObjects;
+        try
+        {
+            taggedObjects = GameObject.FindGameObjectsWithTag(TileTag);
+        }
+        catch (UnityException)
+        {
+            return directTiles;
+        }
+
+        if (taggedObjects == null || taggedObjects.Length == 0)
+        {
+            return directTiles;
+        }
+
+        HashSet<ChessTile> merged = new HashSet<ChessTile>(directTiles);
+        for (int i = 0; i < taggedObjects.Length; i++)
+        {
+            ChessTile tile = taggedObjects[i].GetComponent<ChessTile>();
+            if (tile == null)
+            {
+                tile = taggedObjects[i].AddComponent<ChessTile>();
+            }
+
+            merged.Add(tile);
+        }
+
+        ChessTile[] result = new ChessTile[merged.Count];
+        merged.CopyTo(result);
+        return result;
     }
 
     void LogBoardMapping()

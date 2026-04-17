@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[ExecuteAlways]
 [DisallowMultipleComponent]
 public class ChessTile : MonoBehaviour
 {
@@ -13,6 +14,8 @@ public class ChessTile : MonoBehaviour
 
     #region Variables
 
+    [SerializeField] bool autoCreateMissingComponents = true;
+
     Renderer cachedRenderer;
     Color originalColor;
     bool hasOriginalColor;
@@ -21,8 +24,21 @@ public class ChessTile : MonoBehaviour
 
     #region Unity
 
+    void Reset()
+    {
+        EnsureRequiredComponents();
+        CacheRenderer();
+    }
+
+    void OnValidate()
+    {
+        EnsureRequiredComponents();
+        CacheRenderer();
+    }
+
     void Awake()
     {
+        EnsureRequiredComponents();
         CacheRenderer();
     }
 
@@ -45,6 +61,107 @@ public class ChessTile : MonoBehaviour
         return $"{file}{rank}";
     }
 
+    void EnsureRequiredComponents()
+    {
+        if (!autoCreateMissingComponents)
+        {
+            return;
+        }
+
+        EnsureRenderer();
+        EnsureCollider();
+    }
+
+    void EnsureRenderer()
+    {
+        Renderer existingRenderer = GetComponent<Renderer>();
+        if (existingRenderer != null)
+        {
+            return;
+        }
+
+        MeshFilter meshFilter = GetComponent<MeshFilter>();
+        if (meshFilter == null)
+        {
+            meshFilter = gameObject.AddComponent<MeshFilter>();
+        }
+
+        MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
+        if (meshRenderer == null)
+        {
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+        }
+
+        if (meshFilter.sharedMesh == null)
+        {
+            meshFilter.sharedMesh = CreateQuadMesh();
+        }
+
+        if (meshRenderer.sharedMaterial == null)
+        {
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Standard");
+            }
+
+            if (shader != null)
+            {
+                meshRenderer.sharedMaterial = new Material(shader);
+            }
+        }
+    }
+
+    void EnsureCollider()
+    {
+        Collider existingCollider = GetComponent<Collider>();
+        if (existingCollider != null)
+        {
+            return;
+        }
+
+        BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
+        boxCollider.size = EstimateColliderSize();
+    }
+
+    Vector3 EstimateColliderSize()
+    {
+        Renderer renderer = GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            Vector3 size = renderer.bounds.size;
+            if (size.x > 0f && size.y > 0f && size.z > 0f)
+            {
+                return transform.InverseTransformVector(size);
+            }
+        }
+
+        return new Vector3(1f, 0.1f, 1f);
+    }
+
+    static Mesh CreateQuadMesh()
+    {
+        Mesh mesh = new Mesh { name = "ChessTileQuad" };
+        mesh.vertices = new[]
+        {
+            new Vector3(-0.5f, 0f, -0.5f),
+            new Vector3(-0.5f, 0f,  0.5f),
+            new Vector3( 0.5f, 0f,  0.5f),
+            new Vector3( 0.5f, 0f, -0.5f)
+        };
+        mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
+        mesh.uv = new[]
+        {
+            new Vector2(0f, 0f),
+            new Vector2(0f, 1f),
+            new Vector2(1f, 1f),
+            new Vector2(1f, 0f)
+        };
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
     void CacheRenderer()
     {
         if (cachedRenderer == null)
@@ -52,7 +169,9 @@ public class ChessTile : MonoBehaviour
             cachedRenderer = GetComponent<Renderer>();
             if (cachedRenderer != null)
             {
-                originalColor = cachedRenderer.material.color;
+                originalColor = cachedRenderer.sharedMaterial != null
+                    ? cachedRenderer.sharedMaterial.color
+                    : Color.white;
                 hasOriginalColor = true;
             }
         }
