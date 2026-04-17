@@ -109,6 +109,7 @@ public class ChessBoard : MonoBehaviour
             }
         }
 
+        OrganizeTileHierarchy(boardSpaceRoot);
         LogBoardMapping();
         LogCornerReferences();
     }
@@ -245,6 +246,30 @@ public class ChessBoard : MonoBehaviour
         }
 
         return true;
+    }
+
+    void OrganizeTileHierarchy(Transform boardSpaceRoot)
+    {
+        if (boardSpaceRoot == null)
+        {
+            return;
+        }
+
+        int siblingIndex = 0;
+        for (int y = BoardSize - 1; y >= 0; y--)
+        {
+            for (int x = 0; x < BoardSize; x++)
+            {
+                ChessTile tile = tiles[x, y];
+                if (tile == null || tile.transform.parent != boardSpaceRoot)
+                {
+                    continue;
+                }
+
+                tile.transform.SetSiblingIndex(siblingIndex);
+                siblingIndex++;
+            }
+        }
     }
 
     void LogBoardMapping()
