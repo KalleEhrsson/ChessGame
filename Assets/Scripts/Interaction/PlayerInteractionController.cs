@@ -16,11 +16,7 @@ public class PlayerInteractionController : MonoBehaviour
 
     void Awake()
     {
-        chessBoard = ChessBoard.Instance;
-        if (chessBoard == null)
-        {
-            chessBoard = FindFirstObjectByType<ChessBoard>();
-        }
+        ResolveBoard();
     }
 
     void Update()
@@ -35,8 +31,22 @@ public class PlayerInteractionController : MonoBehaviour
 
     #region Interaction
 
+    void ResolveBoard()
+    {
+        chessBoard = ChessBoard.Instance;
+        if (chessBoard == null)
+        {
+            chessBoard = FindFirstObjectByType<ChessBoard>();
+        }
+    }
+
     void TryInteract()
     {
+        if (chessBoard == null)
+        {
+            ResolveBoard();
+        }
+
         Camera cameraRef = Camera.main;
         if (cameraRef == null)
         {
@@ -44,8 +54,8 @@ public class PlayerInteractionController : MonoBehaviour
         }
 
         Ray ray = new Ray(cameraRef.transform.position, cameraRef.transform.forward);
-
         int raycastMask = interactLayer.value == 0 ? Physics.DefaultRaycastLayers : interactLayer.value;
+
         if (!Physics.Raycast(ray, out RaycastHit hit, interactDistance, raycastMask))
         {
             return;
