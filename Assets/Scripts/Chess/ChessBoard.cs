@@ -416,6 +416,39 @@ public class ChessBoard : MonoBehaviour
         return hit.collider != null ? hit.collider.GetComponentInParent<ChessTile>() : null;
     }
 
+    public Vector3 GetBoardCenterWorld()
+    {
+        bool hasTile = false;
+        Vector3 min = Vector3.zero;
+        Vector3 max = Vector3.zero;
+
+        for (int y = 0; y < BoardSize; y++)
+        {
+            for (int x = 0; x < BoardSize; x++)
+            {
+                ChessTile tile = tiles[x, y];
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                Vector3 tilePosition = tile.transform.position;
+                if (!hasTile)
+                {
+                    min = tilePosition;
+                    max = tilePosition;
+                    hasTile = true;
+                    continue;
+                }
+
+                min = Vector3.Min(min, tilePosition);
+                max = Vector3.Max(max, tilePosition);
+            }
+        }
+
+        return hasTile ? (min + max) * 0.5f : transform.position;
+    }
+
     public bool MovePiece(ChessTile from, ChessTile to)
     {
         if (from == null || to == null)
