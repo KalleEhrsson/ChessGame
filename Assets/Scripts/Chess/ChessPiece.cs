@@ -27,6 +27,13 @@ public class ChessPiece : MonoBehaviour
 
     #endregion
 
+    #region Variables
+
+    [SerializeField] bool faceBoardCenter = true;
+    [SerializeField] float rotationYawOffset;
+
+    #endregion
+
     #region Setup
 
     public void SetIdentity(PieceTeam team, PieceType type)
@@ -70,12 +77,131 @@ public class ChessPiece : MonoBehaviour
             return;
         }
 
-        transform.position = CurrentTile.transform.position;
+        Vector3 targetPosition = CurrentTile.transform.position;
+        targetPosition.y = ResolvePlacementY(CurrentTile, targetPosition.y);
+        transform.position = targetPosition;
+
+        if (faceBoardCenter)
+        {
+            RotateTowardBoardCenter(targetPosition);
+        }
     }
 
     public void ClearTileReference()
     {
         CurrentTile = null;
+    }
+
+    #endregion
+
+    #region Placement
+
+    void RotateTowardBoardCenter(Vector3 piecePosition)
+    {
+        ChessBoard board = ChessBoard.Instance;
+        Vector3 boardCenter = board != null ? board.GetBoardCenterWorld() : transform.parent.position;
+        Vector3 toCenter = boardCenter - piecePosition;
+        toCenter.y = 0f;
+
+        if (toCenter.sqrMagnitude <= Mathf.Epsilon)
+        {
+            return;
+        }
+
+        Quaternion targetRotation = Quaternion.LookRotation(toCenter.normalized, Vector3.up);
+        if (!Mathf.Approximately(rotationYawOffset, 0f))
+        {
+            targetRotation *= Quaternion.Euler(0f, rotationYawOffset, 0f);
+        }
+
+        transform.rotation = targetRotation;
+    }
+
+    float ResolvePlacementY(ChessTile tile, float fallbackY)
+    {
+        float boardTop = ResolveTileTopY(tile, fallbackY);
+        if (!TryGetPieceBounds(out Bounds pieceBounds))
+        {
+            return boardTop;
+        }
+
+        float bottomOffset = transform.position.y - pieceBounds.min.y;
+        return boardTop + bottomOffset;
+    }
+
+    float ResolveTileTopY(ChessTile tile, float fallbackY)
+    {
+        if (tile == null)
+        {
+            return fallbackY;
+        }
+
+        Renderer tileRenderer = tile.GetComponent<Renderer>();
+        if (tileRenderer != null)
+        {
+            return tileRenderer.bounds.max.y;
+        }
+
+        Collider tileCollider = tile.GetComponent<Collider>();
+        if (tileCollider != null)
+        {
+            return tileCollider.bounds.max.y;
+        }
+
+        return fallbackY;
+    }
+
+    bool TryGetPieceBounds(out Bounds bounds)
+    {
+        bounds = default;
+        bool hasBounds = false;
+
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null || !renderer.enabled)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = renderer.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        if (hasBounds)
+        {
+            return true;
+        }
+
+        Collider[] colliders = GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider collider = colliders[i];
+            if (collider == null || !collider.enabled)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = collider.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(collider.bounds);
+            }
+        }
+
+        return hasBounds;
     }
 
     #endregion
