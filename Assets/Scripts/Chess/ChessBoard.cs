@@ -6,12 +6,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class ChessBoard : MonoBehaviour
 {
-    #region Singleton
-
     const string BoardObjectName = "ChessBoard";
     public static ChessBoard Instance { get; private set; }
-
-    #endregion
 
     #region Variables
 
