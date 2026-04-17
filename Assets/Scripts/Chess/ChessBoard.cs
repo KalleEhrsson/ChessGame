@@ -217,9 +217,9 @@ public class ChessBoard : MonoBehaviour
                 continue;
             }
 
-            piece.SetTile(null);
-            Destroy(piece.gameObject);
-        }
+        OrganizeTileHierarchy(boardSpaceRoot);
+        LogBoardMapping();
+        LogCornerReferences();
     }
 
     ChessTile[] DiscoverTiles()
@@ -354,6 +354,64 @@ public class ChessBoard : MonoBehaviour
         }
 
         return true;
+    }
+
+    void OrganizeTileHierarchy(Transform boardSpaceRoot)
+    {
+        if (boardSpaceRoot == null)
+        {
+            return;
+        }
+
+        int siblingIndex = 0;
+        for (int y = BoardSize - 1; y >= 0; y--)
+        {
+            for (int x = 0; x < BoardSize; x++)
+            {
+                ChessTile tile = tiles[x, y];
+                if (tile == null || tile.transform.parent != boardSpaceRoot)
+                {
+                    continue;
+                }
+
+                tile.transform.SetSiblingIndex(siblingIndex);
+                siblingIndex++;
+            }
+        }
+    }
+
+    void LogBoardMapping()
+    {
+        for (int y = BoardSize - 1; y >= 0; y--)
+        {
+            string row = string.Empty;
+            for (int x = 0; x < BoardSize; x++)
+            {
+                ChessTile tile = tiles[x, y];
+                row += tile != null ? $"[{tile.TileName}]" : "[--]";
+            }
+            Debug.Log($"Board Row {y + 1}: {row}");
+        }
+    }
+
+    void LogCornerReferences()
+    {
+        LogCorner("A1", 0, 0);
+        LogCorner("H1", 7, 0);
+        LogCorner("A8", 0, 7);
+        LogCorner("H8", 7, 7);
+    }
+
+    void LogCorner(string label, int x, int y)
+    {
+        ChessTile tile = GetTile(x, y);
+        if (tile == null)
+        {
+            Debug.LogWarning($"{label} not assigned.");
+            return;
+        }
+
+        Debug.Log($"{label}: {tile.gameObject.name} at {tile.transform.position}");
     }
 
     #endregion
