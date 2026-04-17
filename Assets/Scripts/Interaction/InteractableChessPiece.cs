@@ -4,9 +4,16 @@ public class InteractableChessPiece : MonoBehaviour
 {
     public void OnInteract()
     {
-        Debug.Log("Piece Selected: " + name);
-        
-        ChessCameraController.Instance.EnterTacticalView(transform);
+        ChessPiece piece = GetComponent<ChessPiece>();
+        if (piece == null)
+        {
+            return;
+        }
+
+        ChessSelectionController selectionController = ChessSelectionController.GetOrCreate();
+        ChessCameraController cameraController = ChessCameraController.GetOrCreate();
+
+        selectionController.SelectPiece(piece);
+        cameraController.EnterTacticalView(piece);
     }
-    
 }
