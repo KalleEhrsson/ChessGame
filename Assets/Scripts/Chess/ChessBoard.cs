@@ -416,6 +416,51 @@ public class ChessBoard : MonoBehaviour
         return hit.collider != null ? hit.collider.GetComponentInParent<ChessTile>() : null;
     }
 
+    public bool TryGetTeamFacingDirection(PieceTeam team, out Vector3 direction)
+    {
+        direction = Vector3.zero;
+        int fromRank = team == PieceTeam.White ? 1 : 6;
+        int toRank = team == PieceTeam.White ? 2 : 5;
+
+        Vector3 accumulatedDirection = Vector3.zero;
+        int validSamples = 0;
+
+        for (int x = 0; x < BoardSize; x++)
+        {
+            ChessTile fromTile = GetTile(x, fromRank);
+            ChessTile toTile = GetTile(x, toRank);
+            if (fromTile == null || toTile == null)
+            {
+                continue;
+            }
+
+            Vector3 sampleDirection = toTile.transform.position - fromTile.transform.position;
+            sampleDirection.y = 0f;
+            if (sampleDirection.sqrMagnitude <= Mathf.Epsilon)
+            {
+                continue;
+            }
+
+            accumulatedDirection += sampleDirection.normalized;
+            validSamples++;
+        }
+
+        if (validSamples == 0)
+        {
+            return false;
+        }
+
+        direction = accumulatedDirection / validSamples;
+        direction.y = 0f;
+        if (direction.sqrMagnitude <= Mathf.Epsilon)
+        {
+            return false;
+        }
+
+        direction.Normalize();
+        return true;
+    }
+
     public bool MovePiece(ChessTile from, ChessTile to)
     {
         if (from == null || to == null)
