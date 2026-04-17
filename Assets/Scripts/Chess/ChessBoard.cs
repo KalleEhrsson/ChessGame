@@ -7,13 +7,13 @@ using UnityEngine;
 public class ChessBoard : MonoBehaviour
 {
     const string BoardObjectName = "ChessBoard";
+    const int BoardSize = 8;
+
     public static ChessBoard Instance { get; private set; }
 
     #region Variables
 
-    const string TileTag = "ChessTile";
-
-    readonly ChessTile[,] tiles = new ChessTile[8, 8];
+    readonly ChessTile[,] tiles = new ChessTile[BoardSize, BoardSize];
     readonly Dictionary<string, ChessTile> tilesByName = new Dictionary<string, ChessTile>(StringComparer.OrdinalIgnoreCase);
 
     #endregion
@@ -60,90 +60,199 @@ public class ChessBoard : MonoBehaviour
         tilesByName.Clear();
 
         ChessTile[] discoveredTiles = DiscoverTiles();
-
         if (discoveredTiles.Length != 64)
         {
             Debug.LogWarning($"ChessBoard expected 64 tiles but found {discoveredTiles.Length}.");
         }
 
-        List<ChessTile> validTiles = new List<ChessTile>(discoveredTiles);
-        validTiles.Sort((a, b) =>
+        if (discoveredTiles.Length == 0)
         {
-            Vector3 posA = a.transform.position;
-            Vector3 posB = b.transform.position;
+            return;
+        }
 
-            int byRow = posA.z.CompareTo(posB.z);
-            if (byRow != 0)
+        Transform boardSpaceRoot = ResolveBoardSpaceRoot(discoveredTiles);
+        Transform viewer = ResolveViewerTransform();
+
+        List<TilePoint> points = BuildTilePoints(discoveredTiles, boardSpaceRoot);
+        if (!TryResolveAxes(points, boardSpaceRoot, viewer, out AxisSelection axisSelection))
+        {
+            Debug.LogWarning("ChessBoard could not resolve board axes from tile layout.");
+            return;
+        }
+
+        points.Sort((a, b) => axisSelection.DepthAscending
+            ? a.Depth.CompareTo(b.Depth)
+            : b.Depth.CompareTo(a.Depth));
+
+        int maxTiles = Mathf.Min(points.Count, BoardSize * BoardSize);
+        for (int y = 0; y < BoardSize; y++)
+        {
+            int rowStart = y * BoardSize;
+            if (rowStart >= maxTiles)
             {
-                return byRow;
+                break;
             }
 
-            return posA.x.CompareTo(posB.x);
-        });
+            int rowCount = Mathf.Min(BoardSize, maxTiles - rowStart);
+            List<TilePoint> row = points.GetRange(rowStart, rowCount);
+            row.Sort((a, b) => axisSelection.FileAscending
+                ? a.File.CompareTo(b.File)
+                : b.File.CompareTo(a.File));
 
-        int maxTiles = Mathf.Min(validTiles.Count, 64);
-        for (int i = 0; i < maxTiles; i++)
-        {
-            int x = i % 8;
-            int y = i / 8;
+            for (int x = 0; x < row.Count; x++)
+            {
+                ChessTile tile = row[x].Tile;
+                tile.SetCoordinates(x, y);
 
-            ChessTile tile = validTiles[i];
-            tile.SetCoordinates(x, y);
-
-            tiles[x, y] = tile;
-            tilesByName[tile.TileName] = tile;
+                tiles[x, y] = tile;
+                tilesByName[tile.TileName] = tile;
+            }
         }
 
         LogBoardMapping();
+        LogCornerReferences();
     }
 
     ChessTile[] DiscoverTiles()
     {
-        ChessTile[] directTiles =
 #if UNITY_2023_1_OR_NEWER
-            FindObjectsByType<ChessTile>(FindObjectsSortMode.None);
+        return FindObjectsByType<ChessTile>(FindObjectsSortMode.None);
 #else
-            FindObjectsOfType<ChessTile>();
+        return FindObjectsOfType<ChessTile>();
 #endif
+    }
 
-        GameObject[] taggedObjects;
-        try
+    Transform ResolveBoardSpaceRoot(IReadOnlyList<ChessTile> discoveredTiles)
+    {
+        Transform candidate = discoveredTiles[0].transform.parent;
+        if (candidate == null)
         {
-            taggedObjects = GameObject.FindGameObjectsWithTag(TileTag);
-        }
-        catch (UnityException)
-        {
-            return directTiles;
-        }
-
-        if (taggedObjects == null || taggedObjects.Length == 0)
-        {
-            return directTiles;
+            return transform;
         }
 
-        HashSet<ChessTile> merged = new HashSet<ChessTile>(directTiles);
-        for (int i = 0; i < taggedObjects.Length; i++)
+        for (int i = 1; i < discoveredTiles.Count; i++)
         {
-            ChessTile tile = taggedObjects[i].GetComponent<ChessTile>();
-            if (tile == null)
+            if (discoveredTiles[i].transform.parent != candidate)
             {
-                tile = taggedObjects[i].AddComponent<ChessTile>();
+                return transform;
             }
-
-            merged.Add(tile);
         }
 
-        ChessTile[] result = new ChessTile[merged.Count];
-        merged.CopyTo(result);
-        return result;
+        return candidate;
+    }
+
+    Transform ResolveViewerTransform()
+    {
+        if (Camera.main != null)
+        {
+            return Camera.main.transform;
+        }
+
+        PlayerInteractionController interaction = FindFirstObjectByType<PlayerInteractionController>();
+        if (interaction != null)
+        {
+            return interaction.transform;
+        }
+
+        return transform;
+    }
+
+    List<TilePoint> BuildTilePoints(IReadOnlyList<ChessTile> discoveredTiles, Transform boardSpaceRoot)
+    {
+        List<TilePoint> points = new List<TilePoint>(discoveredTiles.Count);
+        for (int i = 0; i < discoveredTiles.Count; i++)
+        {
+            ChessTile tile = discoveredTiles[i];
+            Vector3 local = boardSpaceRoot.InverseTransformPoint(tile.transform.position);
+            points.Add(new TilePoint(tile, local));
+        }
+
+        return points;
+    }
+
+    bool TryResolveAxes(List<TilePoint> points, Transform boardSpaceRoot, Transform viewer, out AxisSelection axisSelection)
+    {
+        axisSelection = default;
+        if (points.Count < BoardSize * BoardSize)
+        {
+            return false;
+        }
+
+        float minX = float.MaxValue;
+        float maxX = float.MinValue;
+        float minZ = float.MaxValue;
+        float maxZ = float.MinValue;
+
+        for (int i = 0; i < points.Count; i++)
+        {
+            Vector3 local = points[i].LocalPosition;
+            minX = Mathf.Min(minX, local.x);
+            maxX = Mathf.Max(maxX, local.x);
+            minZ = Mathf.Min(minZ, local.z);
+            maxZ = Mathf.Max(maxZ, local.z);
+        }
+
+        float rangeX = maxX - minX;
+        float rangeZ = maxZ - minZ;
+        if (rangeX <= Mathf.Epsilon || rangeZ <= Mathf.Epsilon)
+        {
+            return false;
+        }
+
+        Vector3 viewerLocal = boardSpaceRoot.InverseTransformPoint(viewer.position);
+        float boardCenterX = (minX + maxX) * 0.5f;
+        float boardCenterZ = (minZ + maxZ) * 0.5f;
+
+        bool depthIsX = Mathf.Abs(viewerLocal.x - boardCenterX) > Mathf.Abs(viewerLocal.z - boardCenterZ);
+
+        if (depthIsX)
+        {
+            float playerDepth = viewerLocal.x;
+            float nearMin = Mathf.Abs(playerDepth - minX);
+            float nearMax = Mathf.Abs(playerDepth - maxX);
+            bool nearAtMin = nearMin < nearMax;
+            axisSelection.DepthAscending = nearAtMin;
+
+            Vector3 viewerRightLocal = boardSpaceRoot.InverseTransformDirection(viewer.right);
+            axisSelection.FileAscending = viewerRightLocal.z > 0f;
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                TilePoint point = points[i];
+                point.Depth = point.LocalPosition.x;
+                point.File = point.LocalPosition.z;
+                points[i] = point;
+            }
+        }
+        else
+        {
+            float playerDepth = viewerLocal.z;
+            float nearMin = Mathf.Abs(playerDepth - minZ);
+            float nearMax = Mathf.Abs(playerDepth - maxZ);
+            bool nearAtMin = nearMin < nearMax;
+            axisSelection.DepthAscending = nearAtMin;
+
+            Vector3 viewerRightLocal = boardSpaceRoot.InverseTransformDirection(viewer.right);
+            axisSelection.FileAscending = viewerRightLocal.x > 0f;
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                TilePoint point = points[i];
+                point.Depth = point.LocalPosition.z;
+                point.File = point.LocalPosition.x;
+                points[i] = point;
+            }
+        }
+
+        return true;
     }
 
     void LogBoardMapping()
     {
-        for (int y = 7; y >= 0; y--)
+        for (int y = BoardSize - 1; y >= 0; y--)
         {
             string row = string.Empty;
-            for (int x = 0; x < 8; x++)
+            for (int x = 0; x < BoardSize; x++)
             {
                 ChessTile tile = tiles[x, y];
                 row += tile != null ? $"[{tile.TileName}]" : "[--]";
@@ -152,13 +261,33 @@ public class ChessBoard : MonoBehaviour
         }
     }
 
+    void LogCornerReferences()
+    {
+        LogCorner("A1", 0, 0);
+        LogCorner("H1", 7, 0);
+        LogCorner("A8", 0, 7);
+        LogCorner("H8", 7, 7);
+    }
+
+    void LogCorner(string label, int x, int y)
+    {
+        ChessTile tile = GetTile(x, y);
+        if (tile == null)
+        {
+            Debug.LogWarning($"{label} not assigned.");
+            return;
+        }
+
+        Debug.Log($"{label}: {tile.gameObject.name} at {tile.transform.position}");
+    }
+
     #endregion
 
     #region Queries
 
     public ChessTile GetTile(int x, int y)
     {
-        if (x < 0 || x > 7 || y < 0 || y > 7)
+        if (x < 0 || x >= BoardSize || y < 0 || y >= BoardSize)
         {
             return null;
         }
@@ -173,17 +302,38 @@ public class ChessBoard : MonoBehaviour
             return null;
         }
 
-        if (tileName.StartsWith(ChessTile.TileObjectPrefix, StringComparison.OrdinalIgnoreCase))
-        {
-            tileName = tileName.Substring(ChessTile.TileObjectPrefix.Length);
-        }
-
         return tilesByName.TryGetValue(tileName, out ChessTile tile) ? tile : null;
     }
 
     public ChessTile GetTileFromRaycast(RaycastHit hit)
     {
         return hit.collider != null ? hit.collider.GetComponentInParent<ChessTile>() : null;
+    }
+
+    #endregion
+
+    #region Types
+
+    struct TilePoint
+    {
+        public ChessTile Tile;
+        public Vector3 LocalPosition;
+        public float Depth;
+        public float File;
+
+        public TilePoint(ChessTile tile, Vector3 localPosition)
+        {
+            Tile = tile;
+            LocalPosition = localPosition;
+            Depth = 0f;
+            File = 0f;
+        }
+    }
+
+    struct AxisSelection
+    {
+        public bool DepthAscending;
+        public bool FileAscending;
     }
 
     #endregion
