@@ -12,7 +12,6 @@ public class PlayerInteractionController : MonoBehaviour
     Camera playerCamera;
     InputAction interactAction;
     InputAction cancelAction;
-    InputAction rightClickAction;
 
     ChessSelectionController selectionController;
     ChessCameraController cameraController;
@@ -35,11 +34,9 @@ public class PlayerInteractionController : MonoBehaviour
 
         interactAction.Enable();
         cancelAction.Enable();
-        rightClickAction.Enable();
 
         interactAction.performed += OnInteractPerformed;
         cancelAction.performed += OnCancelPerformed;
-        rightClickAction.performed += OnCancelPerformed;
     }
 
     void OnDisable()
@@ -54,12 +51,6 @@ public class PlayerInteractionController : MonoBehaviour
         {
             cancelAction.performed -= OnCancelPerformed;
             cancelAction.Disable();
-        }
-
-        if (rightClickAction != null)
-        {
-            rightClickAction.performed -= OnCancelPerformed;
-            rightClickAction.Disable();
         }
     }
 
@@ -82,12 +73,7 @@ public class PlayerInteractionController : MonoBehaviour
 
         if (cancelAction == null)
         {
-            cancelAction = new InputAction("Cancel", InputActionType.Button, "<Keyboard>/escape");
-        }
-
-        if (rightClickAction == null)
-        {
-            rightClickAction = new InputAction("RightClick", InputActionType.Button, "<Mouse>/rightButton");
+            cancelAction = new InputAction("Cancel", InputActionType.Button, "<Mouse>/rightButton");
         }
     }
 
