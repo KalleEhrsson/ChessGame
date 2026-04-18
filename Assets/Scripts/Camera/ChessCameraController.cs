@@ -44,14 +44,20 @@ public class ChessCameraController : MonoBehaviour
 
     [SerializeField] float transitionSpeed = 6f;
     [SerializeField] float tacticalHeight = 9.5f;
-    [SerializeField] float tacticalTilt = 58f;
+    [SerializeField] float tacticalBackOffset = 5f;
 
     Camera controlledCamera;
     Transform tacticalCameraPoint;
 
     CameraMode currentMode = CameraMode.FirstPerson;
-    Vector3 firstPersonPosition;
-    Quaternion firstPersonRotation;
+    bool isTransitioningToTactical;
+    bool isTransitioningToFirstPerson;
+
+    Transform firstPersonParent;
+    Vector3 firstPersonLocalPosition;
+    Quaternion firstPersonLocalRotation;
+
+    const float CompleteThreshold = 0.02f;
 
     #endregion
 
@@ -74,7 +80,6 @@ public class ChessCameraController : MonoBehaviour
         Instance = this;
         ResolveCamera();
         ResolveOrCreateTacticalPoint();
-        CacheFirstPersonPose();
     }
 
     void LateUpdate()
@@ -97,12 +102,12 @@ public class ChessCameraController : MonoBehaviour
 
     public bool IsInFirstPerson()
     {
-        return currentMode == CameraMode.FirstPerson;
+        return currentMode == CameraMode.FirstPerson && !isTransitioningToFirstPerson;
     }
 
     public bool IsInTacticalMode()
     {
-        return currentMode == CameraMode.TacticalView;
+        return currentMode == CameraMode.TacticalView || isTransitioningToTactical;
     }
 
     public void EnterTacticalView(ChessPiece selectedPiece)
@@ -112,24 +117,43 @@ public class ChessCameraController : MonoBehaviour
             return;
         }
 
+        if (IsInTacticalMode())
+        {
+            return;
+        }
+
+        ResolveCamera();
         if (controlledCamera == null)
         {
-            ResolveCamera();
+            return;
         }
 
         ResolveOrCreateTacticalPoint();
-        CacheFirstPersonPose();
+        CacheFirstPersonLocalPose();
+
+        controlledCamera.transform.SetParent(null, true);
+
         currentMode = CameraMode.TacticalView;
+        isTransitioningToTactical = true;
+        isTransitioningToFirstPerson = false;
     }
 
     public void ExitTacticalView()
     {
+        if (!IsInTacticalMode())
+        {
+            return;
+        }
+
+        ResolveCamera();
         if (controlledCamera == null)
         {
-            ResolveCamera();
+            return;
         }
 
         currentMode = CameraMode.FirstPerson;
+        isTransitioningToFirstPerson = true;
+        isTransitioningToTactical = false;
     }
 
     public void SetTransitionSpeed(float speed)
@@ -144,9 +168,6 @@ public class ChessCameraController : MonoBehaviour
             return;
         }
 
-        Vector3 targetPosition;
-        Quaternion targetRotation;
-
         if (currentMode == CameraMode.TacticalView)
         {
             if (tacticalCameraPoint == null)
@@ -154,18 +175,55 @@ public class ChessCameraController : MonoBehaviour
                 ResolveOrCreateTacticalPoint();
             }
 
-            targetPosition = tacticalCameraPoint.position;
-            targetRotation = tacticalCameraPoint.rotation;
-        }
-        else
-        {
-            targetPosition = firstPersonPosition;
-            targetRotation = firstPersonRotation;
+            MoveCameraTowards(tacticalCameraPoint.position, tacticalCameraPoint.rotation);
+            if (isTransitioningToTactical && IsAtTarget(tacticalCameraPoint.position, tacticalCameraPoint.rotation))
+            {
+                isTransitioningToTactical = false;
+            }
+
+            return;
         }
 
+        if (!isTransitioningToFirstPerson)
+        {
+            return;
+        }
+
+        ResolveFirstPersonWorldPose(out Vector3 targetPosition, out Quaternion targetRotation);
+        MoveCameraTowards(targetPosition, targetRotation);
+
+        if (!IsAtTarget(targetPosition, targetRotation))
+        {
+            return;
+        }
+
+        CompleteReturnToFirstPerson();
+    }
+
+    void MoveCameraTowards(Vector3 targetPosition, Quaternion targetRotation)
+    {
         float blend = Time.deltaTime * transitionSpeed;
         controlledCamera.transform.position = Vector3.Lerp(controlledCamera.transform.position, targetPosition, blend);
         controlledCamera.transform.rotation = Quaternion.Slerp(controlledCamera.transform.rotation, targetRotation, blend);
+    }
+
+    bool IsAtTarget(Vector3 targetPosition, Quaternion targetRotation)
+    {
+        float positionDelta = Vector3.Distance(controlledCamera.transform.position, targetPosition);
+        float angleDelta = Quaternion.Angle(controlledCamera.transform.rotation, targetRotation);
+        return positionDelta <= CompleteThreshold && angleDelta <= 0.5f;
+    }
+
+    void CompleteReturnToFirstPerson()
+    {
+        if (firstPersonParent != null)
+        {
+            controlledCamera.transform.SetParent(firstPersonParent, true);
+            controlledCamera.transform.localPosition = firstPersonLocalPosition;
+            controlledCamera.transform.localRotation = firstPersonLocalRotation;
+        }
+
+        isTransitioningToFirstPerson = false;
     }
 
     void ResolveCamera()
@@ -189,15 +247,24 @@ public class ChessCameraController : MonoBehaviour
         }
     }
 
-    void CacheFirstPersonPose()
+    void CacheFirstPersonLocalPose()
     {
-        if (controlledCamera == null)
+        firstPersonParent = controlledCamera.transform.parent;
+        firstPersonLocalPosition = controlledCamera.transform.localPosition;
+        firstPersonLocalRotation = controlledCamera.transform.localRotation;
+    }
+
+    void ResolveFirstPersonWorldPose(out Vector3 position, out Quaternion rotation)
+    {
+        if (firstPersonParent != null)
         {
+            position = firstPersonParent.TransformPoint(firstPersonLocalPosition);
+            rotation = firstPersonParent.rotation * firstPersonLocalRotation;
             return;
         }
 
-        firstPersonPosition = controlledCamera.transform.position;
-        firstPersonRotation = controlledCamera.transform.rotation;
+        position = controlledCamera.transform.position;
+        rotation = controlledCamera.transform.rotation;
     }
 
     void ResolveOrCreateTacticalPoint()
@@ -229,10 +296,10 @@ public class ChessCameraController : MonoBehaviour
 
         Bounds boardBounds = ResolveBoardBounds();
         Vector3 center = boardBounds.center;
+        Vector3 offset = new Vector3(0f, tacticalHeight, -Mathf.Max(1f, tacticalBackOffset));
 
-        tacticalCameraPoint.position = center + new Vector3(0f, tacticalHeight, -tacticalHeight * 0.5f);
+        tacticalCameraPoint.position = center + offset;
         tacticalCameraPoint.rotation = Quaternion.LookRotation(center - tacticalCameraPoint.position, Vector3.up);
-        tacticalCameraPoint.rotation *= Quaternion.Euler(tacticalTilt * -0.15f, 0f, 0f);
     }
 
     Bounds ResolveBoardBounds()
