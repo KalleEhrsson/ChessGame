@@ -1,14 +1,21 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
+[DisallowMultipleComponent]
 public class PlayerInteractionController : MonoBehaviour
 {
     #region Variables
 
-    public float interactDistance = 3f;
-    public LayerMask interactLayer;
+    [SerializeField] float interactDistance = 4f;
+    [SerializeField] LayerMask interactLayer = Physics.DefaultRaycastLayers;
 
-    ChessBoard chessBoard;
-    ChessTile currentHighlightedTile;
+    Camera playerCamera;
+    InputAction interactAction;
+    InputAction cancelAction;
+    InputAction rightClickAction;
+
+    ChessSelectionController selectionController;
+    ChessCameraController cameraController;
 
     #endregion
 
@@ -16,86 +23,165 @@ public class PlayerInteractionController : MonoBehaviour
 
     void Awake()
     {
-        ResolveBoard();
+        EnsureSystems();
+        EnsureInput();
+        ResolveCamera();
     }
 
-    void Update()
+    void OnEnable()
     {
-        if (Input.GetKeyDown(KeyCode.E))
+        EnsureSystems();
+        EnsureInput();
+
+        interactAction.Enable();
+        cancelAction.Enable();
+        rightClickAction.Enable();
+
+        interactAction.performed += OnInteractPerformed;
+        cancelAction.performed += OnCancelPerformed;
+        rightClickAction.performed += OnCancelPerformed;
+    }
+
+    void OnDisable()
+    {
+        if (interactAction != null)
         {
-            TryInteract();
+            interactAction.performed -= OnInteractPerformed;
+            interactAction.Disable();
         }
+
+        if (cancelAction != null)
+        {
+            cancelAction.performed -= OnCancelPerformed;
+            cancelAction.Disable();
+        }
+
+        if (rightClickAction != null)
+        {
+            rightClickAction.performed -= OnCancelPerformed;
+            rightClickAction.Disable();
+        }
+    }
+
+    #endregion
+
+    #region Setup
+
+    void EnsureSystems()
+    {
+        selectionController = ChessSelectionController.GetOrCreate();
+        cameraController = ChessCameraController.GetOrCreate();
+    }
+
+    void EnsureInput()
+    {
+        if (interactAction == null)
+        {
+            interactAction = new InputAction("Interact", InputActionType.Button, "<Keyboard>/e");
+        }
+
+        if (cancelAction == null)
+        {
+            cancelAction = new InputAction("Cancel", InputActionType.Button, "<Keyboard>/escape");
+        }
+
+        if (rightClickAction == null)
+        {
+            rightClickAction = new InputAction("RightClick", InputActionType.Button, "<Mouse>/rightButton");
+        }
+    }
+
+    void ResolveCamera()
+    {
+        if (playerCamera != null)
+        {
+            return;
+        }
+
+        playerCamera = GetComponentInChildren<Camera>(true);
+        if (playerCamera != null)
+        {
+            return;
+        }
+
+        playerCamera = Camera.main;
+        if (playerCamera != null)
+        {
+            return;
+        }
+
+        playerCamera = FindFirstObjectByType<Camera>();
     }
 
     #endregion
 
     #region Interaction
 
-    void ResolveBoard()
+    void OnInteractPerformed(InputAction.CallbackContext _)
     {
-        chessBoard = ChessBoard.Instance;
-        if (chessBoard == null)
+        if (selectionController == null || cameraController == null)
         {
-            chessBoard = FindFirstObjectByType<ChessBoard>();
-        }
-    }
-
-    void TryInteract()
-    {
-        if (chessBoard == null)
-        {
-            ResolveBoard();
+            EnsureSystems();
         }
 
-        Camera cameraRef = Camera.main;
-        if (cameraRef == null)
+        if (cameraController.IsInTacticalMode() && selectionController.HasSelection())
+        {
+            DeselectAndReturn();
+            return;
+        }
+
+        if (!cameraController.IsInFirstPerson())
         {
             return;
         }
 
-        Ray ray = new Ray(cameraRef.transform.position, cameraRef.transform.forward);
-        int raycastMask = interactLayer.value == 0 ? Physics.DefaultRaycastLayers : interactLayer.value;
+        TrySelectFromRaycast();
+    }
 
-        if (!Physics.Raycast(ray, out RaycastHit hit, interactDistance, raycastMask))
+    void OnCancelPerformed(InputAction.CallbackContext _)
+    {
+        if (selectionController == null || cameraController == null)
+        {
+            EnsureSystems();
+        }
+
+        if (!cameraController.IsInTacticalMode() || !selectionController.HasSelection())
         {
             return;
         }
 
-        ChessTile tile = ResolveTile(hit);
-        if (tile != null)
+        DeselectAndReturn();
+    }
+
+    void TrySelectFromRaycast()
+    {
+        ResolveCamera();
+        if (playerCamera == null)
         {
-            SelectTile(tile);
             return;
         }
 
-        InteractableChessPiece piece = hit.collider.GetComponent<InteractableChessPiece>();
-        if (piece != null)
+        Ray ray = new(playerCamera.transform.position, playerCamera.transform.forward);
+        int layerMask = interactLayer.value == 0 ? Physics.DefaultRaycastLayers : interactLayer.value;
+        if (!Physics.Raycast(ray, out RaycastHit hit, interactDistance, layerMask, QueryTriggerInteraction.Ignore))
         {
-            piece.OnInteract();
+            return;
         }
+
+        ChessPiece piece = hit.collider.GetComponentInParent<ChessPiece>();
+        if (piece == null)
+        {
+            return;
+        }
+
+        selectionController.SelectPiece(piece);
+        cameraController.EnterTacticalView(piece);
     }
 
-    ChessTile ResolveTile(RaycastHit hit)
+    void DeselectAndReturn()
     {
-        if (chessBoard != null)
-        {
-            return chessBoard.GetTileFromRaycast(hit);
-        }
-
-        return hit.collider.GetComponentInParent<ChessTile>();
-    }
-
-    void SelectTile(ChessTile tile)
-    {
-        if (currentHighlightedTile != null && currentHighlightedTile != tile)
-        {
-            currentHighlightedTile.ResetColor();
-        }
-
-        tile.Highlight(Color.green);
-        currentHighlightedTile = tile;
-
-        Debug.Log($"Tile: {tile.TileName}");
+        selectionController.Deselect();
+        cameraController.ExitTacticalView();
     }
 
     #endregion
