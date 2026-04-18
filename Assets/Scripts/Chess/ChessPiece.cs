@@ -29,8 +29,20 @@ public class ChessPiece : MonoBehaviour
 
     #region Variables
 
-    readonly bool faceOpponentSide = true;
-    readonly float rotationYawOffset = 90f;
+    [SerializeField] bool faceOpponentSide = true;
+    [SerializeField] float rotationYawOffset;
+    [SerializeField] Color selectedTint = new(1f, 0.93f, 0.35f, 1f);
+    [SerializeField] float selectedEmissionIntensity = 0.5f;
+
+    Renderer[] cachedRenderers = System.Array.Empty<Renderer>();
+    MaterialPropertyBlock[] propertyBlocks = System.Array.Empty<MaterialPropertyBlock>();
+    Color[] originalColors = System.Array.Empty<Color>();
+    Color[] originalEmissionColors = System.Array.Empty<Color>();
+    bool visualsCached;
+
+    static readonly int ColorId = Shader.PropertyToID("_Color");
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
 
     #endregion
 
@@ -70,7 +82,7 @@ public class ChessPiece : MonoBehaviour
         SnapToTile();
     }
 
-    private void SnapToTile()
+    public void SnapToTile()
     {
         if (CurrentTile == null)
         {
@@ -87,9 +99,36 @@ public class ChessPiece : MonoBehaviour
         }
     }
 
-    private void ClearTileReference()
+    public void ClearTileReference()
     {
         CurrentTile = null;
+    }
+
+    public void SetSelected(bool selected)
+    {
+        EnsureVisualCache();
+
+        for (int i = 0; i < cachedRenderers.Length; i++)
+        {
+            Renderer renderer = cachedRenderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            MaterialPropertyBlock block = propertyBlocks[i];
+            renderer.GetPropertyBlock(block);
+
+            Color baseColor = selected ? Color.Lerp(originalColors[i], selectedTint, 0.7f) : originalColors[i];
+            Color emissionColor = selected
+                ? originalEmissionColors[i] + (selectedTint * selectedEmissionIntensity)
+                : originalEmissionColors[i];
+
+            block.SetColor(ColorId, baseColor);
+            block.SetColor(BaseColorId, baseColor);
+            block.SetColor(EmissionColorId, emissionColor);
+            renderer.SetPropertyBlock(block);
+        }
     }
 
     #endregion
@@ -198,6 +237,57 @@ public class ChessPiece : MonoBehaviour
         }
 
         return hasBounds;
+    }
+
+    void EnsureVisualCache()
+    {
+        if (visualsCached)
+        {
+            return;
+        }
+
+        cachedRenderers = GetComponentsInChildren<Renderer>(true);
+        propertyBlocks = new MaterialPropertyBlock[cachedRenderers.Length];
+        originalColors = new Color[cachedRenderers.Length];
+        originalEmissionColors = new Color[cachedRenderers.Length];
+
+        for (int i = 0; i < cachedRenderers.Length; i++)
+        {
+            Renderer renderer = cachedRenderers[i];
+            propertyBlocks[i] = new MaterialPropertyBlock();
+
+            if (renderer == null || renderer.sharedMaterial == null)
+            {
+                originalColors[i] = Color.white;
+                originalEmissionColors[i] = Color.black;
+                continue;
+            }
+
+            Material sharedMaterial = renderer.sharedMaterial;
+            if (sharedMaterial.HasProperty(BaseColorId))
+            {
+                originalColors[i] = sharedMaterial.GetColor(BaseColorId);
+            }
+            else if (sharedMaterial.HasProperty(ColorId))
+            {
+                originalColors[i] = sharedMaterial.GetColor(ColorId);
+            }
+            else
+            {
+                originalColors[i] = Color.white;
+            }
+
+            if (sharedMaterial.HasProperty(EmissionColorId))
+            {
+                originalEmissionColors[i] = sharedMaterial.GetColor(EmissionColorId);
+            }
+            else
+            {
+                originalEmissionColors[i] = Color.black;
+            }
+        }
+
+        visualsCached = true;
     }
 
     #endregion

@@ -206,6 +206,12 @@ public class PlayerController : MonoBehaviour
 
     private void ApplyLook()
     {
+        ChessCameraController cameraController = ChessCameraController.Instance;
+        if (cameraController != null && !cameraController.IsInFirstPerson())
+        {
+            return;
+        }
+
         float yawDelta = lookInput.x * lookSensitivity;
         float pitchDelta = lookInput.y * lookSensitivity;
 
