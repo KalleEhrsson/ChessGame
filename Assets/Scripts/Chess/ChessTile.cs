@@ -149,11 +149,18 @@ public class ChessTile : MonoBehaviour
         Collider existingCollider = GetComponent<Collider>();
         if (existingCollider != null)
         {
+            existingCollider.enabled = true;
             return;
         }
 
         BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
         boxCollider.size = EstimateColliderSize();
+        boxCollider.enabled = true;
+    }
+
+    public void EnsureInteractionCollider()
+    {
+        EnsureCollider();
     }
 
     Vector3 EstimateColliderSize()
