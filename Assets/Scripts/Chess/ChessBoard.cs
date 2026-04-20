@@ -569,6 +569,35 @@ public class ChessBoard : MonoBehaviour
         return true;
     }
 
+    bool TryGetBoardCenter(out Vector3 center)
+    {
+        center = Vector3.zero;
+        int count = 0;
+
+        for (int y = 0; y < BoardSize; y++)
+        {
+            for (int x = 0; x < BoardSize; x++)
+            {
+                ChessTile tile = tiles[x, y];
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                center += tile.transform.position;
+                count++;
+            }
+        }
+
+        if (count == 0)
+        {
+            return false;
+        }
+
+        center /= count;
+        return true;
+    }
+
     public bool TryGetTeamFacingDirection(PieceTeam team, out Vector3 direction)
     {
         direction = Vector3.zero;
