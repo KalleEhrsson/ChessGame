@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -31,6 +32,15 @@ public class ChessSelectionController : MonoBehaviour
     #region Variables
 
     ChessPiece selectedPiece;
+    readonly List<ChessTile> moveTiles = new(32);
+    readonly List<ChessTile> captureTiles = new(32);
+
+    #endregion
+
+    #region Properties
+
+    public IReadOnlyList<ChessTile> MoveTiles => moveTiles;
+    public IReadOnlyList<ChessTile> CaptureTiles => captureTiles;
 
     #endregion
 
@@ -72,6 +82,32 @@ public class ChessSelectionController : MonoBehaviour
         selectedPiece.SetSelected(true);
     }
 
+    public void SetMoveOptions(List<ChessTile> moves, List<ChessTile> captures)
+    {
+        moveTiles.Clear();
+        captureTiles.Clear();
+
+        if (moves != null)
+        {
+            moveTiles.AddRange(moves);
+        }
+
+        if (captures != null)
+        {
+            captureTiles.AddRange(captures);
+        }
+    }
+
+    public bool IsValidDestination(ChessTile tile)
+    {
+        if (tile == null)
+        {
+            return false;
+        }
+
+        return moveTiles.Contains(tile) || captureTiles.Contains(tile);
+    }
+
     public void Deselect()
     {
         if (selectedPiece != null)
@@ -80,6 +116,8 @@ public class ChessSelectionController : MonoBehaviour
         }
 
         selectedPiece = null;
+        moveTiles.Clear();
+        captureTiles.Clear();
     }
 
     public bool HasSelection()
