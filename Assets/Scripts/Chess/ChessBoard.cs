@@ -217,10 +217,6 @@ public class ChessBoard : MonoBehaviour
 
         piece.SetIdentity(team, type);
         piece.SetTile(tile);
-        if (TryGetBoardCenter(out Vector3 boardCenter))
-        {
-            piece.RotateTowardPosition(boardCenter);
-        }
 
         return piece;
     }
@@ -540,64 +536,6 @@ public class ChessBoard : MonoBehaviour
         return hit.collider != null ? hit.collider.GetComponentInParent<ChessTile>() : null;
     }
     
-    bool TryGetBoardCenter(out Vector3 center)
-    {
-        center = Vector3.zero;
-        int count = 0;
-
-        for (int y = 0; y < BoardSize; y++)
-        {
-            for (int x = 0; x < BoardSize; x++)
-            {
-                ChessTile tile = tiles[x, y];
-                if (tile == null)
-                {
-                    continue;
-                }
-
-                center += tile.transform.position;
-                count++;
-            }
-        }
-
-        if (count == 0)
-        {
-            return false;
-        }
-
-        center /= count;
-        return true;
-    }
-
-    bool TryGetBoardCenter(out Vector3 center)
-    {
-        center = Vector3.zero;
-        int count = 0;
-
-        for (int y = 0; y < BoardSize; y++)
-        {
-            for (int x = 0; x < BoardSize; x++)
-            {
-                ChessTile tile = tiles[x, y];
-                if (tile == null)
-                {
-                    continue;
-                }
-
-                center += tile.transform.position;
-                count++;
-            }
-        }
-
-        if (count == 0)
-        {
-            return false;
-        }
-
-        center /= count;
-        return true;
-    }
-
     public bool TryGetTeamFacingDirection(PieceTeam team, out Vector3 direction)
     {
         direction = Vector3.zero;
