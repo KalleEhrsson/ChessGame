@@ -12,6 +12,7 @@ public class PlayerInteractionController : MonoBehaviour
     Camera playerCamera;
     InputAction interactAction;
     InputAction cancelAction;
+    InputAction rightClickAction;
 
     ChessSelectionController selectionController;
     ChessCameraController cameraController;
@@ -34,9 +35,11 @@ public class PlayerInteractionController : MonoBehaviour
 
         interactAction.Enable();
         cancelAction.Enable();
+        rightClickAction.Enable();
 
         interactAction.performed += OnInteractPerformed;
         cancelAction.performed += OnCancelPerformed;
+        rightClickAction.performed += OnRightClickPerformed;
     }
 
     void OnDisable()
@@ -52,6 +55,12 @@ public class PlayerInteractionController : MonoBehaviour
             cancelAction.performed -= OnCancelPerformed;
             cancelAction.Disable();
         }
+
+        if (rightClickAction != null)
+        {
+            rightClickAction.performed -= OnRightClickPerformed;
+            rightClickAction.Disable();
+        }
     }
 
     #endregion
@@ -66,15 +75,9 @@ public class PlayerInteractionController : MonoBehaviour
 
     void EnsureInput()
     {
-        if (interactAction == null)
-        {
-            interactAction = new InputAction("Interact", InputActionType.Button, "<Keyboard>/e");
-        }
-
-        if (cancelAction == null)
-        {
-            cancelAction = new InputAction("Cancel", InputActionType.Button, "<Mouse>/rightButton");
-        }
+        interactAction ??= new InputAction("Interact", InputActionType.Button, "<Keyboard>/e");
+        cancelAction ??= new InputAction("Cancel", InputActionType.Button, "<Keyboard>/escape");
+        rightClickAction ??= new InputAction("RightClick", InputActionType.Button, "<Mouse>/rightButton");
     }
 
     void ResolveCamera()
@@ -126,12 +129,22 @@ public class PlayerInteractionController : MonoBehaviour
 
     void OnCancelPerformed(InputAction.CallbackContext _)
     {
+        TryCancelSelection();
+    }
+
+    void OnRightClickPerformed(InputAction.CallbackContext _)
+    {
+        TryCancelSelection();
+    }
+
+    void TryCancelSelection()
+    {
         if (selectionController == null || cameraController == null)
         {
             EnsureSystems();
         }
 
-        if (!cameraController.IsInTacticalMode() || !selectionController.HasSelection())
+        if (!selectionController.HasSelection() || !cameraController.IsInTacticalMode())
         {
             return;
         }
