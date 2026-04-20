@@ -59,7 +59,7 @@ public class ChessTileHoverController : MonoBehaviour
 
     #region Variables
 
-    [SerializeField] Color hoverColor = new(0.2f, 0.95f, 1f, 1f);
+    [SerializeField] Color hoverColor = new(0.8f, 0f, 1f, 1f);
     [SerializeField] LayerMask tileOnlyMask;
     [SerializeField] LayerMask raycastMask = Physics.DefaultRaycastLayers;
     [SerializeField] bool enableDebugLogs = true;
@@ -163,8 +163,6 @@ public class ChessTileHoverController : MonoBehaviour
             {
                 return tacticalCamera;
             }
-
-            tile.EnsureInteractionCollider();
         }
 
         if (Camera.main != null)
