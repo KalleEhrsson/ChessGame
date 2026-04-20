@@ -152,6 +152,24 @@ public class ChessPiece : MonoBehaviour
         transform.rotation = targetRotation;
     }
 
+    public void RotateTowardPosition(Vector3 targetPosition)
+    {
+        Vector3 facingDirection = targetPosition - transform.position;
+        facingDirection.y = 0f;
+        if (facingDirection.sqrMagnitude <= Mathf.Epsilon)
+        {
+            return;
+        }
+
+        Quaternion targetRotation = Quaternion.LookRotation(facingDirection.normalized, Vector3.up);
+        if (!Mathf.Approximately(rotationYawOffset, 0f))
+        {
+            targetRotation *= Quaternion.Euler(0f, rotationYawOffset, 0f);
+        }
+
+        transform.rotation = targetRotation;
+    }
+
     float ResolvePlacementY(ChessTile tile, float fallbackY)
     {
         float boardTop = ResolveTileTopY(tile, fallbackY);
