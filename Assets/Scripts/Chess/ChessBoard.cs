@@ -20,6 +20,10 @@ public class ChessBoard : MonoBehaviour
     [SerializeField] GameObject[] whitePiecePrefabs = Array.Empty<GameObject>();
     [SerializeField] GameObject[] blackPiecePrefabs = Array.Empty<GameObject>();
 
+#if UNITY_EDITOR
+    bool delayedHierarchyOrganizeQueued;
+#endif
+    
     #endregion
 
     #region Unity
@@ -28,7 +32,16 @@ public class ChessBoard : MonoBehaviour
     {
         RegisterInstance();
         RenameBoardObject();
-        AutoSetupBoard();
+        if (Application.isPlaying)
+        {
+            AutoSetupBoard();
+            return;
+        }
+
+        AutoSetupBoard(false);
+#if UNITY_EDITOR
+        QueueDelayedHierarchyOrganize();
+#endif
     }
 
     void Start()
@@ -46,7 +59,16 @@ public class ChessBoard : MonoBehaviour
         RegisterInstance();
         RenameBoardObject();
         RefreshPiecePrefabReferences();
-        AutoSetupBoard();
+        if (Application.isPlaying)
+        {
+            AutoSetupBoard();
+            return;
+        }
+
+        AutoSetupBoard(false);
+#if UNITY_EDITOR
+        QueueDelayedHierarchyOrganize();
+#endif
     }
 
     #endregion
@@ -69,7 +91,7 @@ public class ChessBoard : MonoBehaviour
         }
     }
 
-    public void AutoSetupBoard()
+    public void AutoSetupBoard(bool organizeHierarchy = true)
     {
         Array.Clear(tiles, 0, tiles.Length);
         tilesByName.Clear();
@@ -124,7 +146,10 @@ public class ChessBoard : MonoBehaviour
             }
         }
 
-        OrganizeTileHierarchy(boardSpaceRoot);
+        if (organizeHierarchy)
+        {
+            OrganizeTileHierarchy(boardSpaceRoot);
+        }
     }
 
     void SpawnStartingPosition()
@@ -390,6 +415,37 @@ public class ChessBoard : MonoBehaviour
 
         return true;
     }
+    
+#if UNITY_EDITOR
+    void QueueDelayedHierarchyOrganize()
+    {
+        if (delayedHierarchyOrganizeQueued)
+        {
+            return;
+        }
+
+        delayedHierarchyOrganizeQueued = true;
+        UnityEditor.EditorApplication.delayCall += DelayedOrganizeTileHierarchy;
+    }
+
+    void DelayedOrganizeTileHierarchy()
+    {
+        delayedHierarchyOrganizeQueued = false;
+        if (this == null)
+        {
+            return;
+        }
+
+        ChessTile[] discoveredTiles = DiscoverTiles();
+        if (discoveredTiles.Length == 0)
+        {
+            return;
+        }
+
+        Transform boardSpaceRoot = ResolveBoardSpaceRoot(discoveredTiles);
+        OrganizeTileHierarchy(boardSpaceRoot);
+    }
+#endif
 
     void OrganizeTileHierarchy(Transform boardSpaceRoot)
     {
