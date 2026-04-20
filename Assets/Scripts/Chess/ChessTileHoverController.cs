@@ -62,7 +62,7 @@ public class ChessTileHoverController : MonoBehaviour
     [SerializeField] Color hoverColor = new(0.8f, 0f, 1f, 1f);
     [SerializeField] LayerMask tileOnlyMask;
     [SerializeField] LayerMask raycastMask = Physics.DefaultRaycastLayers;
-    [SerializeField] bool enableDebugLogs = true;
+    [SerializeField] bool enableDebugLogs;
     [SerializeField] float maxRayDistance = 1000f;
 
     Camera activeCamera;

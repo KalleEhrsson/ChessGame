@@ -34,6 +34,8 @@ public class ChessTile : MonoBehaviour
     Color currentHighlightColor;
     bool isHovered;
     Color hoverColor;
+    LineRenderer hoverOutline;
+    static readonly int[] OutlineCornerOrder = { 0, 1, 2, 3, 0 };
 
     #endregion
 
@@ -259,8 +261,11 @@ public class ChessTile : MonoBehaviour
 
         if (isHovered)
         {
-            SetRendererColor(cachedRenderer, hoverColor);
-            return;
+            SetHoverOutlineActive(true, hoverColor);
+        }
+        else
+        {
+            SetHoverOutlineActive(false, hoverColor);
         }
 
         if (currentHighlightState != HighlightState.None)
@@ -329,5 +334,86 @@ public class ChessTile : MonoBehaviour
         renderer.SetPropertyBlock(propertyBlock);
     }
 
+    void SetHoverOutlineActive(bool active, Color color)
+    {
+        EnsureHoverOutline();
+        if (hoverOutline == null)
+        {
+            return;
+        }
+
+        hoverOutline.enabled = active;
+        if (!active)
+        {
+            return;
+        }
+
+        hoverOutline.startColor = color;
+        hoverOutline.endColor = color;
+        UpdateHoverOutlinePositions();
+    }
+
+    void EnsureHoverOutline()
+    {
+        if (hoverOutline != null)
+        {
+            return;
+        }
+
+        Transform existing = transform.Find("HoverOutline");
+        if (existing != null)
+        {
+            hoverOutline = existing.GetComponent<LineRenderer>();
+        }
+
+        if (hoverOutline == null)
+        {
+            GameObject outlineObject = new("HoverOutline");
+            outlineObject.transform.SetParent(transform, false);
+            hoverOutline = outlineObject.AddComponent<LineRenderer>();
+        }
+
+        hoverOutline.loop = false;
+        hoverOutline.useWorldSpace = false;
+        hoverOutline.positionCount = 5;
+        hoverOutline.startWidth = 0.05f;
+        hoverOutline.endWidth = 0.05f;
+        hoverOutline.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        hoverOutline.receiveShadows = false;
+        hoverOutline.alignment = LineAlignment.TransformZ;
+        hoverOutline.textureMode = LineTextureMode.Stretch;
+        hoverOutline.numCornerVertices = 2;
+        hoverOutline.numCapVertices = 2;
+        hoverOutline.enabled = false;
+
+        Material outlineMaterial = new(Shader.Find("Sprites/Default"));
+        hoverOutline.material = outlineMaterial;
+        UpdateHoverOutlinePositions();
+    }
+
+    void UpdateHoverOutlinePositions()
+    {
+        if (hoverOutline == null)
+        {
+            return;
+        }
+
+        Bounds bounds = cachedRenderer != null ? cachedRenderer.localBounds : new Bounds(Vector3.zero, Vector3.one);
+        float yOffset = bounds.max.y + 0.01f;
+        Vector3 extents = bounds.extents;
+        Vector3[] corners =
+        {
+            new(-extents.x, yOffset, -extents.z),
+            new(-extents.x, yOffset, extents.z),
+            new(extents.x, yOffset, extents.z),
+            new(extents.x, yOffset, -extents.z)
+        };
+
+        for (int i = 0; i < OutlineCornerOrder.Length; i++)
+        {
+            hoverOutline.SetPosition(i, corners[OutlineCornerOrder[i]]);
+        }
+    }
+    
     #endregion
 }
