@@ -148,6 +148,13 @@ public class ChessBoard : MonoBehaviour
 
         if (organizeHierarchy)
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                QueueDelayedHierarchyOrganize();
+                return;
+            }
+#endif
             OrganizeTileHierarchy(boardSpaceRoot);
         }
     }
