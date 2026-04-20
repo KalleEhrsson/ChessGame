@@ -4,6 +4,13 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class ChessTile : MonoBehaviour
 {
+    public enum HighlightState
+    {
+        None,
+        Move,
+        Capture
+    }
+
     #region Properties
 
     [field: SerializeField] public int X { get; private set; } = -1;
@@ -23,6 +30,11 @@ public class ChessTile : MonoBehaviour
     Color originalColor;
     bool hasOriginalColor;
 
+    HighlightState currentHighlightState;
+    Color currentHighlightColor;
+    bool isHovered;
+    Color hoverColor;
+
     #endregion
 
     #region Unity
@@ -37,12 +49,14 @@ public class ChessTile : MonoBehaviour
     {
         EnsureRequiredComponents();
         CacheRenderer();
+        ApplyVisualState();
     }
 
     void Awake()
     {
         EnsureRequiredComponents();
         CacheRenderer();
+        ApplyVisualState();
     }
 
     #endregion
@@ -199,24 +213,59 @@ public class ChessTile : MonoBehaviour
 
     public void Highlight(Color color)
     {
+        SetHighlightState(HighlightState.Move, color);
+    }
+
+    public void ResetColor()
+    {
+        ClearHighlightState();
+    }
+
+    public void SetHighlightState(HighlightState state, Color color)
+    {
+        currentHighlightState = state;
+        currentHighlightColor = color;
+        ApplyVisualState();
+    }
+
+    public void ClearHighlightState()
+    {
+        currentHighlightState = HighlightState.None;
+        currentHighlightColor = default;
+        ApplyVisualState();
+    }
+
+    public void SetHoverState(bool hovered, Color color)
+    {
+        isHovered = hovered;
+        hoverColor = color;
+        ApplyVisualState();
+    }
+
+    void ApplyVisualState()
+    {
         CacheRenderer();
         if (cachedRenderer == null)
         {
             return;
         }
 
-        SetRendererColor(cachedRenderer, color);
-    }
-
-    public void ResetColor()
-    {
-        CacheRenderer();
-        if (cachedRenderer == null || !hasOriginalColor)
+        if (isHovered)
         {
+            SetRendererColor(cachedRenderer, hoverColor);
             return;
         }
 
-        SetRendererColor(cachedRenderer, originalColor);
+        if (currentHighlightState != HighlightState.None)
+        {
+            SetRendererColor(cachedRenderer, currentHighlightColor);
+            return;
+        }
+
+        if (hasOriginalColor)
+        {
+            SetRendererColor(cachedRenderer, originalColor);
+        }
     }
 
     static bool TryGetRendererColor(Renderer renderer, out Color color)

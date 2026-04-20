@@ -13,9 +13,14 @@ public class PlayerInteractionController : MonoBehaviour
     InputAction interactAction;
     InputAction cancelAction;
     InputAction rightClickAction;
+    InputAction leftClickAction;
 
+    ChessBoard board;
     ChessSelectionController selectionController;
     ChessCameraController cameraController;
+    ChessMoveGenerator moveGenerator;
+    ChessTileHighlighter tileHighlighter;
+    ChessTileHoverController tileHoverController;
 
     #endregion
 
@@ -36,10 +41,12 @@ public class PlayerInteractionController : MonoBehaviour
         interactAction.Enable();
         cancelAction.Enable();
         rightClickAction.Enable();
+        leftClickAction.Enable();
 
         interactAction.performed += OnInteractPerformed;
         cancelAction.performed += OnCancelPerformed;
         rightClickAction.performed += OnRightClickPerformed;
+        leftClickAction.performed += OnLeftClickPerformed;
     }
 
     void OnDisable()
@@ -61,6 +68,12 @@ public class PlayerInteractionController : MonoBehaviour
             rightClickAction.performed -= OnRightClickPerformed;
             rightClickAction.Disable();
         }
+
+        if (leftClickAction != null)
+        {
+            leftClickAction.performed -= OnLeftClickPerformed;
+            leftClickAction.Disable();
+        }
     }
 
     #endregion
@@ -69,8 +82,17 @@ public class PlayerInteractionController : MonoBehaviour
 
     void EnsureSystems()
     {
+        board = ChessBoard.Instance;
+        if (board == null)
+        {
+            board = FindFirstObjectByType<ChessBoard>();
+        }
+
         selectionController = ChessSelectionController.GetOrCreate();
         cameraController = ChessCameraController.GetOrCreate();
+        moveGenerator = ChessMoveGenerator.GetOrCreate();
+        tileHighlighter = ChessTileHighlighter.GetOrCreate();
+        tileHoverController = ChessTileHoverController.GetOrCreate();
     }
 
     void EnsureInput()
@@ -78,6 +100,7 @@ public class PlayerInteractionController : MonoBehaviour
         interactAction ??= new InputAction("Interact", InputActionType.Button, "<Keyboard>/e");
         cancelAction ??= new InputAction("Cancel", InputActionType.Button, "<Keyboard>/escape");
         rightClickAction ??= new InputAction("RightClick", InputActionType.Button, "<Mouse>/rightButton");
+        leftClickAction ??= new InputAction("LeftClick", InputActionType.Button, "<Mouse>/leftButton");
     }
 
     void ResolveCamera()
@@ -108,14 +131,11 @@ public class PlayerInteractionController : MonoBehaviour
 
     void OnInteractPerformed(InputAction.CallbackContext _)
     {
-        if (selectionController == null || cameraController == null)
-        {
-            EnsureSystems();
-        }
+        EnsureSystems();
 
         if (cameraController.IsInTacticalMode() && selectionController.HasSelection())
         {
-            DeselectAndReturn();
+            ResetSelectionFlow();
             return;
         }
 
@@ -137,19 +157,20 @@ public class PlayerInteractionController : MonoBehaviour
         TryCancelSelection();
     }
 
+    void OnLeftClickPerformed(InputAction.CallbackContext _)
+    {
+        TryMoveFromTileClick();
+    }
+
     void TryCancelSelection()
     {
-        if (selectionController == null || cameraController == null)
-        {
-            EnsureSystems();
-        }
-
+        EnsureSystems();
         if (!selectionController.HasSelection() || !cameraController.IsInTacticalMode())
         {
             return;
         }
 
-        DeselectAndReturn();
+        ResetSelectionFlow();
     }
 
     void TrySelectFromRaycast()
@@ -175,10 +196,45 @@ public class PlayerInteractionController : MonoBehaviour
 
         selectionController.SelectPiece(piece);
         cameraController.EnterTacticalView(piece);
+
+        moveGenerator.GenerateMoves(piece, out var moveTiles, out var captureTiles);
+        selectionController.SetMoveOptions(moveTiles, captureTiles);
+        tileHighlighter.Highlight(selectionController.MoveTiles, selectionController.CaptureTiles);
     }
 
-    void DeselectAndReturn()
+    void TryMoveFromTileClick()
     {
+        EnsureSystems();
+        if (!cameraController.IsInTacticalMode() || !selectionController.HasSelection())
+        {
+            return;
+        }
+
+        ChessTile targetTile = tileHoverController.CurrentHoveredTile;
+        if (targetTile == null || !selectionController.IsValidDestination(targetTile))
+        {
+            return;
+        }
+
+        ChessPiece selectedPiece = selectionController.GetSelected();
+        if (selectedPiece == null || selectedPiece.CurrentTile == null)
+        {
+            ResetSelectionFlow();
+            return;
+        }
+
+        if (board != null)
+        {
+            board.MovePiece(selectedPiece.CurrentTile, targetTile);
+        }
+
+        ResetSelectionFlow();
+    }
+
+    void ResetSelectionFlow()
+    {
+        tileHighlighter.ClearAllHighlights();
+        tileHoverController.ClearHover();
         selectionController.Deselect();
         cameraController.ExitTacticalView();
     }
