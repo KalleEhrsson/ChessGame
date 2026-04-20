@@ -97,6 +97,7 @@ public class ChessBoard : MonoBehaviour
         tilesByName.Clear();
 
         ChessTile[] discoveredTiles = DiscoverTiles();
+        EnsureTileColliders(discoveredTiles);
         if (discoveredTiles.Length != BoardSize * BoardSize)
         {
             Debug.LogWarning($"ChessBoard expected {BoardSize * BoardSize} tiles but found {discoveredTiles.Length}.");
@@ -296,6 +297,20 @@ public class ChessBoard : MonoBehaviour
     ChessTile[] DiscoverTiles()
     {
         return GetComponentsInChildren<ChessTile>(true);
+    }
+
+    void EnsureTileColliders(IReadOnlyList<ChessTile> discoveredTiles)
+    {
+        for (int i = 0; i < discoveredTiles.Count; i++)
+        {
+            ChessTile tile = discoveredTiles[i];
+            if (tile == null)
+            {
+                continue;
+            }
+
+            tile.EnsureInteractionCollider();
+        }
     }
 
     Transform ResolveBoardSpaceRoot(IReadOnlyList<ChessTile> discoveredTiles)

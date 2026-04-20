@@ -8,6 +8,7 @@ public class PlayerInteractionController : MonoBehaviour
 
     [SerializeField] float interactDistance = 4f;
     [SerializeField] LayerMask interactLayer = Physics.DefaultRaycastLayers;
+    [SerializeField] bool enableTacticalClickDebugLogs = true;
 
     Camera playerCamera;
     InputAction interactAction;
@@ -207,11 +208,20 @@ public class PlayerInteractionController : MonoBehaviour
         EnsureSystems();
         if (!cameraController.IsInTacticalMode() || !selectionController.HasSelection())
         {
+            DebugTacticalClick("Left click ignored: tactical mode inactive or no selected piece.");
             return;
         }
 
-        ChessTile targetTile = tileHoverController.CurrentHoveredTile;
-        if (targetTile == null || !selectionController.IsValidDestination(targetTile))
+        ChessTile targetTile = tileHoverController.GetTileUnderCursor();
+        if (targetTile == null)
+        {
+            DebugTacticalClick("Left click raycast found no ChessTile under cursor.");
+            return;
+        }
+
+        bool validDestination = selectionController.IsValidDestination(targetTile);
+        DebugTacticalClick($"Tile click hit {targetTile.TileName}. Valid destination={validDestination}.");
+        if (!validDestination)
         {
             return;
         }
@@ -229,6 +239,16 @@ public class PlayerInteractionController : MonoBehaviour
         }
 
         ResetSelectionFlow();
+    }
+
+    void DebugTacticalClick(string message)
+    {
+        if (!enableTacticalClickDebugLogs)
+        {
+            return;
+        }
+
+        Debug.Log($"[PlayerInteractionController] {message}");
     }
 
     void ResetSelectionFlow()
