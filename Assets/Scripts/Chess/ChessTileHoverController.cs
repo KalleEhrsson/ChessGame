@@ -163,6 +163,8 @@ public class ChessTileHoverController : MonoBehaviour
             {
                 return tacticalCamera;
             }
+
+            tile.EnsureInteractionCollider();
         }
 
         if (Camera.main != null)
