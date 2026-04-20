@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -43,19 +44,30 @@ public class PlayerController : MonoBehaviour
 
     #region Unity
 
+    private void Start()
+    {
+        StartCoroutine(LockCursorNextFrame());
+    }
+
+    private IEnumerator LockCursorNextFrame()
+    {
+        yield return null;
+        ApplyCursorStateForCameraMode();
+    }
+    
     private void Awake()
     {
         EnsureCoreComponents();
         EnsureCameraHierarchy();
         EnsureInputActions();
-        LockCursor();
+        ApplyCursorStateForCameraMode();
     }
 
     private void OnEnable()
     {
         moveAction?.Enable();
         lookAction?.Enable();
-        LockCursor();
+        ApplyCursorStateForCameraMode();
     }
 
     private void OnDisable()
@@ -80,7 +92,7 @@ public class PlayerController : MonoBehaviour
     {
         if (hasFocus)
         {
-            LockCursor();
+            ApplyCursorStateForCameraMode();
         }
     }
 
@@ -169,6 +181,24 @@ public class PlayerController : MonoBehaviour
         Cursor.visible = false;
     }
 
+    private void UnlockCursor()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    private void ApplyCursorStateForCameraMode()
+    {
+        ChessCameraController cameraController = ChessCameraController.Instance;
+        if (cameraController != null && cameraController.IsInTacticalMode())
+        {
+            UnlockCursor();
+            return;
+        }
+
+        LockCursor();
+    }
+    
     #endregion
 
     #region Movement

@@ -34,8 +34,14 @@ public class ChessTile : MonoBehaviour
     Color currentHighlightColor;
     bool isHovered;
     Color hoverColor;
-    LineRenderer hoverOutline;
-    static readonly int[] OutlineCornerOrder = { 0, 1, 2, 3, 0 };
+
+    Transform hoverOutlineRoot;
+    MeshRenderer[] hoverOutlineRenderers;
+    Material hoverOutlineMaterial;
+
+    const float HoverOutlineThicknessRatio = 0.02f;
+    const float HoverOutlineMinThickness = 0f;
+    const float HoverOutlineMinYOffset = 0.02f;
 
     #endregion
 
@@ -259,14 +265,7 @@ public class ChessTile : MonoBehaviour
             return;
         }
 
-        if (isHovered)
-        {
-            SetHoverOutlineActive(true, hoverColor);
-        }
-        else
-        {
-            SetHoverOutlineActive(false, hoverColor);
-        }
+        SetHoverOutlineActive(isHovered, hoverColor);
 
         if (currentHighlightState != HighlightState.None)
         {
@@ -337,83 +336,193 @@ public class ChessTile : MonoBehaviour
     void SetHoverOutlineActive(bool active, Color color)
     {
         EnsureHoverOutline();
-        if (hoverOutline == null)
+        if (hoverOutlineRoot == null || hoverOutlineRenderers == null)
         {
             return;
         }
 
-        hoverOutline.enabled = active;
+        hoverOutlineRoot.gameObject.SetActive(active);
         if (!active)
         {
             return;
         }
 
-        hoverOutline.startColor = color;
-        hoverOutline.endColor = color;
-        UpdateHoverOutlinePositions();
+        UpdateHoverOutlineTransforms();
+        ApplyHoverOutlineColor(color);
     }
 
     void EnsureHoverOutline()
     {
-        if (hoverOutline != null)
+        if (hoverOutlineRoot == null)
+        {
+            Transform existing = transform.Find("HoverOutline");
+            if (existing != null)
+            {
+                hoverOutlineRoot = existing;
+            }
+        }
+
+        if (hoverOutlineRoot == null)
+        {
+            GameObject rootObject = new("HoverOutline");
+            rootObject.transform.SetParent(transform, false);
+            hoverOutlineRoot = rootObject.transform;
+        }
+
+        if (hoverOutlineRenderers == null || hoverOutlineRenderers.Length != 4)
+        {
+            hoverOutlineRenderers = new MeshRenderer[4];
+        }
+
+        EnsureHoverOutlineMaterial();
+
+        for (int i = 0; i < 4; i++)
+        {
+            string edgeName = $"Edge_{i}";
+            Transform edgeTransform = hoverOutlineRoot.Find(edgeName);
+
+            if (edgeTransform == null)
+            {
+                GameObject edgeObject = new(edgeName);
+                edgeObject.transform.SetParent(hoverOutlineRoot, false);
+
+                MeshFilter meshFilter = edgeObject.AddComponent<MeshFilter>();
+                meshFilter.sharedMesh = CreateQuadMesh();
+
+                MeshRenderer meshRenderer = edgeObject.AddComponent<MeshRenderer>();
+                meshRenderer.sharedMaterial = hoverOutlineMaterial;
+                meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                meshRenderer.receiveShadows = false;
+
+                edgeTransform = edgeObject.transform;
+            }
+
+            MeshFilter existingFilter = edgeTransform.GetComponent<MeshFilter>();
+            if (existingFilter == null)
+            {
+                existingFilter = edgeTransform.gameObject.AddComponent<MeshFilter>();
+            }
+
+            if (existingFilter.sharedMesh == null)
+            {
+                existingFilter.sharedMesh = CreateQuadMesh();
+            }
+
+            MeshRenderer existingRenderer = edgeTransform.GetComponent<MeshRenderer>();
+            if (existingRenderer == null)
+            {
+                existingRenderer = edgeTransform.gameObject.AddComponent<MeshRenderer>();
+            }
+
+            existingRenderer.sharedMaterial = hoverOutlineMaterial;
+            existingRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            existingRenderer.receiveShadows = false;
+
+            hoverOutlineRenderers[i] = existingRenderer;
+        }
+
+        hoverOutlineRoot.gameObject.SetActive(false);
+        UpdateHoverOutlineTransforms();
+    }
+
+    void EnsureHoverOutlineMaterial()
+    {
+        if (hoverOutlineMaterial != null)
         {
             return;
         }
 
-        Transform existing = transform.Find("HoverOutline");
-        if (existing != null)
+        Shader outlineShader = Shader.Find("Sprites/Default");
+        if (outlineShader == null)
         {
-            hoverOutline = existing.GetComponent<LineRenderer>();
+            outlineShader = Shader.Find("Universal Render Pipeline/Unlit");
         }
 
-        if (hoverOutline == null)
+        if (outlineShader == null)
         {
-            GameObject outlineObject = new("HoverOutline");
-            outlineObject.transform.SetParent(transform, false);
-            hoverOutline = outlineObject.AddComponent<LineRenderer>();
+            return;
         }
 
-        hoverOutline.loop = false;
-        hoverOutline.useWorldSpace = false;
-        hoverOutline.positionCount = 5;
-        hoverOutline.startWidth = 0.05f;
-        hoverOutline.endWidth = 0.05f;
-        hoverOutline.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        hoverOutline.receiveShadows = false;
-        hoverOutline.alignment = LineAlignment.TransformZ;
-        hoverOutline.textureMode = LineTextureMode.Stretch;
-        hoverOutline.numCornerVertices = 2;
-        hoverOutline.numCapVertices = 2;
-        hoverOutline.enabled = false;
-
-        Material outlineMaterial = new(Shader.Find("Sprites/Default"));
-        hoverOutline.material = outlineMaterial;
-        UpdateHoverOutlinePositions();
+        hoverOutlineMaterial = new Material(outlineShader);
+        hoverOutlineMaterial.renderQueue = 4000;
     }
 
-    void UpdateHoverOutlinePositions()
+    void ApplyHoverOutlineColor(Color color)
     {
-        if (hoverOutline == null)
+        if (hoverOutlineRenderers == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < hoverOutlineRenderers.Length; i++)
+        {
+            MeshRenderer outlineRenderer = hoverOutlineRenderers[i];
+            if (outlineRenderer == null)
+            {
+                continue;
+            }
+
+            Material sharedMaterial = outlineRenderer.sharedMaterial;
+            if (sharedMaterial == null)
+            {
+                continue;
+            }
+
+            if (sharedMaterial.HasProperty("_BaseColor"))
+            {
+                sharedMaterial.SetColor("_BaseColor", color);
+            }
+            else if (sharedMaterial.HasProperty("_Color"))
+            {
+                sharedMaterial.SetColor("_Color", color);
+            }
+        }
+    }
+
+    void UpdateHoverOutlineTransforms()
+    {
+        if (hoverOutlineRoot == null || hoverOutlineRenderers == null)
         {
             return;
         }
 
         Bounds bounds = cachedRenderer != null ? cachedRenderer.localBounds : new Bounds(Vector3.zero, Vector3.one);
-        float yOffset = bounds.max.y + 0.01f;
-        Vector3 extents = bounds.extents;
-        Vector3[] corners =
-        {
-            new(-extents.x, yOffset, -extents.z),
-            new(-extents.x, yOffset, extents.z),
-            new(extents.x, yOffset, extents.z),
-            new(extents.x, yOffset, -extents.z)
-        };
 
-        for (int i = 0; i < OutlineCornerOrder.Length; i++)
-        {
-            hoverOutline.SetPosition(i, corners[OutlineCornerOrder[i]]);
-        }
+        float width = bounds.size.x;
+        float depth = bounds.size.z;
+        float thickness = Mathf.Max(HoverOutlineMinThickness, Mathf.Min(width, depth) * HoverOutlineThicknessRatio);
+        float yOffset = bounds.max.y + Mathf.Max(HoverOutlineMinYOffset, bounds.size.y * 0.1f);
+
+        Vector3 northPos = new(0f, yOffset, (depth * 0.5f) - (thickness * 0.5f));
+        Vector3 southPos = new(0f, yOffset, (-depth * 0.5f) + (thickness * 0.5f));
+        Vector3 eastPos = new((width * 0.5f) - (thickness * 0.5f), yOffset, 0f);
+        Vector3 westPos = new((-width * 0.5f) + (thickness * 0.5f), yOffset, 0f);
+
+        float overlap = 0.01f;
+        SetOutlineEdgeTransform(0, northPos, new Vector3(width + overlap, 1f, thickness + overlap));
+        SetOutlineEdgeTransform(1, southPos, new Vector3(width + overlap, 1f, thickness + overlap));
+        SetOutlineEdgeTransform(2, eastPos, new Vector3(thickness + overlap, 1f, depth + overlap));
+        SetOutlineEdgeTransform(3, westPos, new Vector3(thickness + overlap, 1f, depth + overlap));
     }
-    
+
+    void SetOutlineEdgeTransform(int index, Vector3 localPosition, Vector3 localScale)
+    {
+        if (hoverOutlineRenderers == null || index < 0 || index >= hoverOutlineRenderers.Length)
+        {
+            return;
+        }
+
+        MeshRenderer outlineRenderer = hoverOutlineRenderers[index];
+        if (outlineRenderer == null)
+        {
+            return;
+        }
+
+        Transform edgeTransform = outlineRenderer.transform;
+        edgeTransform.localPosition = localPosition;
+        edgeTransform.localRotation = Quaternion.identity;
+        edgeTransform.localScale = localScale;
+    }
+
     #endregion
 }
