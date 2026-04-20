@@ -492,6 +492,29 @@ public class ChessBoard : MonoBehaviour
         return tiles[x, y];
     }
 
+    public ChessTile[] GetAllTiles()
+    {
+        List<ChessTile> results = new List<ChessTile>(BoardSize * BoardSize);
+        for (int y = 0; y < BoardSize; y++)
+        {
+            for (int x = 0; x < BoardSize; x++)
+            {
+                ChessTile tile = tiles[x, y];
+                if (tile != null)
+                {
+                    results.Add(tile);
+                }
+            }
+        }
+
+        if (results.Count > 0)
+        {
+            return results.ToArray();
+        }
+
+        return GetComponentsInChildren<ChessTile>(true);
+    }
+
     public ChessTile GetTile(string tileName)
     {
         if (string.IsNullOrWhiteSpace(tileName))
