@@ -30,7 +30,7 @@ public class ChessPiece : MonoBehaviour
     #region Variables
 
     [SerializeField] bool faceOpponentSide = true;
-    [SerializeField] float rotationYawOffset;
+    [SerializeField] float rotationYawOffset = 0f;
     [SerializeField] Color selectedTint = new(1f, 0.93f, 0.35f, 1f);
     [SerializeField] float selectedEmissionIntensity = 0.5f;
 
@@ -144,6 +144,24 @@ public class ChessPiece : MonoBehaviour
         }
 
         Quaternion targetRotation = Quaternion.LookRotation(facingDirection, Vector3.up);
+        if (!Mathf.Approximately(rotationYawOffset, 0f))
+        {
+            targetRotation *= Quaternion.Euler(0f, rotationYawOffset, 0f);
+        }
+
+        transform.rotation = targetRotation;
+    }
+    
+    public void RotateTowardPosition(Vector3 targetPosition)
+    {
+        Vector3 facingDirection = targetPosition - transform.position;
+        facingDirection.y = 0f;
+        if (facingDirection.sqrMagnitude <= Mathf.Epsilon)
+        {
+            return;
+        }
+
+        Quaternion targetRotation = Quaternion.LookRotation(facingDirection.normalized, Vector3.up);
         if (!Mathf.Approximately(rotationYawOffset, 0f))
         {
             targetRotation *= Quaternion.Euler(0f, rotationYawOffset, 0f);

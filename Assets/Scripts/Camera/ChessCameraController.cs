@@ -137,6 +137,7 @@ public class ChessCameraController : MonoBehaviour
         currentMode = CameraMode.TacticalView;
         isTransitioningToTactical = true;
         isTransitioningToFirstPerson = false;
+        SetCursorForMode(currentMode);
     }
 
     public void ExitTacticalView()
@@ -155,6 +156,7 @@ public class ChessCameraController : MonoBehaviour
         currentMode = CameraMode.FirstPerson;
         isTransitioningToFirstPerson = true;
         isTransitioningToTactical = false;
+        SetCursorForMode(currentMode);
     }
 
     public void SetTransitionSpeed(float speed)
@@ -221,6 +223,13 @@ public class ChessCameraController : MonoBehaviour
 
     #endregion
 
+    void SetCursorForMode(CameraMode mode)
+    {
+        bool tacticalMode = mode == CameraMode.TacticalView;
+        Cursor.lockState = tacticalMode ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = tacticalMode;
+    }
+    
     #region Tactical Solver
 
     void SolveTacticalPose(out Vector3 position, out Quaternion rotation)
