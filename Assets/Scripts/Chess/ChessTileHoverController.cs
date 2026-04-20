@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System;
 
 [DisallowMultipleComponent]
 public class ChessTileHoverController : MonoBehaviour
@@ -22,9 +23,36 @@ public class ChessTileHoverController : MonoBehaviour
             return Instance;
         }
 
-        GameObject host = new("ChessTileHoverController");
-        Instance = host.AddComponent<ChessTileHoverController>();
+        GameObject host = ResolveHostGameObject();
+        Instance = host.GetComponent<ChessTileHoverController>();
+        if (Instance == null)
+        {
+            Instance = host.AddComponent<ChessTileHoverController>();
+        }
+
         return Instance;
+    }
+
+    static GameObject ResolveHostGameObject()
+    {
+        ChessBoard existingBoard = ChessBoard.Instance;
+        if (existingBoard == null)
+        {
+            existingBoard = FindFirstObjectByType<ChessBoard>();
+        }
+
+        if (existingBoard != null)
+        {
+            return existingBoard.gameObject;
+        }
+
+        PlayerInteractionController interactionController = FindFirstObjectByType<PlayerInteractionController>();
+        if (interactionController != null)
+        {
+            return interactionController.gameObject;
+        }
+
+        return new GameObject("ChessTileHoverController");
     }
 
     #endregion
@@ -32,6 +60,7 @@ public class ChessTileHoverController : MonoBehaviour
     #region Variables
 
     [SerializeField] Color hoverColor = new(0.2f, 0.95f, 1f, 1f);
+    [SerializeField] LayerMask tileOnlyMask;
     [SerializeField] LayerMask raycastMask = Physics.DefaultRaycastLayers;
     [SerializeField] bool enableDebugLogs = true;
     [SerializeField] float maxRayDistance = 1000f;
@@ -134,6 +163,8 @@ public class ChessTileHoverController : MonoBehaviour
             {
                 return tacticalCamera;
             }
+
+            tile.EnsureInteractionCollider();
         }
 
         if (Camera.main != null)
@@ -189,17 +220,31 @@ public class ChessTileHoverController : MonoBehaviour
             DebugLog($"Tactical mode active. Mouse={cursorPosition}. Camera={activeCamera.name}. LayerMask={layerMask}.");
         }
 
-        bool hasHit = Physics.Raycast(ray, out RaycastHit hit, maxRayDistance, layerMask, QueryTriggerInteraction.Ignore);
-        if (!hasHit && layerMask != Physics.DefaultRaycastLayers)
+        RaycastHit[] hits = Array.Empty<RaycastHit>();
+        if (tileOnlyMask.value != 0)
         {
-            hasHit = Physics.Raycast(ray, out hit, maxRayDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            if (hasHit && logResult)
+            hits = Physics.RaycastAll(ray, maxRayDistance, tileOnlyMask.value, QueryTriggerInteraction.Ignore);
+            if (hits.Length > 0 && logResult)
+            {
+                DebugLog($"Tile-only mask hit {hits.Length} collider(s). Ignoring pieces for tactical hover/click.");
+            }
+        }
+
+        if (hits.Length == 0)
+        {
+            hits = Physics.RaycastAll(ray, maxRayDistance, layerMask, QueryTriggerInteraction.Ignore);
+        }
+
+        if ((hits == null || hits.Length == 0) && layerMask != Physics.DefaultRaycastLayers)
+        {
+            hits = Physics.RaycastAll(ray, maxRayDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            if (hits != null && hits.Length > 0 && logResult)
             {
                 DebugLog("Layer masked tactical raycast missed; default layer fallback hit a collider.");
             }
         }
 
-        if (!hasHit)
+        if (hits == null || hits.Length == 0)
         {
             if (logResult)
             {
@@ -209,29 +254,59 @@ public class ChessTileHoverController : MonoBehaviour
             return null;
         }
 
+        Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        for (int i = 0; i < hits.Length; i++)
+        {
+            RaycastHit hit = hits[i];
+            if (hit.collider == null)
+            {
+                continue;
+            }
+
+            ChessTile tile = TryMapHitToTile(hit, out bool mappedFromPiece);
+            if (logResult)
+            {
+                string mappedFrom = mappedFromPiece ? "piece" : "tile";
+                DebugLog(tile != null
+                    ? $"Raycast hit collider={hit.collider.name}, mapped via {mappedFrom} to tile={tile.TileName}."
+                    : $"Raycast hit collider={hit.collider.name} but it did not map to a ChessTile.");
+            }
+
+            if (tile != null)
+            {
+                return tile;
+            }
+        }
+
         if (logResult)
         {
-            DebugLog($"Tactical raycast hit collider={hit.collider.name} ({hit.collider.GetType().Name}).");
+            DebugLog("Raycast hits found, but none mapped to a ChessTile.");
         }
 
-        ChessTile tile;
-        if (board != null)
+        return null;
+    }
+
+    ChessTile TryMapHitToTile(RaycastHit hit, out bool mappedFromPiece)
+    {
+        mappedFromPiece = false;
+
+        ChessTile tile = board != null
+            ? board.GetTileFromRaycast(hit)
+            : hit.collider != null ? hit.collider.GetComponentInParent<ChessTile>() : null;
+
+        if (tile != null)
         {
-            tile = board.GetTileFromRaycast(hit);
-        }
-        else
-        {
-            tile = hit.collider != null ? hit.collider.GetComponentInParent<ChessTile>() : null;
+            return tile;
         }
 
-        if (logResult)
+        ChessPiece piece = hit.collider != null ? hit.collider.GetComponentInParent<ChessPiece>() : null;
+        if (piece == null || piece.CurrentTile == null)
         {
-            DebugLog(tile != null
-                ? $"ChessTile found from raycast: {tile.TileName}."
-                : "Raycast hit did not map to a ChessTile.");
+            return null;
         }
 
-        return tile;
+        mappedFromPiece = true;
+        return piece.CurrentTile;
     }
 
     void SetHoveredTile(ChessTile tile)
