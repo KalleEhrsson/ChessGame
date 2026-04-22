@@ -47,6 +47,10 @@ public class ChessPieceMotion : MonoBehaviour
 
     public async Task PlayMoveAsync(Vector3 startPos, Vector3 endPos, bool isCapture)
     {
+        Vector3 fallbackPosition = transform.position;
+        startPos = SanitizePosition(startPos, fallbackPosition);
+        endPos = SanitizePosition(endPos, startPos);
+
         if (!isActiveAndEnabled || isAnimating)
         {
             transform.position = endPos;
@@ -190,6 +194,21 @@ public class ChessPieceMotion : MonoBehaviour
             elapsed += Time.deltaTime;
             await AwaitNextFrame();
         }
+    }
+
+    static Vector3 SanitizePosition(Vector3 candidate, Vector3 fallback)
+    {
+        if (!IsFinite(candidate.x) || !IsFinite(candidate.y) || !IsFinite(candidate.z))
+        {
+            return fallback;
+        }
+
+        return candidate;
+    }
+
+    static bool IsFinite(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
     #endregion
