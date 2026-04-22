@@ -66,10 +66,10 @@ public class ChessPieceMotion : MonoBehaviour
                 await AwaitSeconds(pickupDelay);
             }
 
-            PlayOneShot(pickupWhoosh);
+            PlayOneShotRandomized(pickupWhoosh, 0.85f, 1f, 0.95f, 1.05f);
             await PlayArcMotionAsync(startPos, endPos, Mathf.Max(0.01f, moveDuration));
 
-            PlayOneShot(dropThud);
+            PlayOneShotRandomized(dropThud, 0.95f, 1.1f, 0.94f, 1.02f);
             await PlayDropSettleAsync(endPos, Mathf.Max(0.01f, dropDuration), isCapture);
         }
         finally
@@ -160,16 +160,22 @@ public class ChessPieceMotion : MonoBehaviour
 
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f;
+        audioSource.dopplerLevel = 0f;
+        audioSource.rolloffMode = AudioRolloffMode.Linear;
     }
 
-    void PlayOneShot(AudioClip clip)
+    void PlayOneShotRandomized(AudioClip clip, float volumeMin, float volumeMax, float pitchMin, float pitchMax)
     {
         if (audioSource == null || clip == null)
         {
             return;
         }
 
-        audioSource.PlayOneShot(clip);
+        float volume = Random.Range(volumeMin, volumeMax);
+        float pitch = Random.Range(pitchMin, pitchMax);
+        audioSource.pitch = pitch;
+        audioSource.PlayOneShot(clip, volume);
+        audioSource.pitch = 1f;
     }
 
     static async Task AwaitNextFrame()

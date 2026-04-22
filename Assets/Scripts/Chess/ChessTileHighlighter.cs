@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -33,6 +34,8 @@ public class ChessTileHighlighter : MonoBehaviour
 
     [SerializeField] Color moveColor = new(0.25f, 0.85f, 0.25f, 1f);
     [SerializeField] Color captureColor = new(0.9f, 0.25f, 0.25f, 1f);
+    [SerializeField, Range(1f, 1.3f)] float clickPulseIntensity = 1.12f;
+    [SerializeField] float clickPulseDuration = 0.12f;
 
     readonly List<ChessTile> activeMoveTiles = new(32);
     readonly List<ChessTile> activeCaptureTiles = new(32);
@@ -68,6 +71,18 @@ public class ChessTileHighlighter : MonoBehaviour
     {
         ClearGroup(activeMoveTiles);
         ClearGroup(activeCaptureTiles);
+    }
+
+    public void TriggerValidTileFeedback(ChessTile tile)
+    {
+        if (tile == null)
+        {
+            return;
+        }
+
+        bool isCaptureTile = activeCaptureTiles.Contains(tile);
+        Color baseColor = isCaptureTile ? captureColor : moveColor;
+        _ = PulseTileAsync(tile, baseColor);
     }
 
     #endregion
@@ -108,6 +123,34 @@ public class ChessTileHighlighter : MonoBehaviour
         }
 
         group.Clear();
+    }
+
+    async Task PulseTileAsync(ChessTile tile, Color baseColor)
+    {
+        if (tile == null)
+        {
+            return;
+        }
+
+        bool wasCapture = activeCaptureTiles.Contains(tile);
+        ChessTile.HighlightState highlightState = wasCapture ? ChessTile.HighlightState.Capture : ChessTile.HighlightState.Move;
+        Color pulseColor = Color.Lerp(baseColor, Color.white, clickPulseIntensity - 1f);
+        tile.SetHighlightState(highlightState, pulseColor);
+
+        float elapsed = 0f;
+        float duration = Mathf.Max(0.04f, clickPulseDuration);
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            await Task.Yield();
+        }
+
+        if (tile != null)
+        {
+            bool isCaptureTile = activeCaptureTiles.Contains(tile);
+            ChessTile.HighlightState state = isCaptureTile ? ChessTile.HighlightState.Capture : ChessTile.HighlightState.Move;
+            tile.SetHighlightState(state, isCaptureTile ? captureColor : moveColor);
+        }
     }
 
     #endregion

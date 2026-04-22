@@ -23,6 +23,7 @@ public class PlayerInteractionController : MonoBehaviour
     ChessTileHighlighter tileHighlighter;
     ChessTileHoverController tileHoverController;
     ChessGameStateController gameStateController;
+    ChessUIAudio uiAudio;
 
     #endregion
 
@@ -97,6 +98,7 @@ public class PlayerInteractionController : MonoBehaviour
         tileHoverController = ChessTileHoverController.GetOrCreate();
         ChessTurnManager.GetOrCreate();
         gameStateController = ChessGameStateController.GetOrCreate();
+        uiAudio = ChessUIAudio.GetOrCreate();
     }
 
     void EnsureInput()
@@ -228,21 +230,25 @@ public class PlayerInteractionController : MonoBehaviour
         int layerMask = interactLayer.value == 0 ? Physics.DefaultRaycastLayers : interactLayer.value;
         if (!Physics.Raycast(ray, out RaycastHit hit, interactDistance, layerMask, QueryTriggerInteraction.Ignore))
         {
+            uiAudio?.PlayInvalid();
             return;
         }
 
         ChessPiece piece = hit.collider.GetComponentInParent<ChessPiece>();
         if (piece == null)
         {
+            uiAudio?.PlayInvalid();
             return;
         }
 
         if (!selectionController.CanSelectPiece(piece))
         {
+            uiAudio?.PlayInvalid();
             return;
         }
 
         selectionController.SelectPiece(piece);
+        uiAudio?.PlaySelectionClick();
         cameraController.EnterTacticalView(piece);
 
         moveValidator.GenerateLegalMoves(piece, out var moveTiles, out var captureTiles);
@@ -263,6 +269,7 @@ public class PlayerInteractionController : MonoBehaviour
         if (targetTile == null)
         {
             DebugTacticalClick("Left click raycast found no ChessTile under cursor.");
+            uiAudio?.PlayInvalid();
             return;
         }
 
@@ -270,8 +277,12 @@ public class PlayerInteractionController : MonoBehaviour
         DebugTacticalClick($"Tile click hit {targetTile.TileName}. Valid destination={validDestination}.");
         if (!validDestination)
         {
+            uiAudio?.PlayInvalid();
             return;
         }
+
+        tileHighlighter.TriggerValidTileFeedback(targetTile);
+        uiAudio?.PlayTileTap();
 
         ChessPiece selectedPiece = selectionController.GetSelected();
         if (selectedPiece == null || selectedPiece.CurrentTile == null)
@@ -285,8 +296,11 @@ public class PlayerInteractionController : MonoBehaviour
             bool moved = board.MovePiece(selectedPiece.CurrentTile, targetTile);
             if (!moved)
             {
+                uiAudio?.PlayInvalid();
                 return;
             }
+
+            uiAudio?.PlayValidMoveClick();
         }
 
         ResetSelectionFlow();
