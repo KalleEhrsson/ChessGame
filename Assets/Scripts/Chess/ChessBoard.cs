@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 [ExecuteAlways]
@@ -613,6 +614,11 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
+        if (Application.isPlaying && ChessPieceMotion.IsAnyAnimating)
+        {
+            return false;
+        }
+
         ChessPiece movingPiece = from.CurrentPiece;
         if (movingPiece == null)
         {
@@ -638,13 +644,14 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
-        if (to.CurrentPiece != null && to.CurrentPiece != movingPiece)
+        bool isCapture = to.CurrentPiece != null && to.CurrentPiece != movingPiece;
+        if (isCapture)
         {
             ChessPiece capturedPiece = to.CurrentPiece;
             capturedPiece.SetTile(null);
             if (Application.isPlaying)
             {
-                Destroy(capturedPiece.gameObject);
+                _ = DestroyCapturedPieceDelayedAsync(capturedPiece.gameObject, 0.08f);
             }
             else
             {
@@ -652,7 +659,15 @@ public class ChessBoard : MonoBehaviour
             }
         }
 
+        Vector3 startWorldPosition = movingPiece.transform.position;
         movingPiece.SetTile(to);
+        Vector3 endWorldPosition = movingPiece.transform.position;
+
+        if (Application.isPlaying)
+        {
+            _ = PlayMoveMotionAsync(movingPiece, startWorldPosition, endWorldPosition, isCapture);
+        }
+
         turnManager?.SwitchTurn();
 
         if (turnManager != null)
@@ -661,6 +676,40 @@ public class ChessBoard : MonoBehaviour
         }
 
         return true;
+    }
+
+    async Task PlayMoveMotionAsync(ChessPiece piece, Vector3 startWorldPosition, Vector3 endWorldPosition, bool isCapture)
+    {
+        if (piece == null)
+        {
+            return;
+        }
+
+        ChessPieceMotion motion = piece.GetOrAddMotion();
+        if (motion == null)
+        {
+            return;
+        }
+
+        await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture);
+    }
+
+    async Task DestroyCapturedPieceDelayedAsync(GameObject pieceObject, float delaySeconds)
+    {
+        if (pieceObject == null)
+        {
+            return;
+        }
+
+        if (delaySeconds > 0f)
+        {
+            await Task.Delay(Mathf.Max(1, Mathf.RoundToInt(delaySeconds * 1000f)));
+        }
+
+        if (pieceObject != null)
+        {
+            Destroy(pieceObject);
+        }
     }
 
     #endregion

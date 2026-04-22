@@ -160,6 +160,8 @@ public class ChessTurnManager : MonoBehaviour
 
         try
         {
+            await WaitForPieceMotionAsync();
+
             ResolveSystems();
             if (board == null || stockfishService == null)
             {
@@ -198,6 +200,7 @@ public class ChessTurnManager : MonoBehaviour
             float delaySeconds = UnityEngine.Random.Range(aiMoveDelayMin, aiMoveDelayMax);
             int delayMs = Mathf.RoundToInt(delaySeconds * 1000f);
             await Task.Delay(delayMs);
+            await WaitForPieceMotionAsync();
 
             bool moved = board.MovePiece(fromTile, toTile);
             if (!moved)
@@ -212,6 +215,14 @@ public class ChessTurnManager : MonoBehaviour
         finally
         {
             aiTurnInProgress = false;
+        }
+    }
+
+    static async Task WaitForPieceMotionAsync()
+    {
+        while (ChessPieceMotion.IsAnyAnimating)
+        {
+            await Task.Yield();
         }
     }
 

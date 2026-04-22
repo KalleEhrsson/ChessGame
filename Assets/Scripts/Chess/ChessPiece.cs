@@ -38,6 +38,7 @@ public class ChessPiece : MonoBehaviour
     MaterialPropertyBlock[] propertyBlocks = System.Array.Empty<MaterialPropertyBlock>();
     Color[] originalColors = System.Array.Empty<Color>();
     Color[] originalEmissionColors = System.Array.Empty<Color>();
+    ChessPieceMotion motionComponent;
     bool visualsCached;
 
     static readonly int ColorId = Shader.PropertyToID("_Color");
@@ -102,6 +103,21 @@ public class ChessPiece : MonoBehaviour
     public void ClearTileReference()
     {
         CurrentTile = null;
+    }
+
+    public ChessPieceMotion GetOrAddMotion()
+    {
+        if (motionComponent == null)
+        {
+            motionComponent = GetComponent<ChessPieceMotion>();
+        }
+
+        if (motionComponent == null)
+        {
+            motionComponent = gameObject.AddComponent<ChessPieceMotion>();
+        }
+
+        return motionComponent;
     }
 
     public void SetSelected(bool selected)
