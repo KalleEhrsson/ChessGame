@@ -26,6 +26,7 @@ public class ChessBoard : MonoBehaviour
 
 #if UNITY_EDITOR
     bool delayedHierarchyOrganizeQueued;
+    bool delayedHierarchyOrganizeWaitingForUpdate;
 #endif
     
     #endregion
@@ -453,12 +454,32 @@ public class ChessBoard : MonoBehaviour
         }
 
         delayedHierarchyOrganizeQueued = true;
-        UnityEditor.EditorApplication.delayCall += DelayedOrganizeTileHierarchy;
+        UnityEditor.EditorApplication.delayCall += BeginDelayedOrganizeTileHierarchy;
+    }
+
+    void BeginDelayedOrganizeTileHierarchy()
+    {
+        if (this == null)
+        {
+            delayedHierarchyOrganizeQueued = false;
+            delayedHierarchyOrganizeWaitingForUpdate = false;
+            return;
+        }
+
+        if (delayedHierarchyOrganizeWaitingForUpdate)
+        {
+            return;
+        }
+
+        delayedHierarchyOrganizeWaitingForUpdate = true;
+        UnityEditor.EditorApplication.update += DelayedOrganizeTileHierarchy;
     }
 
     void DelayedOrganizeTileHierarchy()
     {
+        UnityEditor.EditorApplication.update -= DelayedOrganizeTileHierarchy;
         delayedHierarchyOrganizeQueued = false;
+        delayedHierarchyOrganizeWaitingForUpdate = false;
         if (this == null)
         {
             return;
