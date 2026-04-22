@@ -21,6 +21,7 @@ public class ChessBoard : MonoBehaviour
     [SerializeField] GameObject[] blackPiecePrefabs = Array.Empty<GameObject>();
     ChessMoveValidator moveValidator;
     ChessTurnManager turnManager;
+    ChessGameStateController gameStateController;
 
 #if UNITY_EDITOR
     bool delayedHierarchyOrganizeQueued;
@@ -167,6 +168,7 @@ public class ChessBoard : MonoBehaviour
         AutoSetupBoard();
         ClearAllPieces();
         ChessTurnManager.GetOrCreate().SetTurn(PieceTeam.White);
+        ChessGameStateController.GetOrCreate().ResetToPlaying();
 
         SpawnBackRank(PieceTeam.White, "A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1");
         SpawnPawns(PieceTeam.White, 2);
@@ -619,6 +621,12 @@ public class ChessBoard : MonoBehaviour
 
         moveValidator ??= ChessMoveValidator.GetOrCreate();
         turnManager ??= ChessTurnManager.GetOrCreate();
+        gameStateController ??= ChessGameStateController.GetOrCreate();
+
+        if (gameStateController != null && !gameStateController.IsGameplayActive())
+        {
+            return false;
+        }
 
         if (turnManager != null && movingPiece.Team != turnManager.GetCurrentTurn())
         {
@@ -646,6 +654,12 @@ public class ChessBoard : MonoBehaviour
 
         movingPiece.SetTile(to);
         turnManager?.SwitchTurn();
+
+        if (turnManager != null)
+        {
+            gameStateController?.EvaluateEndOfTurn(turnManager.GetCurrentTurn());
+        }
+
         return true;
     }
 

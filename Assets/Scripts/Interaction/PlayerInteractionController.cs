@@ -22,6 +22,7 @@ public class PlayerInteractionController : MonoBehaviour
     ChessMoveValidator moveValidator;
     ChessTileHighlighter tileHighlighter;
     ChessTileHoverController tileHoverController;
+    ChessGameStateController gameStateController;
 
     #endregion
 
@@ -95,6 +96,7 @@ public class PlayerInteractionController : MonoBehaviour
         tileHighlighter = ChessTileHighlighter.GetOrCreate();
         tileHoverController = ChessTileHoverController.GetOrCreate();
         ChessTurnManager.GetOrCreate();
+        gameStateController = ChessGameStateController.GetOrCreate();
     }
 
     void EnsureInput()
@@ -135,6 +137,11 @@ public class PlayerInteractionController : MonoBehaviour
     {
         EnsureSystems();
 
+        if (gameStateController != null && !gameStateController.IsGameplayActive())
+        {
+            return;
+        }
+
         if (cameraController.IsInTacticalMode() && selectionController.HasSelection())
         {
             ResetSelectionFlow();
@@ -151,16 +158,31 @@ public class PlayerInteractionController : MonoBehaviour
 
     void OnCancelPerformed(InputAction.CallbackContext _)
     {
+        if (gameStateController != null && !gameStateController.IsGameplayActive())
+        {
+            return;
+        }
+
         TryCancelSelection();
     }
 
     void OnRightClickPerformed(InputAction.CallbackContext _)
     {
+        if (gameStateController != null && !gameStateController.IsGameplayActive())
+        {
+            return;
+        }
+
         TryCancelSelection();
     }
 
     void OnLeftClickPerformed(InputAction.CallbackContext _)
     {
+        if (gameStateController != null && !gameStateController.IsGameplayActive())
+        {
+            return;
+        }
+
         TryMoveFromTileClick();
     }
 

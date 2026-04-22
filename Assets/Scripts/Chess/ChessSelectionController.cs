@@ -35,6 +35,7 @@ public class ChessSelectionController : MonoBehaviour
     readonly List<ChessTile> moveTiles = new(32);
     readonly List<ChessTile> captureTiles = new(32);
     ChessTurnManager turnManager;
+    ChessGameStateController gameStateController;
 
     #endregion
 
@@ -86,6 +87,12 @@ public class ChessSelectionController : MonoBehaviour
     public bool CanSelectPiece(ChessPiece piece)
     {
         if (piece == null)
+        {
+            return false;
+        }
+
+        gameStateController ??= ChessGameStateController.GetOrCreate();
+        if (gameStateController != null && !gameStateController.IsGameplayActive())
         {
             return false;
         }
