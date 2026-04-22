@@ -103,6 +103,11 @@ public class ChessSelectionController : MonoBehaviour
             return true;
         }
 
+        if (!turnManager.IsHumanTurn())
+        {
+            return false;
+        }
+
         return piece.Team == turnManager.GetCurrentTurn();
     }
 
