@@ -125,11 +125,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d8c10fa383d4ee2a2d5f3dcd722af89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessPieceMotion
-  pickupDelay: 0.05
-  liftHeight: 0.5
-  moveDuration: 0.2
-  dropDuration: 0.1
-  settleOvershoot: 0.05
+  pickupDelay: 5
+  liftHeight: 5
+  moveDuration: 1
+  dropDuration: 0.5
+  settleOvershoot: 0.5
   audioSource: {fileID: 0}
   pickupWhoosh: {fileID: 0}
   dropThud: {fileID: 0}
