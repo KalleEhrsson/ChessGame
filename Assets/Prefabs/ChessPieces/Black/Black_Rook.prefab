@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3962690676610441169}
   - component: {fileID: 8665334434295951220}
   - component: {fileID: 5948070324315615389}
+  - component: {fileID: 2901200988237992142}
   m_Layer: 0
   m_Name: Black_Rook
   m_TagString: Untagged
@@ -110,5 +111,25 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.187786, y: 3.965663, z: 2.1877859}
-  m_Center: {x: 0.0023845432, y: 0.008598684, z: -0.0011242627}
+  m_Size: {x: 1.5, y: 4, z: 1.5}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &2901200988237992142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2989705879457890165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d8c10fa383d4ee2a2d5f3dcd722af89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChessPieceMotion
+  pickupDelay: 0.05
+  liftHeight: 0.5
+  moveDuration: 0.2
+  dropDuration: 0.1
+  settleOvershoot: 0.05
+  audioSource: {fileID: 0}
+  pickupWhoosh: {fileID: 0}
+  dropThud: {fileID: 0}

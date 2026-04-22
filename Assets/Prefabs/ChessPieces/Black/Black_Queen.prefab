@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6443226622968445851}
   - component: {fileID: 4082695351832199838}
   - component: {fileID: -3704084686784725271}
+  - component: {fileID: -3493790453050141151}
   m_Layer: 0
   m_Name: Black_Queen
   m_TagString: Untagged
@@ -110,5 +111,25 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 3.1376874, y: 7.1799145, z: 3.1376848}
-  m_Center: {x: -0.00000011920929, y: -1.198783, z: -0.0000023245811}
+  m_Size: {x: 1.5, y: 7, z: 1.5}
+  m_Center: {x: 0, y: -1.198783, z: 0}
+--- !u!114 &-3493790453050141151
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7287626031760169382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d8c10fa383d4ee2a2d5f3dcd722af89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChessPieceMotion
+  pickupDelay: 0.05
+  liftHeight: 0.5
+  moveDuration: 0.2
+  dropDuration: 0.1
+  settleOvershoot: 0.05
+  audioSource: {fileID: 0}
+  pickupWhoosh: {fileID: 0}
+  dropThud: {fileID: 0}

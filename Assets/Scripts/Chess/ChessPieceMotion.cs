@@ -6,10 +6,10 @@ public class ChessPieceMotion : MonoBehaviour
 {
     #region Variables
 
-    [SerializeField] float pickupDelay = 0.05f;
-    [SerializeField] float liftHeight = 0.5f;
-    [SerializeField] float moveDuration = 0.2f;
-    [SerializeField] float dropDuration = 0.1f;
+    [SerializeField] float pickupDelay = 1f;
+    [SerializeField] float liftHeight = 4f;
+    [SerializeField] float moveDuration = 1f;
+    [SerializeField] float dropDuration = 0.5f;
     [SerializeField] float settleOvershoot = 0.05f;
     [SerializeField] AudioSource audioSource;
     [SerializeField] AudioClip pickupWhoosh;
@@ -47,6 +47,10 @@ public class ChessPieceMotion : MonoBehaviour
 
     public async Task PlayMoveAsync(Vector3 startPos, Vector3 endPos, bool isCapture)
     {
+        Vector3 fallbackPosition = transform.position;
+        startPos = SanitizePosition(startPos, fallbackPosition);
+        endPos = SanitizePosition(endPos, startPos);
+        
         if (!isActiveAndEnabled || isAnimating)
         {
             transform.position = endPos;
@@ -192,5 +196,20 @@ public class ChessPieceMotion : MonoBehaviour
         }
     }
 
+    static Vector3 SanitizePosition(Vector3 candidate, Vector3 fallback)
+    {
+        if (!IsFinite(candidate.x) || !IsFinite(candidate.y) || !IsFinite(candidate.z))
+        {
+            return fallback;
+        }
+
+        return candidate;
+    }
+
+    static bool IsFinite(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
+    }
+    
     #endregion
 }

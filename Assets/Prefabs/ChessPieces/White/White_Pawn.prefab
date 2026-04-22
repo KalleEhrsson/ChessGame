@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7469595829254239810}
   - component: {fileID: 7803353568228713369}
   - component: {fileID: 6258213863640608058}
+  - component: {fileID: 983306844036405998}
   m_Layer: 0
   m_Name: White_Pawn
   m_TagString: Untagged
@@ -110,5 +111,25 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.9110875, y: 6.9019804, z: 2.911088}
-  m_Center: {x: 1.2644306e-21, y: -0.7463881, z: -0.0000014901161}
+  m_Size: {x: 2, y: 7, z: 2}
+  m_Center: {x: 0, y: -0.7463881, z: 0}
+--- !u!114 &983306844036405998
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8533173619447268320}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d8c10fa383d4ee2a2d5f3dcd722af89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChessPieceMotion
+  pickupDelay: 0.05
+  liftHeight: 0.5
+  moveDuration: 0.2
+  dropDuration: 0.1
+  settleOvershoot: 0.05
+  audioSource: {fileID: 0}
+  pickupWhoosh: {fileID: 0}
+  dropThud: {fileID: 0}

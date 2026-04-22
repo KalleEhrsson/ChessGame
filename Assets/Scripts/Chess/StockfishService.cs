@@ -266,7 +266,7 @@ public class StockfishService : MonoBehaviour
                 SendCommand("quit");
                 if (!stockfishProcess.WaitForExit(1000))
                 {
-                    stockfishProcess.Kill(true);
+                    stockfishProcess.Kill();
                 }
             }
         }

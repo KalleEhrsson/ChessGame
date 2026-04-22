@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 375796303860487816}
   - component: {fileID: 5098655549358281168}
   - component: {fileID: 6929614267067301953}
+  - component: {fileID: -8131992153218114448}
   m_Layer: 0
   m_Name: Black_King
   m_TagString: Untagged
@@ -110,5 +111,25 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.1877868, y: 8.091909, z: 2.1877868}
-  m_Center: {x: 0, y: -1.6994737, z: 0.000000119209275}
+  m_Size: {x: 1.5, y: 8, z: 1.5}
+  m_Center: {x: 0, y: -1.6994737, z: 0}
+--- !u!114 &-8131992153218114448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9115864557451125168}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d8c10fa383d4ee2a2d5f3dcd722af89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChessPieceMotion
+  pickupDelay: 0.05
+  liftHeight: 0.5
+  moveDuration: 0.2
+  dropDuration: 0.1
+  settleOvershoot: 0.05
+  audioSource: {fileID: 0}
+  pickupWhoosh: {fileID: 0}
+  dropThud: {fileID: 0}

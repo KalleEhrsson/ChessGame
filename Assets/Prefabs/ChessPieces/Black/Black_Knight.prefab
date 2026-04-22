@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5877383631860651179}
   - component: {fileID: 513923650927370323}
   - component: {fileID: -8629303922146403002}
+  - component: {fileID: 4892134800396630483}
   m_Layer: 0
   m_Name: Black_Knight
   m_TagString: Untagged
@@ -110,5 +111,25 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 3.3203392, y: 6.001145, z: 2.187786}
-  m_Center: {x: -0.11291224, y: 0.049122334, z: -0.0000019073486}
+  m_Size: {x: 1.5, y: 6, z: 1.5}
+  m_Center: {x: 0.5, y: 0, z: 0}
+--- !u!114 &4892134800396630483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5165512836897157335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d8c10fa383d4ee2a2d5f3dcd722af89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChessPieceMotion
+  pickupDelay: 0.05
+  liftHeight: 0.5
+  moveDuration: 0.2
+  dropDuration: 0.1
+  settleOvershoot: 0.05
+  audioSource: {fileID: 0}
+  pickupWhoosh: {fileID: 0}
+  dropThud: {fileID: 0}
