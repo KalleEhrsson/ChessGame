@@ -92,6 +92,14 @@ public class ChessPiece : MonoBehaviour
 
         Vector3 targetPosition = CurrentTile.transform.position;
         targetPosition.y = ResolvePlacementY(CurrentTile, targetPosition.y);
+
+        if (!IsFinite(targetPosition))
+        {
+            float fallbackY = IsFinite(CurrentTile.transform.position.y) ? CurrentTile.transform.position.y : 0f;
+            targetPosition = new Vector3(CurrentTile.transform.position.x, fallbackY, CurrentTile.transform.position.z);
+            Debug.LogWarning($"[ChessPiece] Computed invalid snap position for '{name}'. Falling back to tile position.", this);
+        }
+
         transform.position = targetPosition;
 
         if (faceOpponentSide)
@@ -171,12 +179,27 @@ public class ChessPiece : MonoBehaviour
     float ResolvePlacementY(ChessTile tile, float fallbackY)
     {
         float boardTop = ResolveTileTopY(tile, fallbackY);
+        if (!IsFinite(boardTop))
+        {
+            return fallbackY;
+        }
+
         if (!TryGetPieceBounds(out Bounds pieceBounds))
         {
             return boardTop;
         }
 
+        if (!IsFinite(pieceBounds.min.y) || !IsFinite(transform.position.y))
+        {
+            return boardTop;
+        }
+
         float bottomOffset = transform.position.y - pieceBounds.min.y;
+        if (!IsFinite(bottomOffset))
+        {
+            return boardTop;
+        }
+
         return boardTop + bottomOffset;
     }
 
@@ -190,13 +213,21 @@ public class ChessPiece : MonoBehaviour
         Renderer tileRenderer = tile.GetComponent<Renderer>();
         if (tileRenderer != null)
         {
-            return tileRenderer.bounds.max.y;
+            float rendererTop = tileRenderer.bounds.max.y;
+            if (IsFinite(rendererTop))
+            {
+                return rendererTop;
+            }
         }
 
         Collider tileCollider = tile.GetComponent<Collider>();
         if (tileCollider != null)
         {
-            return tileCollider.bounds.max.y;
+            float colliderTop = tileCollider.bounds.max.y;
+            if (IsFinite(colliderTop))
+            {
+                return colliderTop;
+            }
         }
 
         return fallbackY;
@@ -216,14 +247,20 @@ public class ChessPiece : MonoBehaviour
                 continue;
             }
 
+            Bounds rendererBounds = renderer.bounds;
+            if (!IsFinite(rendererBounds))
+            {
+                continue;
+            }
+
             if (!hasBounds)
             {
-                bounds = renderer.bounds;
+                bounds = rendererBounds;
                 hasBounds = true;
             }
             else
             {
-                bounds.Encapsulate(renderer.bounds);
+                bounds.Encapsulate(rendererBounds);
             }
         }
 
@@ -241,18 +278,39 @@ public class ChessPiece : MonoBehaviour
                 continue;
             }
 
+            Bounds colliderBounds = collider.bounds;
+            if (!IsFinite(colliderBounds))
+            {
+                continue;
+            }
+
             if (!hasBounds)
             {
-                bounds = collider.bounds;
+                bounds = colliderBounds;
                 hasBounds = true;
             }
             else
             {
-                bounds.Encapsulate(collider.bounds);
+                bounds.Encapsulate(colliderBounds);
             }
         }
 
         return hasBounds;
+    }
+
+    static bool IsFinite(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
+    }
+
+    static bool IsFinite(Vector3 value)
+    {
+        return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+    }
+
+    static bool IsFinite(Bounds bounds)
+    {
+        return IsFinite(bounds.min) && IsFinite(bounds.max);
     }
 
     void EnsureVisualCache()
