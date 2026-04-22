@@ -11,6 +11,12 @@ public class InteractableChessPiece : MonoBehaviour
             return;
         }
 
+        ChessGameStateController gameStateController = ChessGameStateController.GetOrCreate();
+        if (gameStateController != null && !gameStateController.IsGameplayActive())
+        {
+            return;
+        }
+
         ChessSelectionController selectionController = ChessSelectionController.GetOrCreate();
         ChessCameraController cameraController = ChessCameraController.GetOrCreate();
         ChessMoveValidator moveValidator = ChessMoveValidator.GetOrCreate();
