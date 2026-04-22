@@ -1,88 +1,81 @@
-# First-Person Chess (Unity)
+# First-Person Chess
 
-A first-person 3D chess game built in Unity where the player explores a full-scale board, interacts with physical chess pieces, uses a tactical camera to plan moves, and plays against a local AI opponent.
+A first-person 3D chess experience where the board is a physical space, not just a top-down UI.
+You move through the arena, interact with pieces in-world, and switch to a tactical camera when precision matters.
 
-## Project Overview
+## Why This Project Is Different
 
-This project combines immersive first-person gameplay with standard chess rules.
+This is not trying to reteach chess rules. The focus is on **how chess feels** when translated into a first-person 3D game:
 
-- Walk around the board as if it were a physical arena.
-- Interact directly with pieces in the world.
-- Switch to a tactical view for clear move selection.
-- Play against a local chess engine (Stockfish) without external APIs.
-
-The goal is to create a portfolio-ready game experience that blends strategy, spatial presence, and clean system architecture.
+- Board-scale presence (you traverse the board as a player).
+- Physical interaction layer for piece handling.
+- Hybrid control loop: exploration view + tactical move view.
+- Local AI pipeline through Stockfish (no online services).
 
 ## Core Features
 
-### First-Person Movement
-- Player-controlled movement around a full-scale chessboard environment.
-- Camera and controls designed for in-world exploration of the board state.
+### Immersive Movement + Interaction
+- First-person movement across a full-scale board environment.
+- Direct interaction with pieces in-world.
 
-### Tile-Based Board System (A1–H8)
-- Board represented as an 8x8 tile grid with chess coordinates.
-- Tile indexing and coordinate mapping used for gameplay logic.
+### Tactical Camera Workflow
+- Fast switch from immersive view to tactical selection mode.
+- Built for readable move planning without losing world context.
 
-### Piece System (Full Chess Setup)
-- Standard initial piece placement for both sides.
-- Piece data and ownership tracked independently from visual presentation.
+### Move Feedback Loop
+- Hover feedback on tiles.
+- Legal-move highlighting.
+- Piece movement updates synced to board state.
 
-### Interaction + Tactical Camera
-- Direct world interaction with chess pieces.
-- Tactical camera mode for precision move planning and selection.
-
-### Move System
-- Hover feedback for target tiles.
-- Move highlighting for legal destinations.
-- Piece movement execution with board state updates.
-
-### Real Chess Rules (Current Scope)
+### Rules Validation (Current Scope)
 - Turn-based move flow.
-- Move legality checks with king safety enforcement.
-- Illegal moves rejected before board state is committed.
+- King-safety-aware legality checks.
+- Illegal move rejection before state commit.
 
 ## Current State
 
-The following systems are currently implemented:
+### Implemented
 
-- First-person player movement and world interaction foundations.
-- Tile-based board representation with coordinate-driven logic.
-- Full initial chess piece setup and placement flow.
-- Tactical camera and selection workflow.
-- Move generation and tile highlighting/hover feedback.
-- Turn system and legality validation, including king safety constraints.
+- [x] First-person controller and interaction foundation.
+- [x] Tile-based board model with coordinate-driven logic.
+- [x] Full initial piece setup.
+- [x] Tactical camera + selection flow.
+- [x] Move generation with hover/highlight feedback.
+- [x] Turn system + king-safety legality validation.
+
+### In Progress
+
+- [ ] End-to-end AI turn loop hardening.
+- [ ] Match-state UX messaging.
 
 ## Roadmap
 
-Planned milestones and next features:
+### Next Milestones
 
-- Checkmate and stalemate detection.
-- Advanced chess rules:
-  - Castling
-  - En passant
-  - Promotion
-- Full Stockfish gameplay loop integration for AI turns.
-- Clear UI/gameplay feedback (turn indicator, legal/illegal move feedback, game state messages).
-- Piece crushing/capture presentation mechanic.
-- Timer system (e.g., blitz/rapid/classical presets).
-- Overall polish: animation pass, sound design, and visual feedback improvements.
+- [ ] Checkmate / stalemate detection.
+- [ ] Advanced rules: castling, en passant, promotion.
+- [ ] Complete Stockfish turn integration.
+- [ ] Stronger UI feedback (turn state, legality reasons, game state).
+- [ ] Piece crushing/capture presentation mechanic.
+- [ ] Timer modes (blitz / rapid / classical).
+- [ ] Polish pass (animations, sound, feel).
 
 ## AI — Stockfish
 
-This project uses **Stockfish** as its chess engine for AI decision-making.
+This project uses **Stockfish** as the local chess engine.
 
-How the integration works (high level):
+Flow:
 
-1. Current board state is serialized to **FEN**.
-2. The FEN is sent to Stockfish through the **UCI** protocol.
-3. Stockfish returns the **best move**, which is then applied in-game.
+1. Export current board state to **FEN**.
+2. Send position to Stockfish via **UCI**.
+3. Read back the engine's best move and apply it in Unity.
 
-Key points:
+Highlights:
 
-- Runs fully **locally** on the player's machine.
-- Requires **no external API** and no online service dependency.
+- Runs **locally** on the machine.
+- Requires **no API key** and no cloud dependency.
 
-Official Stockfish repository:
+Official repository:
 
 - https://github.com/official-stockfish/Stockfish
 
@@ -90,31 +83,29 @@ Official Stockfish repository:
 
 Stockfish is licensed under the **GNU General Public License v3.0 (GPLv3)**.
 
-If Stockfish is distributed with this project:
+If you distribute this project with Stockfish included:
 
-- A copy of the GPLv3 license must be included with the distribution.
-- The corresponding Stockfish source code must be made available (for example, by including it or providing a clear source link).
+- Include a copy of the GPLv3 license.
+- Make corresponding Stockfish source code available (bundle it or provide a clear source link).
 
-For exact terms, refer to the official Stockfish repository and license text.
+For exact obligations, refer to the official Stockfish repository license text.
 
 ## Architecture
 
-The project architecture follows a tile-centric, system-separated approach:
+System design priorities:
 
-- **Tiles are the source of truth** for board occupancy and move resolution.
-- **System separation** keeps responsibilities clear:
-  - Move generation
-  - Legality/validation
-  - Visual feedback and interaction
-- **Auto-wiring preference** is used where practical to reduce manual Inspector setup and keep scene configuration lightweight.
+- **Tile-first logic:** tiles own occupancy truth and move destinations.
+- **Separation of concerns:**
+  - move generation
+  - move validation
+  - presentation/visual feedback
+- **Auto-wiring preference:** minimal Inspector plumbing where possible.
 
 ## Tech Stack
 
-- **Engine:** Unity
-- **Language:** C#
-- **Input:** Unity Input System
-- **AI Engine:** Stockfish (local executable, UCI)
+- Unity (C#)
+- Stockfish (local executable over UCI)
 
 ## Project Status
 
-Active development. Core gameplay foundations are in place, with rule completeness, AI flow hardening, and presentation polish currently prioritized.
+Active development. The playable core is working; rule completeness, AI loop robustness, and presentation polish are the next targets.
