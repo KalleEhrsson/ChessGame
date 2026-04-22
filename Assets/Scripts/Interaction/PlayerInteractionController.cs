@@ -136,6 +136,10 @@ public class PlayerInteractionController : MonoBehaviour
     void OnInteractPerformed(InputAction.CallbackContext _)
     {
         EnsureSystems();
+        if (ChessPieceMotion.IsAnyAnimating)
+        {
+            return;
+        }
 
         if (gameStateController != null && !gameStateController.IsGameplayActive())
         {
@@ -158,6 +162,11 @@ public class PlayerInteractionController : MonoBehaviour
 
     void OnCancelPerformed(InputAction.CallbackContext _)
     {
+        if (ChessPieceMotion.IsAnyAnimating)
+        {
+            return;
+        }
+
         if (gameStateController != null && !gameStateController.IsGameplayActive())
         {
             return;
@@ -168,6 +177,11 @@ public class PlayerInteractionController : MonoBehaviour
 
     void OnRightClickPerformed(InputAction.CallbackContext _)
     {
+        if (ChessPieceMotion.IsAnyAnimating)
+        {
+            return;
+        }
+
         if (gameStateController != null && !gameStateController.IsGameplayActive())
         {
             return;
@@ -178,6 +192,11 @@ public class PlayerInteractionController : MonoBehaviour
 
     void OnLeftClickPerformed(InputAction.CallbackContext _)
     {
+        if (ChessPieceMotion.IsAnyAnimating)
+        {
+            return;
+        }
+
         if (gameStateController != null && !gameStateController.IsGameplayActive())
         {
             return;
