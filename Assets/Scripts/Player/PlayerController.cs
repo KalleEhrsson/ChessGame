@@ -139,6 +139,13 @@ public class PlayerController : MonoBehaviour
             WarnOnce("camera_created", "PlayerController: Camera child was missing and has been created automatically.");
         }
 
+        AudioListener audioListener = existingCamera.GetComponent<AudioListener>();
+        if (audioListener == null)
+        {
+            existingCamera.gameObject.AddComponent<AudioListener>();
+            WarnOnce("audio_listener_created", "PlayerController: AudioListener was missing and has been created automatically.");
+        }
+
         cameraPivot = existingCamera.transform;
         cameraPivot.SetParent(transform, false);
         cameraPivot.localPosition = new Vector3(0f, cameraHeight, 0f);
