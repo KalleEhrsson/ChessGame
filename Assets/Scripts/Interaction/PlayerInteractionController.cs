@@ -19,7 +19,7 @@ public class PlayerInteractionController : MonoBehaviour
     ChessBoard board;
     ChessSelectionController selectionController;
     ChessCameraController cameraController;
-    ChessMoveGenerator moveGenerator;
+    ChessMoveValidator moveValidator;
     ChessTileHighlighter tileHighlighter;
     ChessTileHoverController tileHoverController;
 
@@ -91,9 +91,10 @@ public class PlayerInteractionController : MonoBehaviour
 
         selectionController = ChessSelectionController.GetOrCreate();
         cameraController = ChessCameraController.GetOrCreate();
-        moveGenerator = ChessMoveGenerator.GetOrCreate();
+        moveValidator = ChessMoveValidator.GetOrCreate();
         tileHighlighter = ChessTileHighlighter.GetOrCreate();
         tileHoverController = ChessTileHoverController.GetOrCreate();
+        ChessTurnManager.GetOrCreate();
     }
 
     void EnsureInput()
@@ -195,10 +196,15 @@ public class PlayerInteractionController : MonoBehaviour
             return;
         }
 
+        if (!selectionController.CanSelectPiece(piece))
+        {
+            return;
+        }
+
         selectionController.SelectPiece(piece);
         cameraController.EnterTacticalView(piece);
 
-        moveGenerator.GenerateMoves(piece, out var moveTiles, out var captureTiles);
+        moveValidator.GenerateLegalMoves(piece, out var moveTiles, out var captureTiles);
         selectionController.SetMoveOptions(moveTiles, captureTiles);
         tileHighlighter.Highlight(selectionController.MoveTiles, selectionController.CaptureTiles);
     }
@@ -235,7 +241,11 @@ public class PlayerInteractionController : MonoBehaviour
 
         if (board != null)
         {
-            board.MovePiece(selectedPiece.CurrentTile, targetTile);
+            bool moved = board.MovePiece(selectedPiece.CurrentTile, targetTile);
+            if (!moved)
+            {
+                return;
+            }
         }
 
         ResetSelectionFlow();
