@@ -19,6 +19,8 @@ public class ChessBoard : MonoBehaviour
     readonly Dictionary<string, ChessTile> tilesByName = new (StringComparer.OrdinalIgnoreCase);
     [SerializeField] GameObject[] whitePiecePrefabs = Array.Empty<GameObject>();
     [SerializeField] GameObject[] blackPiecePrefabs = Array.Empty<GameObject>();
+    ChessMoveValidator moveValidator;
+    ChessTurnManager turnManager;
 
 #if UNITY_EDITOR
     bool delayedHierarchyOrganizeQueued;
@@ -164,6 +166,7 @@ public class ChessBoard : MonoBehaviour
     {
         AutoSetupBoard();
         ClearAllPieces();
+        ChessTurnManager.GetOrCreate().SetTurn(PieceTeam.White);
 
         SpawnBackRank(PieceTeam.White, "A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1");
         SpawnPawns(PieceTeam.White, 2);
@@ -550,6 +553,11 @@ public class ChessBoard : MonoBehaviour
     {
         return hit.collider != null ? hit.collider.GetComponentInParent<ChessTile>() : null;
     }
+
+    public ChessPiece[] GetAllPieces()
+    {
+        return GetComponentsInChildren<ChessPiece>(true);
+    }
     
     public bool TryGetTeamFacingDirection(PieceTeam team, out Vector3 direction)
     {
@@ -609,6 +617,19 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
+        moveValidator ??= ChessMoveValidator.GetOrCreate();
+        turnManager ??= ChessTurnManager.GetOrCreate();
+
+        if (turnManager != null && movingPiece.Team != turnManager.GetCurrentTurn())
+        {
+            return false;
+        }
+
+        if (moveValidator != null && !moveValidator.IsMoveLegalDestination(movingPiece, to))
+        {
+            return false;
+        }
+
         if (to.CurrentPiece != null && to.CurrentPiece != movingPiece)
         {
             ChessPiece capturedPiece = to.CurrentPiece;
@@ -624,6 +645,7 @@ public class ChessBoard : MonoBehaviour
         }
 
         movingPiece.SetTile(to);
+        turnManager?.SwitchTurn();
         return true;
     }
 

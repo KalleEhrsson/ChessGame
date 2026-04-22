@@ -13,13 +13,18 @@ public class InteractableChessPiece : MonoBehaviour
 
         ChessSelectionController selectionController = ChessSelectionController.GetOrCreate();
         ChessCameraController cameraController = ChessCameraController.GetOrCreate();
-        ChessMoveGenerator moveGenerator = ChessMoveGenerator.GetOrCreate();
+        ChessMoveValidator moveValidator = ChessMoveValidator.GetOrCreate();
         ChessTileHighlighter tileHighlighter = ChessTileHighlighter.GetOrCreate();
+
+        if (!selectionController.CanSelectPiece(piece))
+        {
+            return;
+        }
 
         selectionController.SelectPiece(piece);
         cameraController.EnterTacticalView(piece);
 
-        moveGenerator.GenerateMoves(piece, out var moveTiles, out var captureTiles);
+        moveValidator.GenerateLegalMoves(piece, out var moveTiles, out var captureTiles);
         selectionController.SetMoveOptions(moveTiles, captureTiles);
         tileHighlighter.Highlight(selectionController.MoveTiles, selectionController.CaptureTiles);
     }

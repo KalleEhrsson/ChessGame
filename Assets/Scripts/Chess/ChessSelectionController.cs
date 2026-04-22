@@ -34,6 +34,7 @@ public class ChessSelectionController : MonoBehaviour
     ChessPiece selectedPiece;
     readonly List<ChessTile> moveTiles = new(32);
     readonly List<ChessTile> captureTiles = new(32);
+    ChessTurnManager turnManager;
 
     #endregion
 
@@ -63,7 +64,7 @@ public class ChessSelectionController : MonoBehaviour
 
     public void SelectPiece(ChessPiece piece)
     {
-        if (piece == null)
+        if (!CanSelectPiece(piece))
         {
             return;
         }
@@ -80,6 +81,22 @@ public class ChessSelectionController : MonoBehaviour
 
         selectedPiece = piece;
         selectedPiece.SetSelected(true);
+    }
+
+    public bool CanSelectPiece(ChessPiece piece)
+    {
+        if (piece == null)
+        {
+            return false;
+        }
+
+        turnManager ??= ChessTurnManager.GetOrCreate();
+        if (turnManager == null)
+        {
+            return true;
+        }
+
+        return piece.Team == turnManager.GetCurrentTurn();
     }
 
     public void SetMoveOptions(List<ChessTile> moves, List<ChessTile> captures)
