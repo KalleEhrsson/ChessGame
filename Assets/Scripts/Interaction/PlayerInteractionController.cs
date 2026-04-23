@@ -24,6 +24,7 @@ public class PlayerInteractionController : MonoBehaviour
     ChessTileHoverController tileHoverController;
     ChessGameStateController gameStateController;
     ChessUIAudio uiAudio;
+    PawnPromotionController promotionController;
 
     #endregion
 
@@ -99,6 +100,7 @@ public class PlayerInteractionController : MonoBehaviour
         ChessTurnManager.GetOrCreate();
         gameStateController = ChessGameStateController.GetOrCreate();
         uiAudio = ChessUIAudio.GetOrCreate();
+        promotionController = PawnPromotionController.GetOrCreate();
     }
 
     void EnsureInput()
@@ -138,6 +140,11 @@ public class PlayerInteractionController : MonoBehaviour
     void OnInteractPerformed(InputAction.CallbackContext _)
     {
         EnsureSystems();
+        if (IsInteractionLockedForPromotion())
+        {
+            return;
+        }
+
         if (ChessPieceMotion.IsAnyAnimating)
         {
             return;
@@ -164,6 +171,12 @@ public class PlayerInteractionController : MonoBehaviour
 
     void OnCancelPerformed(InputAction.CallbackContext _)
     {
+        EnsureSystems();
+        if (IsInteractionLockedForPromotion())
+        {
+            return;
+        }
+
         if (ChessPieceMotion.IsAnyAnimating)
         {
             return;
@@ -179,6 +192,12 @@ public class PlayerInteractionController : MonoBehaviour
 
     void OnRightClickPerformed(InputAction.CallbackContext _)
     {
+        EnsureSystems();
+        if (IsInteractionLockedForPromotion())
+        {
+            return;
+        }
+
         if (ChessPieceMotion.IsAnyAnimating)
         {
             return;
@@ -194,6 +213,12 @@ public class PlayerInteractionController : MonoBehaviour
 
     void OnLeftClickPerformed(InputAction.CallbackContext _)
     {
+        EnsureSystems();
+        if (IsInteractionLockedForPromotion())
+        {
+            return;
+        }
+
         if (ChessPieceMotion.IsAnyAnimating)
         {
             return;
@@ -291,9 +316,23 @@ public class PlayerInteractionController : MonoBehaviour
             return;
         }
 
+        ChessTile fromTile = selectedPiece.CurrentTile;
+        if (fromTile == null)
+        {
+            ResetSelectionFlow();
+            return;
+        }
+
+        if (promotionController != null && promotionController.TryBeginPlayerPromotion(selectedPiece, targetTile))
+        {
+            uiAudio?.PlaySelectionClick();
+            ResetSelectionFlow();
+            return;
+        }
+
         if (board != null)
         {
-            bool moved = board.MovePiece(selectedPiece.CurrentTile, targetTile);
+            bool moved = board.MovePiece(fromTile, targetTile);
             if (!moved)
             {
                 uiAudio?.PlayInvalid();
@@ -304,6 +343,11 @@ public class PlayerInteractionController : MonoBehaviour
         }
 
         ResetSelectionFlow();
+    }
+
+    bool IsInteractionLockedForPromotion()
+    {
+        return promotionController != null && promotionController.IsPromotionPending;
     }
 
     void DebugTacticalClick(string message)

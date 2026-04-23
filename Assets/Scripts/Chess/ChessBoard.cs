@@ -745,6 +745,11 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
+        if (moveData.IsPromotion && !promotionPiece.HasValue && turnManager != null && turnManager.IsHumanTurn(movingPiece.Team))
+        {
+            return false;
+        }
+
         bool isCapture = moveData.IsCapture;
         ChessPiece capturedPiece = moveData.IsCapture && moveData.CaptureTile != null ? moveData.CaptureTile.CurrentPiece : null;
         if (capturedPiece != null)
