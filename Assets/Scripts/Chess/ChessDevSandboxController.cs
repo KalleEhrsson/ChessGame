@@ -85,8 +85,9 @@ public class ChessDevSandboxController : MonoBehaviour
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
         return;
 #endif
-        if (Input.GetKeyDown(toggleKey)
+        if (Input.GetKeyDown(toggleKey))
         {
+        
             ToggleOpen();
         }
 
