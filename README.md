@@ -52,7 +52,7 @@ This is not trying to reteach chess rules. The focus is on **how chess feels** w
 
 ### Next Milestones
 
-- [ ] Checkmate / stalemate detection.
+- [x] Checkmate / stalemate detection.
 - [ ] Advanced rules: castling, en passant, promotion.
 - [ ] Complete Stockfish turn integration.
 - [ ] Stronger UI feedback (turn state, legality reasons, game state).
