@@ -261,12 +261,21 @@ public class ChessTileHoverController : MonoBehaviour
                 continue;
             }
 
-            ChessTile tile = TryMapHitToTile(hit, out bool mappedFromPiece);
+            if (hit.collider.GetComponentInParent<ChessPiece>() != null)
+            {
+                if (logResult)
+                {
+                    DebugLog($"Raycast hit piece collider={hit.collider.name}. Ignoring piece hit in tactical mode.");
+                }
+
+                continue;
+            }
+
+            ChessTile tile = TryMapHitToTile(hit);
             if (logResult)
             {
-                string mappedFrom = mappedFromPiece ? "piece" : "tile";
                 DebugLog(tile != null
-                    ? $"Raycast hit collider={hit.collider.name}, mapped via {mappedFrom} to tile={tile.TileName}."
+                    ? $"Raycast hit collider={hit.collider.name}, mapped to tile={tile.TileName}."
                     : $"Raycast hit collider={hit.collider.name} but it did not map to a ChessTile.");
             }
 
@@ -284,28 +293,17 @@ public class ChessTileHoverController : MonoBehaviour
         return null;
     }
 
-    ChessTile TryMapHitToTile(RaycastHit hit, out bool mappedFromPiece)
-    {
-        mappedFromPiece = false;
+    #region Raycast Mapping
 
+    ChessTile TryMapHitToTile(RaycastHit hit)
+    {
         ChessTile tile = board != null
             ? board.GetTileFromRaycast(hit)
             : hit.collider != null ? hit.collider.GetComponentInParent<ChessTile>() : null;
-
-        if (tile != null)
-        {
-            return tile;
-        }
-
-        ChessPiece piece = hit.collider != null ? hit.collider.GetComponentInParent<ChessPiece>() : null;
-        if (piece == null || piece.CurrentTile == null)
-        {
-            return null;
-        }
-
-        mappedFromPiece = true;
-        return piece.CurrentTile;
+        return tile;
     }
+
+    #endregion
 
     void SetHoveredTile(ChessTile tile)
     {
