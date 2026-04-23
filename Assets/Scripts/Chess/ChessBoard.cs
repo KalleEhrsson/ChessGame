@@ -23,6 +23,7 @@ public class ChessBoard : MonoBehaviour
     ChessMoveValidator moveValidator;
     ChessTurnManager turnManager;
     ChessGameStateController gameStateController;
+    ChessCapturedPieceTray capturedPieceTray;
     ChessTile enPassantTargetTile;
     ChessPiece enPassantVulnerablePawn;
     int halfMoveClock;
@@ -196,6 +197,8 @@ public class ChessBoard : MonoBehaviour
     void SpawnStartingPosition()
     {
         AutoSetupBoard();
+        capturedPieceTray ??= ChessCapturedPieceTray.GetOrCreate(this);
+        capturedPieceTray?.ResetTrayState();
         ClearAllPieces();
         ResetSpecialState();
         ChessTurnManager.GetOrCreate().SetTurn(PieceTeam.White);
@@ -750,18 +753,15 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
+        capturedPieceTray ??= ChessCapturedPieceTray.GetOrCreate(this);
         bool isCapture = moveData.IsCapture;
         ChessPiece capturedPiece = moveData.IsCapture && moveData.CaptureTile != null ? moveData.CaptureTile.CurrentPiece : null;
         if (capturedPiece != null)
         {
-            capturedPiece.SetTile(null);
-            if (Application.isPlaying)
+            bool placedInTray = capturedPieceTray != null && capturedPieceTray.PlaceCapturedPiece(capturedPiece);
+            if (!placedInTray)
             {
-                _ = DestroyCapturedPieceDelayedAsync(capturedPiece.gameObject, 0.08f);
-            }
-            else
-            {
-                DestroyImmediate(capturedPiece.gameObject);
+                capturedPiece.SetTile(null);
             }
         }
 
@@ -899,24 +899,6 @@ public class ChessBoard : MonoBehaviour
         }
 
         return promotedPiece;
-    }
-
-    async Task DestroyCapturedPieceDelayedAsync(GameObject pieceObject, float delaySeconds)
-    {
-        if (pieceObject == null)
-        {
-            return;
-        }
-
-        if (delaySeconds > 0f)
-        {
-            await Task.Delay(Mathf.Max(1, Mathf.RoundToInt(delaySeconds * 1000f)));
-        }
-
-        if (pieceObject != null)
-        {
-            Destroy(pieceObject);
-        }
     }
 
     #endregion
