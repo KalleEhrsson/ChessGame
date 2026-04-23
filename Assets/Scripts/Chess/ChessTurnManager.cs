@@ -183,7 +183,7 @@ public class ChessTurnManager : MonoBehaviour
                 return;
             }
 
-            if (!stockfishService.TryParseBestMove(bestMoveRaw, out string fromName, out string toName))
+            if (!stockfishService.TryParseBestMove(bestMoveRaw, out string fromName, out string toName, out PieceType? promotionPiece))
             {
                 UnityEngine.Debug.LogError($"[ChessTurnManager] Invalid bestmove format: {bestMoveRaw}");
                 return;
@@ -202,7 +202,7 @@ public class ChessTurnManager : MonoBehaviour
             await Task.Delay(delayMs);
             await WaitForPieceMotionAsync();
 
-            bool moved = board.MovePiece(fromTile, toTile);
+            bool moved = board.MovePiece(fromTile, toTile, promotionPiece);
             if (!moved)
             {
                 UnityEngine.Debug.LogError($"[ChessTurnManager] AI move rejected by move system: {fromName}->{toName}.");
