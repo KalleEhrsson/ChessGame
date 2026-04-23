@@ -848,7 +848,7 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
-        ChessMoveData moveData;
+        ChessMoveData moveData = default;
         if (moveValidator != null && !moveValidator.TryGetLegalMove(movingPiece, to, out moveData, promotionPiece))
         {
             return false;
