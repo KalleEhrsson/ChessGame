@@ -15,7 +15,6 @@ public class ChessDevSandboxController : MonoBehaviour
     public static ChessDevSandboxController Instance { get; private set; }
 
     [SerializeField] KeyCode toggleKey = KeyCode.F1;
-    [SerializeField] KeyCode alternateToggleKey = KeyCode.BackQuote;
 
     ChessBoard board;
     ChessTurnManager turnManager;
@@ -86,7 +85,7 @@ public class ChessDevSandboxController : MonoBehaviour
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
         return;
 #endif
-        if (Input.GetKeyDown(toggleKey) || Input.GetKeyDown(alternateToggleKey))
+        if (Input.GetKeyDown(toggleKey)
         {
             ToggleOpen();
         }
