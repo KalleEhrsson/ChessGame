@@ -42,6 +42,8 @@ This is not trying to reteach chess rules. The focus is on **how chess feels** w
 - [x] Tactical camera + selection flow.
 - [x] Move generation with hover/highlight feedback.
 - [x] Turn system + king-safety legality validation.
+- [x] Checkmate / stalemate detection.
+- [x] Stockfish AI turn integration (local UCI engine).
 
 ### In Progress
 
@@ -52,9 +54,7 @@ This is not trying to reteach chess rules. The focus is on **how chess feels** w
 
 ### Next Milestones
 
-- [x] Checkmate / stalemate detection.
 - [ ] Advanced rules: castling, en passant, promotion.
-- [ ] Complete Stockfish turn integration.
 - [ ] Stronger UI feedback (turn state, legality reasons, game state).
 - [ ] Piece crushing/capture presentation mechanic.
 - [ ] Timer modes (blitz / rapid / classical).
