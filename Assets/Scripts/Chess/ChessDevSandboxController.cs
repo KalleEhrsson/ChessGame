@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
 public class ChessDevSandboxController : MonoBehaviour
@@ -21,6 +22,8 @@ public class ChessDevSandboxController : MonoBehaviour
     ChessGameStateController gameStateController;
     ChessTileHoverController tileHoverController;
     ChessBoardStateTools boardTools;
+    InputAction toggleSandboxAction;
+    KeyCode actionBoundToggleKey = KeyCode.None;
 
     readonly IReadOnlyList<ChessBoardPreset> presets = ChessBoardPresetLibrary.GetPresets();
 
@@ -77,7 +80,34 @@ public class ChessDevSandboxController : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        EnsureToggleInputAction();
         RefreshDependencies();
+    }
+
+    void OnEnable()
+    {
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
+        return;
+#endif
+        EnsureToggleInputAction();
+        toggleSandboxAction?.Enable();
+    }
+
+    void OnDisable()
+    {
+        toggleSandboxAction?.Disable();
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+
+        toggleSandboxAction?.Dispose();
+        toggleSandboxAction = null;
+        actionBoundToggleKey = KeyCode.None;
     }
 
     void Update()
@@ -85,7 +115,9 @@ public class ChessDevSandboxController : MonoBehaviour
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
         return;
 #endif
-        if (Input.GetKeyDown(toggleKey)
+        EnsureToggleInputAction();
+
+        if (toggleSandboxAction != null && toggleSandboxAction.WasPressedThisFrame())
         {
             ToggleOpen();
         }
@@ -93,6 +125,26 @@ public class ChessDevSandboxController : MonoBehaviour
         if (board == null || turnManager == null)
         {
             RefreshDependencies();
+        }
+    }
+
+    void EnsureToggleInputAction()
+    {
+        if (toggleSandboxAction != null && actionBoundToggleKey == toggleKey)
+        {
+            return;
+        }
+
+        toggleSandboxAction?.Disable();
+        toggleSandboxAction?.Dispose();
+
+        string keyPath = $"<Keyboard>/{toggleKey.ToString().ToLowerInvariant()}";
+        toggleSandboxAction = new InputAction("ToggleSandbox", InputActionType.Button, keyPath);
+        actionBoundToggleKey = toggleKey;
+
+        if (isActiveAndEnabled)
+        {
+            toggleSandboxAction.Enable();
         }
     }
 
