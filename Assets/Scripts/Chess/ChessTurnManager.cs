@@ -122,6 +122,34 @@ public class ChessTurnManager : MonoBehaviour
         HandleTurnStarted();
     }
 
+    public void SetAiControl(PieceTeam team, bool enabled)
+    {
+        if (team == PieceTeam.White)
+        {
+            whiteControlledByAi = enabled;
+        }
+        else
+        {
+            blackControlledByAi = enabled;
+        }
+
+        if (IsAiTurn())
+        {
+            HandleTurnStarted();
+        }
+    }
+
+    public void SetAiEnabledForBothTeams(bool enabled)
+    {
+        whiteControlledByAi = enabled;
+        blackControlledByAi = enabled;
+
+        if (IsAiTurn())
+        {
+            HandleTurnStarted();
+        }
+    }
+
     #endregion
 
     #region AI Turn
