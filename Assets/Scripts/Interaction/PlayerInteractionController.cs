@@ -25,6 +25,7 @@ public class PlayerInteractionController : MonoBehaviour
     ChessGameStateController gameStateController;
     ChessUIAudio uiAudio;
     PawnPromotionController promotionController;
+    ChessDevSandboxController devSandboxController;
 
     #endregion
 
@@ -101,6 +102,7 @@ public class PlayerInteractionController : MonoBehaviour
         gameStateController = ChessGameStateController.GetOrCreate();
         uiAudio = ChessUIAudio.GetOrCreate();
         promotionController = PawnPromotionController.GetOrCreate();
+        devSandboxController = ChessDevSandboxController.Instance;
     }
 
     void EnsureInput()
@@ -144,7 +146,6 @@ public class PlayerInteractionController : MonoBehaviour
         {
             return;
         }
-
         if (ChessPieceMotion.IsAnyAnimating)
         {
             return;
@@ -215,6 +216,11 @@ public class PlayerInteractionController : MonoBehaviour
     {
         EnsureSystems();
         if (IsInteractionLockedForPromotion())
+        {
+            return;
+        }
+
+        if (devSandboxController != null && devSandboxController.TryHandleSandboxTileClick())
         {
             return;
         }

@@ -622,6 +622,116 @@ public class ChessBoard : MonoBehaviour
     {
         return GetComponentsInChildren<ChessPiece>(true);
     }
+
+    public void ResetBoardToStartingPosition()
+    {
+        SpawnStartingPosition();
+    }
+
+    public void ClearBoardState(bool resetMetaState = true)
+    {
+        AutoSetupBoard();
+        capturedPieceTray ??= ChessCapturedPieceTray.GetOrCreate(this);
+        capturedPieceTray?.ResetTrayState();
+        ClearAllPieces();
+        if (resetMetaState)
+        {
+            ResetSpecialState();
+        }
+    }
+
+    public bool TrySpawnPiece(PieceTeam team, PieceType type, ChessTile tile)
+    {
+        if (tile == null)
+        {
+            Debug.LogWarning("[ChessBoard] Cannot spawn piece on a null tile.");
+            return false;
+        }
+
+        if (tile.CurrentPiece != null)
+        {
+            if (!TryRemovePiece(tile))
+            {
+                return false;
+            }
+        }
+
+        ChessPiece piece = SpawnPiece(team, type, tile.TileName);
+        if (piece == null)
+        {
+            Debug.LogWarning($"[ChessBoard] Failed to spawn {team} {type} on {tile.TileName}.");
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool TryRemovePiece(ChessTile tile)
+    {
+        if (tile == null)
+        {
+            Debug.LogWarning("[ChessBoard] Cannot remove from a null tile.");
+            return false;
+        }
+
+        ChessPiece piece = tile.CurrentPiece;
+        if (piece == null)
+        {
+            Debug.LogWarning($"[ChessBoard] Tile {tile.TileName} has no piece to remove.");
+            return false;
+        }
+
+        piece.SetTile(null);
+        if (Application.isPlaying)
+        {
+            Destroy(piece.gameObject);
+        }
+        else
+        {
+            DestroyImmediate(piece.gameObject);
+        }
+
+        return true;
+    }
+
+    public bool TryRelocatePiece(ChessTile from, ChessTile to, bool overwriteDestination)
+    {
+        if (from == null || to == null)
+        {
+            Debug.LogWarning("[ChessBoard] Cannot relocate piece with null source or destination.");
+            return false;
+        }
+
+        ChessPiece piece = from.CurrentPiece;
+        if (piece == null)
+        {
+            Debug.LogWarning($"[ChessBoard] Source tile {from.TileName} has no piece to relocate.");
+            return false;
+        }
+
+        if (to.CurrentPiece != null && to.CurrentPiece != piece)
+        {
+            if (!overwriteDestination)
+            {
+                Debug.LogWarning($"[ChessBoard] Destination tile {to.TileName} is occupied.");
+                return false;
+            }
+
+            TryRemovePiece(to);
+        }
+
+        piece.SetTile(to);
+        piece.MarkMoved();
+        return true;
+    }
+
+    public void SetRuntimeState(ChessTile enPassantTile, ChessPiece enPassantPawn, int halfMove, int fullMove)
+    {
+        enPassantTargetTile = enPassantTile;
+        enPassantVulnerablePawn = enPassantPawn;
+        halfMoveClock = Mathf.Max(0, halfMove);
+        fullMoveNumber = Mathf.Max(1, fullMove);
+    }
     
     public bool TryGetTeamFacingDirection(PieceTeam team, out Vector3 direction)
     {
