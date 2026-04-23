@@ -144,7 +144,12 @@ public class ChessMoveValidator : MonoBehaviour
             }
 
             moveGenerator.GenerateMoves(piece, out List<ChessTile> rawMoveTiles, out List<ChessTile> rawCaptureTiles);
-            if (rawMoveTiles.Contains(tile) || rawCaptureTiles.Contains(tile))
+
+            bool attacksTile = piece.Type == PieceType.Pawn
+                ? rawCaptureTiles.Contains(tile)
+                : rawMoveTiles.Contains(tile) || rawCaptureTiles.Contains(tile);
+
+            if (attacksTile)
             {
                 return true;
             }
