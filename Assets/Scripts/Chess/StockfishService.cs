@@ -167,10 +167,11 @@ public class StockfishService : MonoBehaviour
         return bestMove;
     }
 
-    public bool TryParseBestMove(string bestMoveRaw, out string from, out string to)
+    public bool TryParseBestMove(string bestMoveRaw, out string from, out string to, out PieceType? promotionPiece)
     {
         from = null;
         to = null;
+        promotionPiece = null;
 
         if (string.IsNullOrWhiteSpace(bestMoveRaw))
         {
@@ -191,6 +192,18 @@ public class StockfishService : MonoBehaviour
 
         from = move.Substring(0, 2).ToUpperInvariant();
         to = move.Substring(2, 2).ToUpperInvariant();
+        if (move.Length >= 5)
+        {
+            promotionPiece = move[4] switch
+            {
+                'q' or 'Q' => PieceType.Queen,
+                'r' or 'R' => PieceType.Rook,
+                'b' or 'B' => PieceType.Bishop,
+                'n' or 'N' => PieceType.Knight,
+                _ => null
+            };
+        }
+
         return true;
     }
 

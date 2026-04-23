@@ -23,12 +23,40 @@ public class ChessBoard : MonoBehaviour
     ChessMoveValidator moveValidator;
     ChessTurnManager turnManager;
     ChessGameStateController gameStateController;
+    ChessTile enPassantTargetTile;
+    ChessPiece enPassantVulnerablePawn;
+    int halfMoveClock;
+    int fullMoveNumber = 1;
 
 #if UNITY_EDITOR
     bool delayedHierarchyOrganizeQueued;
     bool delayedHierarchyOrganizeWaitingForUpdate;
 #endif
     
+    #endregion
+
+    #region State
+
+    public ChessTile GetEnPassantTargetTile() => enPassantTargetTile;
+    public ChessPiece GetEnPassantVulnerablePawn() => enPassantVulnerablePawn;
+    public int GetHalfMoveClock() => halfMoveClock;
+    public int GetFullMoveNumber() => Mathf.Max(1, fullMoveNumber);
+
+    public string GetCastlingRightsFen()
+    {
+        string rights = string.Empty;
+        AppendCastlingRight(PieceTeam.White, true, ref rights);
+        AppendCastlingRight(PieceTeam.White, false, ref rights);
+        AppendCastlingRight(PieceTeam.Black, true, ref rights);
+        AppendCastlingRight(PieceTeam.Black, false, ref rights);
+        return string.IsNullOrEmpty(rights) ? "-" : rights;
+    }
+
+    public string GetEnPassantTargetFen()
+    {
+        return enPassantTargetTile != null ? enPassantTargetTile.TileName.ToLowerInvariant() : "-";
+    }
+
     #endregion
 
     #region Unity
@@ -169,6 +197,7 @@ public class ChessBoard : MonoBehaviour
     {
         AutoSetupBoard();
         ClearAllPieces();
+        ResetSpecialState();
         ChessTurnManager.GetOrCreate().SetTurn(PieceTeam.White);
         ChessGameStateController.GetOrCreate().ResetToPlaying();
 
@@ -299,6 +328,14 @@ public class ChessBoard : MonoBehaviour
                 DestroyImmediate(piece.gameObject);
             }
         }
+    }
+
+    void ResetSpecialState()
+    {
+        enPassantTargetTile = null;
+        enPassantVulnerablePawn = null;
+        halfMoveClock = 0;
+        fullMoveNumber = 1;
     }
 
     ChessTile[] DiscoverTiles()
@@ -628,7 +665,45 @@ public class ChessBoard : MonoBehaviour
         return true;
     }
 
-    public bool MovePiece(ChessTile from, ChessTile to)
+    void AppendCastlingRight(PieceTeam team, bool kingSide, ref string rights)
+    {
+        ChessPiece king = GetCastleKing(team);
+        ChessPiece rook = GetCastleRook(team, kingSide);
+        if (king == null || rook == null || king.HasMoved || rook.HasMoved)
+        {
+            return;
+        }
+
+        rights += team == PieceTeam.White
+            ? (kingSide ? "K" : "Q")
+            : (kingSide ? "k" : "q");
+    }
+
+    ChessPiece GetCastleKing(PieceTeam team)
+    {
+        ChessTile kingStart = GetTile(4, team == PieceTeam.White ? 0 : 7);
+        ChessPiece king = kingStart != null ? kingStart.CurrentPiece : null;
+        if (king == null || king.Team != team || king.Type != PieceType.King)
+        {
+            return null;
+        }
+
+        return king;
+    }
+
+    ChessPiece GetCastleRook(PieceTeam team, bool kingSide)
+    {
+        ChessTile rookStart = GetTile(kingSide ? 7 : 0, team == PieceTeam.White ? 0 : 7);
+        ChessPiece rook = rookStart != null ? rookStart.CurrentPiece : null;
+        if (rook == null || rook.Team != team || rook.Type != PieceType.Rook)
+        {
+            return null;
+        }
+
+        return rook;
+    }
+
+    public bool MovePiece(ChessTile from, ChessTile to, PieceType? promotionPiece = null)
     {
         if (from == null || to == null)
         {
@@ -660,15 +735,20 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
-        if (moveValidator != null && !moveValidator.IsMoveLegalDestination(movingPiece, to))
+        ChessMoveData moveData;
+        if (moveValidator != null && !moveValidator.TryGetLegalMove(movingPiece, to, out moveData, promotionPiece))
+        {
+            return false;
+        }
+        else if (moveValidator == null)
         {
             return false;
         }
 
-        bool isCapture = to.CurrentPiece != null && to.CurrentPiece != movingPiece;
-        if (isCapture)
+        bool isCapture = moveData.IsCapture;
+        ChessPiece capturedPiece = moveData.IsCapture && moveData.CaptureTile != null ? moveData.CaptureTile.CurrentPiece : null;
+        if (capturedPiece != null)
         {
-            ChessPiece capturedPiece = to.CurrentPiece;
             capturedPiece.SetTile(null);
             if (Application.isPlaying)
             {
@@ -681,12 +761,38 @@ public class ChessBoard : MonoBehaviour
         }
 
         Vector3 startWorldPosition = movingPiece.transform.position;
+        if (moveData.IsCastle && moveData.CastleRookFrom != null && moveData.CastleRookTo != null)
+        {
+            ChessPiece rook = moveData.CastleRookFrom.CurrentPiece;
+            if (rook == null)
+            {
+                return false;
+            }
+
+            rook.SetTile(moveData.CastleRookTo);
+            rook.MarkMoved();
+        }
+
         movingPiece.SetTile(to);
-        Vector3 endWorldPosition = movingPiece.transform.position;
+        movingPiece.MarkMoved();
+        UpdateSpecialStateAfterMove(movingPiece, moveData, capturedPiece != null);
+
+        ChessPiece animatedPiece = movingPiece;
+        if (moveData.IsPromotion)
+        {
+            PieceType targetPromotion = promotionPiece ?? moveData.PromotionPieceType;
+            animatedPiece = PromotePawn(movingPiece, targetPromotion);
+            if (animatedPiece == null)
+            {
+                return false;
+            }
+        }
+
+        Vector3 endWorldPosition = animatedPiece.transform.position;
 
         if (Application.isPlaying)
         {
-            _ = PlayMoveMotionAsync(movingPiece, startWorldPosition, endWorldPosition, isCapture);
+            _ = PlayMoveMotionAsync(animatedPiece, startWorldPosition, endWorldPosition, isCapture);
         }
 
         turnManager?.SwitchTurn();
@@ -713,6 +819,81 @@ public class ChessBoard : MonoBehaviour
         }
 
         await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture);
+    }
+
+    void UpdateSpecialStateAfterMove(ChessPiece movingPiece, ChessMoveData moveData, bool didCapture)
+    {
+        bool isPawnMove = movingPiece != null && movingPiece.Type == PieceType.Pawn;
+        if (isPawnMove || didCapture)
+        {
+            halfMoveClock = 0;
+        }
+        else
+        {
+            halfMoveClock++;
+        }
+
+        if (movingPiece != null && movingPiece.Team == PieceTeam.Black)
+        {
+            fullMoveNumber++;
+        }
+
+        enPassantTargetTile = null;
+        enPassantVulnerablePawn = null;
+        if (!isPawnMove || moveData.FromTile == null || moveData.ToTile == null)
+        {
+            return;
+        }
+
+        int moveDistance = Mathf.Abs(moveData.ToTile.Y - moveData.FromTile.Y);
+        if (moveDistance != 2)
+        {
+            return;
+        }
+
+        int intermediateY = (moveData.FromTile.Y + moveData.ToTile.Y) / 2;
+        enPassantTargetTile = GetTile(moveData.FromTile.X, intermediateY);
+        enPassantVulnerablePawn = movingPiece;
+    }
+
+    ChessPiece PromotePawn(ChessPiece pawn, PieceType promotionType)
+    {
+        if (pawn == null || pawn.CurrentTile == null || pawn.Type != PieceType.Pawn)
+        {
+            return pawn;
+        }
+
+        ChessTile promotionTile = pawn.CurrentTile;
+        GameObject prefab = LoadPiecePrefab(pawn.Team, promotionType);
+        if (prefab == null)
+        {
+            pawn.SetType(promotionType);
+            return pawn;
+        }
+
+        GameObject promotedObject = Instantiate(prefab, transform);
+        promotedObject.name = $"{pawn.Team}_{promotionType}_{promotionTile.TileName}";
+        ChessPiece promotedPiece = promotedObject.GetComponent<ChessPiece>();
+        if (promotedPiece == null)
+        {
+            promotedPiece = promotedObject.AddComponent<ChessPiece>();
+        }
+
+        promotedPiece.SetIdentity(pawn.Team, promotionType);
+        promotedPiece.SetTile(promotionTile);
+        promotedPiece.MarkMoved();
+
+        pawn.SetTile(null);
+        if (Application.isPlaying)
+        {
+            Destroy(pawn.gameObject);
+        }
+        else
+        {
+            DestroyImmediate(pawn.gameObject);
+        }
+
+        return promotedPiece;
     }
 
     async Task DestroyCapturedPieceDelayedAsync(GameObject pieceObject, float delaySeconds)

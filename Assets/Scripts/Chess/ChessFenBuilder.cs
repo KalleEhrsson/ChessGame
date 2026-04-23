@@ -17,13 +17,13 @@ public static class ChessFenBuilder
         fenBuilder.Append(' ');
         fenBuilder.Append(activeColor == PieceTeam.White ? 'w' : 'b');
         fenBuilder.Append(' ');
-        fenBuilder.Append(ResolveCastlingRights());
+        fenBuilder.Append(ResolveCastlingRights(board));
         fenBuilder.Append(' ');
-        fenBuilder.Append(ResolveEnPassantTarget());
+        fenBuilder.Append(ResolveEnPassantTarget(board));
         fenBuilder.Append(' ');
-        fenBuilder.Append(ResolveHalfMoveClock());
+        fenBuilder.Append(ResolveHalfMoveClock(board));
         fenBuilder.Append(' ');
-        fenBuilder.Append(ResolveFullMoveNumber());
+        fenBuilder.Append(ResolveFullMoveNumber(board));
 
         return fenBuilder.ToString();
     }
@@ -84,24 +84,24 @@ public static class ChessFenBuilder
         return piece.Team == PieceTeam.White ? char.ToUpperInvariant(pieceChar) : pieceChar;
     }
 
-    static string ResolveCastlingRights()
+    static string ResolveCastlingRights(ChessBoard board)
     {
-        return "-";
+        return board != null ? board.GetCastlingRightsFen() : "-";
     }
 
-    static string ResolveEnPassantTarget()
+    static string ResolveEnPassantTarget(ChessBoard board)
     {
-        return "-";
+        return board != null ? board.GetEnPassantTargetFen() : "-";
     }
 
-    static int ResolveHalfMoveClock()
+    static int ResolveHalfMoveClock(ChessBoard board)
     {
-        return 0;
+        return board != null ? board.GetHalfMoveClock() : 0;
     }
 
-    static int ResolveFullMoveNumber()
+    static int ResolveFullMoveNumber(ChessBoard board)
     {
-        return 1;
+        return board != null ? board.GetFullMoveNumber() : 1;
     }
 
     #endregion

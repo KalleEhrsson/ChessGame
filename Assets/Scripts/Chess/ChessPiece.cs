@@ -24,6 +24,7 @@ public class ChessPiece : MonoBehaviour
     [field: SerializeField] public PieceType Type { get; private set; }
     [field: SerializeField] public PieceTeam Team { get; private set; }
     [field: SerializeField] public ChessTile CurrentTile { get; private set; }
+    [field: SerializeField] public bool HasMoved { get; private set; }
 
     #endregion
 
@@ -53,6 +54,22 @@ public class ChessPiece : MonoBehaviour
     {
         Team = team;
         Type = type;
+        HasMoved = false;
+    }
+
+    public void SetType(PieceType type)
+    {
+        Type = type;
+    }
+
+    public void MarkMoved()
+    {
+        HasMoved = true;
+    }
+
+    public void ResetMovedState()
+    {
+        HasMoved = false;
     }
 
     public void SetTile(ChessTile tile)

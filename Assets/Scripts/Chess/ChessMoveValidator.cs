@@ -70,9 +70,25 @@ public class ChessMoveValidator : MonoBehaviour
             return;
         }
 
-        moveGenerator.GenerateMoves(piece, out List<ChessTile> rawMoveTiles, out List<ChessTile> rawCaptureTiles);
-        FilterLegalTiles(piece, rawMoveTiles, legalMoveTiles);
-        FilterLegalTiles(piece, rawCaptureTiles, legalCaptureTiles);
+        List<ChessMoveData> legalMoves = GenerateLegalMovesData(piece);
+        for (int i = 0; i < legalMoves.Count; i++)
+        {
+            ChessMoveData move = legalMoves[i];
+            if (move.IsCapture)
+            {
+                if (!legalCaptureTiles.Contains(move.ToTile))
+                {
+                    legalCaptureTiles.Add(move.ToTile);
+                }
+
+                continue;
+            }
+
+            if (!legalMoveTiles.Contains(move.ToTile))
+            {
+                legalMoveTiles.Add(move.ToTile);
+            }
+        }
     }
 
     public bool IsMoveLegalDestination(ChessPiece piece, ChessTile destination)
@@ -84,6 +100,65 @@ public class ChessMoveValidator : MonoBehaviour
 
         GenerateLegalMoves(piece, out List<ChessTile> legalMoveTiles, out List<ChessTile> legalCaptureTiles);
         return legalMoveTiles.Contains(destination) || legalCaptureTiles.Contains(destination);
+    }
+
+    public bool TryGetLegalMove(ChessPiece piece, ChessTile destination, out ChessMoveData moveData, PieceType? requestedPromotionPiece = null)
+    {
+        moveData = default;
+        if (piece == null || destination == null)
+        {
+            return false;
+        }
+
+        ResolveSystems();
+        if (board == null || moveGenerator == null)
+        {
+            return false;
+        }
+
+        List<ChessMoveData> legalMoves = GenerateLegalMovesData(piece);
+        ChessMoveData? queenPromotionFallback = null;
+        ChessMoveData? firstDestinationMove = null;
+        for (int i = 0; i < legalMoves.Count; i++)
+        {
+            ChessMoveData candidate = legalMoves[i];
+            if (candidate.ToTile != destination)
+            {
+                continue;
+            }
+
+            firstDestinationMove ??= candidate;
+            if (!candidate.IsPromotion)
+            {
+                moveData = candidate;
+                return true;
+            }
+
+            if (requestedPromotionPiece.HasValue && candidate.PromotionPieceType == requestedPromotionPiece.Value)
+            {
+                moveData = candidate;
+                return true;
+            }
+
+            if (candidate.PromotionPieceType == PieceType.Queen)
+            {
+                queenPromotionFallback ??= candidate;
+            }
+        }
+
+        if (queenPromotionFallback.HasValue)
+        {
+            moveData = queenPromotionFallback.Value;
+            return true;
+        }
+
+        if (firstDestinationMove.HasValue)
+        {
+            moveData = firstDestinationMove.Value;
+            return true;
+        }
+
+        return false;
     }
 
     public ChessTile GetKingTile(PieceTeam team)
@@ -143,13 +218,8 @@ public class ChessMoveValidator : MonoBehaviour
                 continue;
             }
 
-            moveGenerator.GenerateMoves(piece, out List<ChessTile> rawMoveTiles, out List<ChessTile> rawCaptureTiles);
-
-            bool attacksTile = piece.Type == PieceType.Pawn
-                ? rawCaptureTiles.Contains(tile)
-                : rawMoveTiles.Contains(tile) || rawCaptureTiles.Contains(tile);
-
-            if (attacksTile)
+            moveGenerator.GenerateAttackTiles(piece, out List<ChessTile> attacks);
+            if (attacks.Contains(tile))
             {
                 return true;
             }
@@ -162,35 +232,83 @@ public class ChessMoveValidator : MonoBehaviour
 
     #region Validation
 
-    void FilterLegalTiles(ChessPiece piece, List<ChessTile> rawTiles, List<ChessTile> legalTiles)
+    List<ChessMoveData> GenerateLegalMovesData(ChessPiece piece)
     {
-        for (int i = 0; i < rawTiles.Count; i++)
+        List<ChessMoveData> legalMoves = new List<ChessMoveData>(24);
+        if (piece == null || piece.CurrentTile == null)
         {
-            ChessTile targetTile = rawTiles[i];
-            if (targetTile == null)
+            return legalMoves;
+        }
+
+        moveGenerator.GenerateMoves(piece, out List<ChessMoveData> rawMoves);
+        for (int i = 0; i < rawMoves.Count; i++)
+        {
+            ChessMoveData move = rawMoves[i];
+            if (!IsRawMoveLegal(piece, move))
             {
                 continue;
             }
 
-            MoveSimulationState simulationState = ApplySimulation(piece, targetTile);
-            bool leavesKingInCheck = IsKingInCheck(piece.Team);
-            RevertSimulation(simulationState);
-
-            if (!leavesKingInCheck)
-            {
-                legalTiles.Add(targetTile);
-            }
+            legalMoves.Add(move);
         }
+
+        return legalMoves;
     }
 
-    MoveSimulationState ApplySimulation(ChessPiece movingPiece, ChessTile targetTile)
+    bool IsRawMoveLegal(ChessPiece piece, ChessMoveData move)
     {
+        if (piece == null || move.ToTile == null)
+        {
+            return false;
+        }
+
+        if (move.IsCastle && !IsCastleSafe(piece, move))
+        {
+            return false;
+        }
+
+        MoveSimulationState simulationState = ApplySimulation(move);
+        bool leavesKingInCheck = IsKingInCheck(piece.Team);
+        RevertSimulation(simulationState);
+        return !leavesKingInCheck;
+    }
+
+    bool IsCastleSafe(ChessPiece king, ChessMoveData move)
+    {
+        if (king == null || king.CurrentTile == null)
+        {
+            return false;
+        }
+
+        PieceTeam opponentTeam = GetOpponentTeam(king.Team);
+        if (IsTileUnderAttack(king.CurrentTile, opponentTeam))
+        {
+            return false;
+        }
+
+        int direction = move.ToTile.X > king.CurrentTile.X ? 1 : -1;
+        ChessTile throughTile = board.GetTile(king.CurrentTile.X + direction, king.CurrentTile.Y);
+        if (throughTile == null || IsTileUnderAttack(throughTile, opponentTeam))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    MoveSimulationState ApplySimulation(ChessMoveData move)
+    {
+        ChessPiece movingPiece = move.Piece;
         MoveSimulationState state = new MoveSimulationState
         {
             MovingPiece = movingPiece,
             FromTile = movingPiece.CurrentTile,
-            ToTile = targetTile,
-            CapturedPiece = targetTile != null ? targetTile.CurrentPiece : null
+            ToTile = move.ToTile,
+            CapturedPiece = move.IsCapture && move.CaptureTile != null ? move.CaptureTile.CurrentPiece : null,
+            CaptureTile = move.CaptureTile,
+            RookPiece = move.IsCastle && move.CastleRookFrom != null ? move.CastleRookFrom.CurrentPiece : null,
+            RookFromTile = move.CastleRookFrom,
+            RookToTile = move.CastleRookTo
         };
 
         if (state.CapturedPiece != null)
@@ -198,7 +316,12 @@ public class ChessMoveValidator : MonoBehaviour
             state.CapturedPiece.SetTile(null);
         }
 
-        movingPiece.SetTile(targetTile);
+        if (state.RookPiece != null)
+        {
+            state.RookPiece.SetTile(state.RookToTile);
+        }
+
+        movingPiece.SetTile(move.ToTile);
         return state;
     }
 
@@ -211,7 +334,12 @@ public class ChessMoveValidator : MonoBehaviour
 
         if (state.CapturedPiece != null)
         {
-            state.CapturedPiece.SetTile(state.ToTile);
+            state.CapturedPiece.SetTile(state.CaptureTile);
+        }
+
+        if (state.RookPiece != null)
+        {
+            state.RookPiece.SetTile(state.RookFromTile);
         }
     }
 
@@ -242,8 +370,12 @@ public class ChessMoveValidator : MonoBehaviour
     {
         public ChessPiece MovingPiece;
         public ChessPiece CapturedPiece;
+        public ChessPiece RookPiece;
         public ChessTile FromTile;
         public ChessTile ToTile;
+        public ChessTile CaptureTile;
+        public ChessTile RookFromTile;
+        public ChessTile RookToTile;
     }
 
     #endregion
