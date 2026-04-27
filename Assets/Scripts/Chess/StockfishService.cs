@@ -53,6 +53,12 @@ public class StockfishService : MonoBehaviour
 
     #endregion
 
+    #region Events
+
+    public event Action<string> EngineLineReceived;
+
+    #endregion
+
     #region Properties
 
     public bool IsReady => engineReady && stockfishProcess is { HasExited: false };
@@ -336,6 +342,8 @@ public class StockfishService : MonoBehaviour
 
     void HandleEngineLine(string line)
     {
+        EngineLineReceived?.Invoke(line);
+
         if (line == "__PROCESS_EXITED__")
         {
             engineReady = false;

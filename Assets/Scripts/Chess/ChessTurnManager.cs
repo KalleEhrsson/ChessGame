@@ -42,7 +42,10 @@ public class ChessTurnManager : MonoBehaviour
     ChessBoard board;
     ChessGameStateController gameStateController;
     StockfishService stockfishService;
+    ChessAiRoundConsole aiRoundConsole;
     bool aiTurnInProgress;
+    bool boardEventsBound;
+    bool stockfishEventsBound;
 
     #endregion
 
@@ -76,6 +79,21 @@ public class ChessTurnManager : MonoBehaviour
         if (aiMoveDelayMax < aiMoveDelayMin)
         {
             aiMoveDelayMax = aiMoveDelayMin;
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (boardEventsBound && board != null)
+        {
+            board.PieceMoved -= OnBoardPieceMoved;
+            boardEventsBound = false;
+        }
+
+        if (stockfishEventsBound && stockfishService != null)
+        {
+            stockfishService.EngineLineReceived -= OnStockfishEngineLine;
+            stockfishEventsBound = false;
         }
     }
 
@@ -159,6 +177,19 @@ public class ChessTurnManager : MonoBehaviour
         board ??= ChessBoard.Instance != null ? ChessBoard.Instance : FindFirstObjectByType<ChessBoard>();
         gameStateController ??= ChessGameStateController.GetOrCreate();
         stockfishService ??= StockfishService.GetOrCreate();
+        aiRoundConsole ??= ChessAiRoundConsole.GetOrCreate();
+
+        if (!boardEventsBound && board != null)
+        {
+            board.PieceMoved += OnBoardPieceMoved;
+            boardEventsBound = true;
+        }
+
+        if (!stockfishEventsBound && stockfishService != null)
+        {
+            stockfishService.EngineLineReceived += OnStockfishEngineLine;
+            stockfishEventsBound = true;
+        }
     }
 
     void HandleTurnStarted()
@@ -204,12 +235,19 @@ public class ChessTurnManager : MonoBehaviour
                 return;
             }
 
+            aiRoundConsole?.SetFen(fen);
+            aiRoundConsole?.SetThinking(true);
+
             string bestMoveRaw = await stockfishService.RequestBestMoveAsync(fen, aiSearchDepth);
             if (string.IsNullOrWhiteSpace(bestMoveRaw))
             {
+                aiRoundConsole?.SetThinking(false);
                 UnityEngine.Debug.LogError("[ChessTurnManager] No bestmove received from Stockfish.");
                 return;
             }
+
+            aiRoundConsole?.SetStockfishMove(bestMoveRaw);
+            aiRoundConsole?.SetThinking(false);
 
             if (!stockfishService.TryParseBestMove(bestMoveRaw, out string fromName, out string toName, out PieceType? promotionPiece))
             {
@@ -244,6 +282,53 @@ public class ChessTurnManager : MonoBehaviour
         {
             aiTurnInProgress = false;
         }
+    }
+
+    void OnBoardPieceMoved(ChessPiece movedPiece, ChessTile fromTile, ChessTile toTile)
+    {
+        if (movedPiece == null || fromTile == null || toTile == null)
+        {
+            return;
+        }
+
+        ResolveSystems();
+        string readableMove = BuildReadableMove(movedPiece, fromTile, toTile);
+        if (IsAiTeam(movedPiece.Team))
+        {
+            aiRoundConsole?.SetAiMove(readableMove);
+            return;
+        }
+
+        aiRoundConsole?.StartNewRound(readableMove);
+    }
+
+    void OnStockfishEngineLine(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return;
+        }
+
+        ResolveSystems();
+
+        if (line.StartsWith("info ", StringComparison.OrdinalIgnoreCase))
+        {
+            aiRoundConsole?.SetStockfishInfo(line);
+            return;
+        }
+
+        if (line.StartsWith("bestmove ", StringComparison.OrdinalIgnoreCase))
+        {
+            aiRoundConsole?.SetStockfishMove(line);
+            aiRoundConsole?.SetThinking(false);
+        }
+    }
+
+    static string BuildReadableMove(ChessPiece piece, ChessTile fromTile, ChessTile toTile)
+    {
+        string team = piece.Team == PieceTeam.White ? "White" : "Black";
+        string pieceType = piece.Type.ToString();
+        return $"{team} {pieceType}: {fromTile.TileName.ToLowerInvariant()} -> {toTile.TileName.ToLowerInvariant()}";
     }
 
     static async Task WaitForPieceMotionAsync()
