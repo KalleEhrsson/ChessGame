@@ -36,6 +36,12 @@ public class ChessBoard : MonoBehaviour
     
     #endregion
 
+    #region Events
+
+    public event Action<ChessPiece, ChessTile, ChessTile> PieceMoved;
+
+    #endregion
+
     #region State
 
     public ChessTile GetEnPassantTargetTile() => enPassantTargetTile;
@@ -917,6 +923,7 @@ public class ChessBoard : MonoBehaviour
             gameStateController?.EvaluateEndOfTurn(turnManager.GetCurrentTurn());
         }
 
+        PieceMoved?.Invoke(animatedPiece, from, to);
         return true;
     }
 
