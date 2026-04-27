@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -79,13 +80,13 @@ public class ChessAiRoundConsole : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.F3))
+        if (Keyboard.current.f3Key.wasPressedThisFrame)
         {
             isVisible = !isVisible;
             ApplyVisibility();
         }
 
-        if (Input.GetKeyDown(KeyCode.F4))
+        if (Keyboard.current.f4Key.wasPressedThisFrame)
         {
             ClearCurrentRound();
         }
@@ -270,7 +271,7 @@ public class ChessAiRoundConsole : MonoBehaviour
         displayText.fontSize = 22f;
         displayText.color = new Color(0.88f, 0.94f, 1f, 1f);
         displayText.alignment = TextAlignmentOptions.TopLeft;
-        displayText.enableWordWrapping = true;
+        displayText.textWrappingMode = TextWrappingModes.PreserveWhitespace;
         displayText.overflowMode = TextOverflowModes.Overflow;
 
         LayoutElement textLayoutElement = textObject.AddComponent<LayoutElement>();

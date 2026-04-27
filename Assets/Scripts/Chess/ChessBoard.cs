@@ -881,7 +881,7 @@ public class ChessBoard : MonoBehaviour
             }
         }
 
-        Vector3 startWorldPosition = movingPiece.transform.position;
+        Vector3 startWorldPosition = GetSafePiecePosition(movingPiece, from, Vector3.zero);
         if (moveData.IsCastle && moveData.CastleRookFrom != null && moveData.CastleRookTo != null)
         {
             ChessPiece rook = moveData.CastleRookFrom.CurrentPiece;
@@ -909,10 +909,16 @@ public class ChessBoard : MonoBehaviour
             }
         }
 
-        Vector3 endWorldPosition = animatedPiece.transform.position;
+        Vector3 endWorldPosition = GetSafePiecePosition(animatedPiece, to, startWorldPosition);
 
         if (Application.isPlaying)
         {
+            if (!IsFinite(startWorldPosition) || !IsFinite(endWorldPosition))
+            {
+                Debug.LogError($"[ChessBoard] Invalid move animation position. Piece={animatedPiece.name}, From={from.TileName}, To={to.TileName}, Start={startWorldPosition}, End={endWorldPosition}");
+                return false;
+            }
+
             _ = PlayMoveMotionAsync(animatedPiece, startWorldPosition, endWorldPosition, isCapture);
         }
 
@@ -941,6 +947,7 @@ public class ChessBoard : MonoBehaviour
         }
 
         await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture);
+        
     }
 
     void UpdateSpecialStateAfterMove(ChessPiece movingPiece, ChessMoveData moveData, bool didCapture)
@@ -1045,4 +1052,29 @@ public class ChessBoard : MonoBehaviour
     }
 
     #endregion
+    
+    Vector3 GetSafePiecePosition(ChessPiece piece, ChessTile tile, Vector3 fallback)
+    {
+        if (piece != null && IsFinite(piece.transform.position))
+        {
+            return piece.transform.position;
+        }
+
+        if (tile != null && IsFinite(tile.transform.position))
+        {
+            return tile.transform.position;
+        }
+
+        return fallback;
+    }
+
+    static bool IsFinite(Vector3 value)
+    {
+        return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+    }
+
+    static bool IsFinite(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
+    }
 }

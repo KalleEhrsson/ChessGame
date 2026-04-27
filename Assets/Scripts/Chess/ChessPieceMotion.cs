@@ -91,6 +91,9 @@ public class ChessPieceMotion : MonoBehaviour
 
     async Task PlayArcMotionAsync(Vector3 startPos, Vector3 endPos, float duration)
     {
+        startPos = SanitizePosition(startPos, transform.position);
+        endPos = SanitizePosition(endPos, startPos);
+
         float elapsed = 0f;
 
         while (elapsed < duration)
@@ -100,14 +103,18 @@ public class ChessPieceMotion : MonoBehaviour
 
             Vector3 pos = Vector3.Lerp(startPos, endPos, t);
             float arc = Mathf.Sin(t * Mathf.PI);
-            float shapedArc = Mathf.Pow(arc, 0.85f);
+            float shapedArc = Mathf.Pow(Mathf.Max(0f, arc), 0.85f);
             pos.y += shapedArc * liftHeight;
+
+            pos = SanitizePosition(pos, endPos);
 
             transform.position = pos;
             transform.rotation = baseRotation * BuildTilt(t);
 
             await AwaitNextFrame();
         }
+
+        transform.position = endPos;
     }
 
     async Task PlayDropSettleAsync(Vector3 endPos, float duration, bool isCapture)
@@ -124,6 +131,9 @@ public class ChessPieceMotion : MonoBehaviour
 
     async Task PlaySegmentAsync(Vector3 from, Vector3 to, float duration)
     {
+        from = SanitizePosition(from, transform.position);
+        to = SanitizePosition(to, from);
+
         float elapsed = 0f;
 
         while (elapsed < duration)
@@ -132,10 +142,16 @@ public class ChessPieceMotion : MonoBehaviour
             float t = Mathf.Clamp01(elapsed / duration);
             float eased = Mathf.SmoothStep(0f, 1f, t);
 
-            transform.position = Vector3.Lerp(from, to, eased);
+            Vector3 pos = Vector3.Lerp(from, to, eased);
+            pos = SanitizePosition(pos, to);
+
+            transform.position = pos;
             transform.rotation = baseRotation;
+
             await AwaitNextFrame();
         }
+
+        transform.position = to;
     }
 
     Quaternion BuildTilt(float t)
@@ -204,12 +220,17 @@ public class ChessPieceMotion : MonoBehaviour
 
     static Vector3 SanitizePosition(Vector3 candidate, Vector3 fallback)
     {
-        if (!IsFinite(candidate.x) || !IsFinite(candidate.y) || !IsFinite(candidate.z))
+        if (!IsFinite(candidate))
         {
-            return fallback;
+            return IsFinite(fallback) ? fallback : Vector3.zero;
         }
 
         return candidate;
+    }
+
+    static bool IsFinite(Vector3 value)
+    {
+        return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
     }
 
     static bool IsFinite(float value)
