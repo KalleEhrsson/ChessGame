@@ -36,11 +36,15 @@ public class ChessAiRoundConsole : MonoBehaviour
 
     #region Variables
 
-    const float MaxPanelWidth = 520f;
-    const float ScreenPadding = 16f;
+    const float DefaultPanelWidth = 420f;
+    const float MinPanelHeight = 200f;
+    const float MaxPanelHeight = 460f;
+    const float ScreenPadding = 20f;
+    const float PanelInnerPadding = 12f;
+    const float MinViewportHeight = 120f;
+    const float PanelChromeHeight = 24f;
 
     string playerMove;
-    string fen;
     bool isThinking;
     string stockfishMove;
     string aiMove;
@@ -52,11 +56,13 @@ public class ChessAiRoundConsole : MonoBehaviour
     bool isVisible = true;
 
     Canvas rootCanvas;
-    RectTransform panelRect;
     RectTransform viewportRect;
-    RectTransform contentRect;
-    ScrollRect scrollRect;
-    TMP_Text displayText;
+
+    [Header("UI References")]
+    [SerializeField] RectTransform panelRoot;
+    [SerializeField] TMP_Text logText;
+    [SerializeField] ScrollRect scrollRect;
+    [SerializeField] RectTransform contentRoot;
 
     string lastRenderedText;
 
@@ -101,7 +107,6 @@ public class ChessAiRoundConsole : MonoBehaviour
     public void StartNewRound(string nextPlayerMove)
     {
         playerMove = nextPlayerMove;
-        fen = null;
         isThinking = false;
         stockfishMove = null;
         aiMove = null;
@@ -113,13 +118,7 @@ public class ChessAiRoundConsole : MonoBehaviour
 
     public void SetFen(string nextFen)
     {
-        if (string.Equals(fen, nextFen, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        fen = nextFen;
-        RefreshDisplayIfChanged();
+        _ = nextFen;
     }
 
     public void SetThinking(bool thinking)
@@ -191,7 +190,6 @@ public class ChessAiRoundConsole : MonoBehaviour
     public void ClearCurrentRound()
     {
         playerMove = null;
-        fen = null;
         isThinking = false;
         stockfishMove = null;
         aiMove = null;
@@ -207,85 +205,181 @@ public class ChessAiRoundConsole : MonoBehaviour
 
     void EnsureUi()
     {
-        if (rootCanvas != null && displayText != null)
+        if (panelRoot != null && logText != null && scrollRect != null && contentRoot != null)
         {
+            ResolveCanvasFromHierarchy();
+            EnsureCanvasSettings();
+            EnsurePanelSettings();
+            EnsureViewportReference();
             return;
         }
 
+        BuildRuntimeUi();
+        Debug.LogWarning("ChessAiRoundConsole UI references were missing. Runtime debug panel was auto-created.", this);
+
+        ApplyVisibility();
+    }
+
+    void BuildRuntimeUi()
+    {
         GameObject canvasObject = new("ChessAiRoundConsoleCanvas");
         canvasObject.transform.SetParent(transform, false);
         rootCanvas = canvasObject.AddComponent<Canvas>();
         rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         rootCanvas.sortingOrder = short.MaxValue;
-        canvasObject.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        canvasObject.AddComponent<GraphicRaycaster>();
+        EnsureCanvasSettings();
 
-        GameObject panelObject = new("Panel");
-        panelObject.transform.SetParent(canvasObject.transform, false);
-        Image panelImage = panelObject.AddComponent<Image>();
+        panelRoot = CreateRect("Panel", canvasObject.transform);
+        Image panelImage = panelRoot.gameObject.AddComponent<Image>();
         panelImage.color = new Color(0f, 0f, 0f, 0.72f);
-        panelRect = panelObject.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(1f, 1f);
-        panelRect.anchorMax = new Vector2(1f, 1f);
-        panelRect.pivot = new Vector2(1f, 1f);
-        panelRect.anchoredPosition = new Vector2(-ScreenPadding, -ScreenPadding);
-        panelRect.sizeDelta = new Vector2(MaxPanelWidth, 200f);
+        EnsurePanelSettings();
 
-        VerticalLayoutGroup panelLayout = panelObject.AddComponent<VerticalLayoutGroup>();
-        panelLayout.padding = new RectOffset(14, 14, 12, 12);
-        panelLayout.childControlHeight = true;
-        panelLayout.childControlWidth = true;
-        panelLayout.childForceExpandHeight = false;
-        panelLayout.childForceExpandWidth = true;
+        RectTransform scrollRectTransform = CreateRect("ScrollView", panelRoot);
+        scrollRectTransform.anchorMin = Vector2.zero;
+        scrollRectTransform.anchorMax = Vector2.one;
+        scrollRectTransform.offsetMin = new Vector2(PanelInnerPadding, PanelInnerPadding);
+        scrollRectTransform.offsetMax = new Vector2(-PanelInnerPadding, -PanelInnerPadding);
 
-        ContentSizeFitter panelFitter = panelObject.AddComponent<ContentSizeFitter>();
-        panelFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-        panelFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        scrollRect = scrollRectTransform.gameObject.AddComponent<ScrollRect>();
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        scrollRect.scrollSensitivity = 28f;
+        scrollRect.inertia = true;
 
-        GameObject viewportObject = new("Viewport");
-        viewportObject.transform.SetParent(panelObject.transform, false);
-        viewportRect = viewportObject.GetComponent<RectTransform>();
-        Image viewportImage = viewportObject.AddComponent<Image>();
-        viewportImage.color = new Color(0f, 0f, 0f, 0f);
-        Mask viewportMask = viewportObject.AddComponent<Mask>();
+        viewportRect = CreateRect("Viewport", scrollRectTransform);
+        viewportRect.anchorMin = Vector2.zero;
+        viewportRect.anchorMax = Vector2.one;
+        viewportRect.offsetMin = Vector2.zero;
+        viewportRect.offsetMax = Vector2.zero;
+        Image viewportImage = viewportRect.gameObject.AddComponent<Image>();
+        viewportImage.color = new Color(0f, 0f, 0f, 0.001f);
+        Mask viewportMask = viewportRect.gameObject.AddComponent<Mask>();
         viewportMask.showMaskGraphic = false;
 
-        GameObject contentObject = new("Content");
-        contentObject.transform.SetParent(viewportObject.transform, false);
-        contentRect = contentObject.GetComponent<RectTransform>();
-        VerticalLayoutGroup contentLayout = contentObject.AddComponent<VerticalLayoutGroup>();
-        contentLayout.padding = new RectOffset(0, 0, 0, 0);
+        contentRoot = CreateRect("Content", viewportRect);
+        contentRoot.anchorMin = new Vector2(0f, 1f);
+        contentRoot.anchorMax = new Vector2(1f, 1f);
+        contentRoot.pivot = new Vector2(0.5f, 1f);
+        contentRoot.anchoredPosition = Vector2.zero;
+        contentRoot.sizeDelta = Vector2.zero;
+
+        VerticalLayoutGroup contentLayout = contentRoot.gameObject.AddComponent<VerticalLayoutGroup>();
         contentLayout.childAlignment = TextAnchor.UpperLeft;
         contentLayout.childControlHeight = true;
         contentLayout.childControlWidth = true;
         contentLayout.childForceExpandHeight = false;
-        contentLayout.childForceExpandWidth = true;
+        contentLayout.childForceExpandWidth = false;
+        contentLayout.spacing = 4f;
 
-        ContentSizeFitter contentFitter = contentObject.AddComponent<ContentSizeFitter>();
+        ContentSizeFitter contentFitter = contentRoot.gameObject.AddComponent<ContentSizeFitter>();
         contentFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
         contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        GameObject textObject = new("Text");
-        textObject.transform.SetParent(contentObject.transform, false);
-        displayText = textObject.AddComponent<TextMeshProUGUI>();
-        displayText.fontSize = 22f;
-        displayText.color = new Color(0.88f, 0.94f, 1f, 1f);
-        displayText.alignment = TextAlignmentOptions.TopLeft;
-        displayText.textWrappingMode = TextWrappingModes.PreserveWhitespace;
-        displayText.overflowMode = TextOverflowModes.Overflow;
+        RectTransform textRect = CreateRect("RoundLog", contentRoot);
+        textRect.anchorMin = new Vector2(0f, 1f);
+        textRect.anchorMax = new Vector2(1f, 1f);
+        textRect.pivot = new Vector2(0f, 1f);
+        textRect.sizeDelta = new Vector2(0f, 0f);
 
-        LayoutElement textLayoutElement = textObject.AddComponent<LayoutElement>();
-        textLayoutElement.preferredWidth = MaxPanelWidth - 28f;
+        TextMeshProUGUI tmp = textRect.gameObject.AddComponent<TextMeshProUGUI>();
+        tmp.fontSize = 20f;
+        tmp.enableAutoSizing = true;
+        tmp.fontSizeMin = 18f;
+        tmp.fontSizeMax = 24f;
+        tmp.color = new Color(0.93f, 0.96f, 1f, 1f);
+        tmp.alignment = TextAlignmentOptions.TopLeft;
+        tmp.textWrappingMode = TextWrappingModes.Normal;
+        tmp.overflowMode = TextOverflowModes.Overflow;
+        logText = tmp;
 
-        scrollRect = panelObject.AddComponent<ScrollRect>();
+        LayoutElement textLayout = textRect.gameObject.AddComponent<LayoutElement>();
+        textLayout.flexibleWidth = 1f;
+        textLayout.minHeight = 120f;
+
         scrollRect.viewport = viewportRect;
-        scrollRect.content = contentRect;
-        scrollRect.horizontal = false;
-        scrollRect.vertical = false;
-        scrollRect.movementType = ScrollRect.MovementType.Clamped;
-        scrollRect.scrollSensitivity = 28f;
+        scrollRect.content = contentRoot;
+    }
 
-        ApplyVisibility();
+    static RectTransform CreateRect(string name, Transform parent)
+    {
+        GameObject go = new(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        return go.GetComponent<RectTransform>();
+    }
+
+    void ResolveCanvasFromHierarchy()
+    {
+        if (panelRoot == null)
+        {
+            return;
+        }
+
+        rootCanvas = panelRoot.GetComponentInParent<Canvas>();
+    }
+
+    void EnsureCanvasSettings()
+    {
+        if (rootCanvas == null)
+        {
+            return;
+        }
+
+        CanvasScaler scaler = rootCanvas.GetComponent<CanvasScaler>();
+        if (scaler == null)
+        {
+            scaler = rootCanvas.gameObject.AddComponent<CanvasScaler>();
+        }
+
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+
+        if (rootCanvas.GetComponent<GraphicRaycaster>() == null)
+        {
+            rootCanvas.gameObject.AddComponent<GraphicRaycaster>();
+        }
+    }
+
+    void EnsurePanelSettings()
+    {
+        if (panelRoot == null)
+        {
+            return;
+        }
+
+        panelRoot.anchorMin = new Vector2(0f, 1f);
+        panelRoot.anchorMax = new Vector2(0f, 1f);
+        panelRoot.pivot = new Vector2(0f, 1f);
+        panelRoot.anchoredPosition = new Vector2(ScreenPadding, -ScreenPadding);
+
+        Vector2 size = panelRoot.sizeDelta;
+        if (size.x <= 0f || size.y <= 0f)
+        {
+            size = new Vector2(DefaultPanelWidth, MinPanelHeight);
+        }
+
+        panelRoot.sizeDelta = new Vector2(Mathf.Max(DefaultPanelWidth, size.x), Mathf.Max(MinPanelHeight, size.y));
+    }
+
+    void EnsureViewportReference()
+    {
+        if (scrollRect == null)
+        {
+            return;
+        }
+
+        viewportRect = scrollRect.viewport;
+        if (viewportRect == null)
+        {
+            Transform viewport = scrollRect.transform.Find("Viewport");
+            if (viewport != null)
+            {
+                viewportRect = viewport as RectTransform;
+                scrollRect.viewport = viewportRect;
+            }
+        }
     }
 
     void ApplyVisibility()
@@ -300,38 +394,35 @@ public class ChessAiRoundConsole : MonoBehaviour
 
     void UpdateScrollState()
     {
-        if (panelRect == null || viewportRect == null || contentRect == null || scrollRect == null || !isVisible)
+        if (panelRoot == null || viewportRect == null || contentRoot == null || scrollRect == null || !isVisible)
         {
             return;
         }
 
-        float maxHeight = Mathf.Max(140f, Screen.height - (ScreenPadding * 2f));
-        LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
-        float contentHeight = contentRect.rect.height;
+        LayoutRebuilder.ForceRebuildLayoutImmediate(contentRoot);
+        float preferredContentHeight = LayoutUtility.GetPreferredHeight(contentRoot);
+        float maxPanelHeight = Mathf.Min(MaxPanelHeight, Screen.height - (ScreenPadding * 2f));
+        maxPanelHeight = Mathf.Max(MinPanelHeight, maxPanelHeight);
 
-        float viewportHeight = Mathf.Min(contentHeight, maxHeight - 24f);
-        if (viewportHeight < 64f)
-        {
-            viewportHeight = 64f;
-        }
+        float maxViewportHeight = Mathf.Max(MinViewportHeight, maxPanelHeight - PanelChromeHeight);
+        float targetViewportHeight = Mathf.Clamp(preferredContentHeight + 4f, MinViewportHeight, maxViewportHeight);
+        float targetPanelHeight = Mathf.Clamp(targetViewportHeight + PanelChromeHeight, MinPanelHeight, maxPanelHeight);
 
-        viewportRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, MaxPanelWidth - 28f);
-        viewportRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, viewportHeight);
+        panelRoot.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, DefaultPanelWidth);
+        panelRoot.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, targetPanelHeight);
 
-        panelRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, MaxPanelWidth);
-        panelRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, viewportHeight + 24f);
-
-        bool shouldScroll = contentHeight > viewportHeight + 0.5f;
+        bool shouldScroll = preferredContentHeight > targetViewportHeight + 0.5f;
         if (scrollRect.vertical != shouldScroll)
         {
             scrollRect.vertical = shouldScroll;
-            scrollRect.verticalNormalizedPosition = 1f;
         }
+
+        scrollRect.verticalNormalizedPosition = 1f;
     }
 
     void RefreshDisplayIfChanged()
     {
-        if (displayText == null)
+        if (logText == null)
         {
             EnsureUi();
         }
@@ -343,7 +434,7 @@ public class ChessAiRoundConsole : MonoBehaviour
         }
 
         lastRenderedText = next;
-        displayText.text = next;
+        logText.text = next;
         UpdateScrollState();
     }
 
@@ -354,21 +445,14 @@ public class ChessAiRoundConsole : MonoBehaviour
         builder.AppendLine();
         builder.AppendLine("Player move:");
         builder.AppendLine(string.IsNullOrWhiteSpace(playerMove) ? "-" : playerMove);
-        builder.AppendLine();
-        builder.AppendLine("FEN:");
-        builder.AppendLine(string.IsNullOrWhiteSpace(fen) ? "-" : fen);
-        builder.AppendLine();
-        builder.AppendLine("Status:");
-        builder.AppendLine(isThinking ? "AI thinking..." : "Idle");
+        builder.AppendLine($"Status: {(isThinking ? "AI thinking..." : "Idle")}");
         builder.AppendLine();
         builder.AppendLine("Stockfish thinking:");
         builder.AppendLine($"Depth: {(currentDepth.HasValue ? currentDepth.Value.ToString() : "-")}");
         builder.AppendLine($"Eval: {(string.IsNullOrWhiteSpace(currentEval) ? "-" : currentEval)}");
-        builder.AppendLine($"Line: {(string.IsNullOrWhiteSpace(currentPv) ? "-" : currentPv)}");
+        builder.AppendLine($"Best line: {(string.IsNullOrWhiteSpace(currentPv) ? "-" : currentPv)}");
         builder.AppendLine();
-        builder.AppendLine("Stockfish result:");
-        builder.AppendLine(string.IsNullOrWhiteSpace(stockfishMove) ? "-" : stockfishMove);
-        builder.AppendLine();
+        builder.AppendLine($"Stockfish best move: {(string.IsNullOrWhiteSpace(stockfishMove) ? "-" : stockfishMove)}");
         builder.AppendLine("AI move:");
         builder.AppendLine(string.IsNullOrWhiteSpace(aiMove) ? "-" : aiMove);
         return builder.ToString();
