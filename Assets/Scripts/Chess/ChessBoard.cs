@@ -20,6 +20,10 @@ public class ChessBoard : MonoBehaviour
     readonly Dictionary<string, ChessTile> tilesByName = new (StringComparer.OrdinalIgnoreCase);
     [SerializeField] GameObject[] whitePiecePrefabs = Array.Empty<GameObject>();
     [SerializeField] GameObject[] blackPiecePrefabs = Array.Empty<GameObject>();
+    [SerializeField] GameObject captureDestructiblePrefab;
+    [SerializeField, Min(0f)] float captureImpactForce = 12f;
+    [SerializeField, Min(0.01f)] float captureImpactRadius = 0.4f;
+    [SerializeField, Min(0.01f)] float captureImpactDelay = 0.05f;
     ChessMoveValidator moveValidator;
     ChessTurnManager turnManager;
     ChessGameStateController gameStateController;
@@ -872,14 +876,6 @@ public class ChessBoard : MonoBehaviour
         capturedPieceTray ??= ChessCapturedPieceTray.GetOrCreate(this);
         bool isCapture = moveData.IsCapture;
         ChessPiece capturedPiece = moveData.IsCapture && moveData.CaptureTile != null ? moveData.CaptureTile.CurrentPiece : null;
-        if (capturedPiece != null)
-        {
-            bool placedInTray = capturedPieceTray != null && capturedPieceTray.PlaceCapturedPiece(capturedPiece);
-            if (!placedInTray)
-            {
-                capturedPiece.SetTile(null);
-            }
-        }
 
         Vector3 startWorldPosition = GetSafePiecePosition(movingPiece, from, Vector3.zero);
         if (moveData.IsCastle && moveData.CastleRookFrom != null && moveData.CastleRookTo != null)
@@ -919,7 +915,11 @@ public class ChessBoard : MonoBehaviour
                 return false;
             }
 
-            _ = PlayMoveMotionAsync(animatedPiece, startWorldPosition, endWorldPosition, isCapture);
+            _ = PlayMoveMotionAsync(animatedPiece, startWorldPosition, endWorldPosition, isCapture, capturedPiece);
+        }
+        else if (isCapture && capturedPiece != null)
+        {
+            ResolveCaptureOnImpact(capturedPiece);
         }
 
         turnManager?.SwitchTurn();
@@ -933,7 +933,7 @@ public class ChessBoard : MonoBehaviour
         return true;
     }
 
-    async Task PlayMoveMotionAsync(ChessPiece piece, Vector3 startWorldPosition, Vector3 endWorldPosition, bool isCapture)
+    async Task PlayMoveMotionAsync(ChessPiece piece, Vector3 startWorldPosition, Vector3 endWorldPosition, bool isCapture, ChessPiece capturedPiece)
     {
         if (piece == null)
         {
@@ -947,8 +947,80 @@ public class ChessBoard : MonoBehaviour
         }
 
         await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture);
-        
+
+        if (!isCapture || capturedPiece == null)
+        {
+            return;
+        }
+
+        if (captureImpactDelay > 0f)
+        {
+            await AwaitSeconds(captureImpactDelay);
+        }
+
+        ResolveCaptureOnImpact(capturedPiece);
     }
+
+    #region Capture Impact
+
+    void ResolveCaptureOnImpact(ChessPiece capturedPiece)
+    {
+        if (capturedPiece == null)
+        {
+            return;
+        }
+
+        Vector3 impactPosition = capturedPiece.transform.position;
+        bool spawnedDebris = TrySpawnCaptureDebris(impactPosition, capturedPiece.transform.rotation);
+
+        if (spawnedDebris)
+        {
+            capturedPiece.gameObject.SetActive(false);
+            return;
+        }
+
+        Debug.LogWarning("[ChessBoard] Capture destructible prefab is missing. Falling back to captured tray placement.");
+        bool placedInTray = capturedPieceTray != null && capturedPieceTray.PlaceCapturedPiece(capturedPiece);
+        if (!placedInTray)
+        {
+            capturedPiece.SetTile(null);
+            capturedPiece.gameObject.SetActive(false);
+        }
+    }
+
+    bool TrySpawnCaptureDebris(Vector3 position, Quaternion rotation)
+    {
+        if (captureDestructiblePrefab == null)
+        {
+            return false;
+        }
+
+        GameObject debrisRoot = Instantiate(captureDestructiblePrefab, position, rotation);
+        Rigidbody[] rigidbodies = debrisRoot.GetComponentsInChildren<Rigidbody>(true);
+        if (rigidbodies.Length == 0)
+        {
+            return true;
+        }
+
+        Vector3 forceDirection = Vector3.down;
+        for (int i = 0; i < rigidbodies.Length; i++)
+        {
+            Rigidbody body = rigidbodies[i];
+            if (body == null)
+            {
+                continue;
+            }
+
+            body.isKinematic = false;
+            body.detectCollisions = true;
+            body.AddExplosionForce(captureImpactForce, position + Vector3.up * captureImpactRadius, captureImpactRadius, 0f, ForceMode.Impulse);
+            body.AddForce(forceDirection * captureImpactForce, ForceMode.Impulse);
+        }
+
+        return true;
+    }
+
+    #endregion
 
     void UpdateSpecialStateAfterMove(ChessPiece movingPiece, ChessMoveData moveData, bool didCapture)
     {
@@ -1066,6 +1138,21 @@ public class ChessBoard : MonoBehaviour
         }
 
         return fallback;
+    }
+
+    static async Task AwaitSeconds(float seconds)
+    {
+        if (seconds <= 0f)
+        {
+            return;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < seconds)
+        {
+            elapsed += Time.deltaTime;
+            await Task.Yield();
+        }
     }
 
     static bool IsFinite(Vector3 value)

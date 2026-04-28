@@ -7,8 +7,11 @@ public class ChessPieceMotion : MonoBehaviour
     #region Variables
 
     [SerializeField] float pickupDelay = 1f;
-    [SerializeField] float liftHeight = 4f;
+    [SerializeField] float normalMoveArcHeight = 4f;
+    [SerializeField] float captureMoveArcHeight = 6.5f;
+    [SerializeField] float captureDropHeight = 1.1f;
     [SerializeField] float moveDuration = 1f;
+    [SerializeField] float captureMoveDuration = 1.05f;
     [SerializeField] float dropDuration = 0.5f;
     [SerializeField] float settleOvershoot = 0.05f;
     [SerializeField] AudioSource audioSource;
@@ -50,7 +53,7 @@ public class ChessPieceMotion : MonoBehaviour
         Vector3 fallbackPosition = transform.position;
         startPos = SanitizePosition(startPos, fallbackPosition);
         endPos = SanitizePosition(endPos, startPos);
-        
+
         if (!isActiveAndEnabled || isAnimating)
         {
             transform.position = endPos;
@@ -71,7 +74,15 @@ public class ChessPieceMotion : MonoBehaviour
             }
 
             PlayOneShotRandomized(pickupWhoosh, 0.85f, 1f, 0.95f, 1.05f);
-            await PlayArcMotionAsync(startPos, endPos, Mathf.Max(0.01f, moveDuration));
+
+            if (isCapture)
+            {
+                await PlayCaptureArcMotionAsync(startPos, endPos, Mathf.Max(0.01f, captureMoveDuration));
+            }
+            else
+            {
+                await PlayArcMotionAsync(startPos, endPos, Mathf.Max(0.01f, moveDuration));
+            }
 
             PlayOneShotRandomized(dropThud, 0.95f, 1.1f, 0.94f, 1.02f);
             await PlayDropSettleAsync(endPos, Mathf.Max(0.01f, dropDuration), isCapture);
@@ -104,12 +115,56 @@ public class ChessPieceMotion : MonoBehaviour
             Vector3 pos = Vector3.Lerp(startPos, endPos, t);
             float arc = Mathf.Sin(t * Mathf.PI);
             float shapedArc = Mathf.Pow(Mathf.Max(0f, arc), 0.85f);
-            pos.y += shapedArc * liftHeight;
+            pos.y += shapedArc * normalMoveArcHeight;
 
             pos = SanitizePosition(pos, endPos);
-
             transform.position = pos;
             transform.rotation = baseRotation * BuildTilt(t);
+
+            await AwaitNextFrame();
+        }
+
+        transform.position = endPos;
+    }
+
+    async Task PlayCaptureArcMotionAsync(Vector3 startPos, Vector3 endPos, float duration)
+    {
+        startPos = SanitizePosition(startPos, transform.position);
+        endPos = SanitizePosition(endPos, startPos);
+
+        Vector3 strikeStart = endPos + (Vector3.up * Mathf.Max(0f, captureDropHeight));
+        float riseTravelRatio = 0.72f;
+        float riseDuration = Mathf.Max(0.01f, duration * riseTravelRatio);
+        float dropDurationLocal = Mathf.Max(0.01f, duration - riseDuration);
+
+        float elapsed = 0f;
+        while (elapsed < riseDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / riseDuration);
+            float eased = Mathf.SmoothStep(0f, 1f, t);
+
+            Vector3 horizontal = Vector3.Lerp(startPos, strikeStart, eased);
+            float arc = Mathf.Sin(eased * Mathf.PI);
+            float shapedArc = Mathf.Pow(Mathf.Max(0f, arc), 0.85f);
+            horizontal.y += shapedArc * captureMoveArcHeight;
+
+            transform.position = SanitizePosition(horizontal, strikeStart);
+            transform.rotation = baseRotation * BuildTilt(eased);
+
+            await AwaitNextFrame();
+        }
+
+        elapsed = 0f;
+        while (elapsed < dropDurationLocal)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / dropDurationLocal);
+            float descentT = t * t * t;
+
+            Vector3 pos = Vector3.Lerp(strikeStart, endPos, descentT);
+            transform.position = SanitizePosition(pos, endPos);
+            transform.rotation = baseRotation;
 
             await AwaitNextFrame();
         }
@@ -220,23 +275,15 @@ public class ChessPieceMotion : MonoBehaviour
 
     static Vector3 SanitizePosition(Vector3 candidate, Vector3 fallback)
     {
-        if (!IsFinite(candidate))
+        if (float.IsFinite(candidate.x) && float.IsFinite(candidate.y) && float.IsFinite(candidate.z))
         {
-            return IsFinite(fallback) ? fallback : Vector3.zero;
+            return candidate;
         }
 
-        return candidate;
+        return float.IsFinite(fallback.x) && float.IsFinite(fallback.y) && float.IsFinite(fallback.z)
+            ? fallback
+            : Vector3.zero;
     }
 
-    static bool IsFinite(Vector3 value)
-    {
-        return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
-    }
-
-    static bool IsFinite(float value)
-    {
-        return !float.IsNaN(value) && !float.IsInfinity(value);
-    }
-    
     #endregion
 }
