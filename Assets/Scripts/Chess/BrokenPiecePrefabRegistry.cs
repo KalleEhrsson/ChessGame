@@ -36,7 +36,7 @@ public class BrokenPiecePrefabRegistry : MonoBehaviour
 
 #if UNITY_EDITOR
     [ContextMenu("Auto Fill Broken Piece Prefabs")]
-    void AutoFillBrokenPiecePrefabs()
+    public void AutoFillBrokenPiecePrefabs()
     {
         PieceTeam[] teams = { PieceTeam.White, PieceTeam.Black };
         PieceType[] pieceTypes =
