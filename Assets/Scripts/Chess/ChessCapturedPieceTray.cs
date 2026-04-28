@@ -4,19 +4,24 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class ChessCapturedPieceTray : MonoBehaviour
 {
-    const string WhiteCapturedAreaName = "WhiteCapturedArea";
-    const string BlackCapturedAreaName = "BlackCapturedArea";
+    const int BoardSquaresPerSide = 8;
+    const string TrayRootName = "CapturedPiecesAnchors";
+    const string WhiteCapturedAreaName = "WhiteCapturedPiecesAnchor";
+    const string BlackCapturedAreaName = "BlackCapturedPiecesAnchor";
+    const string LegacyWhiteCapturedAreaName = "WhiteCapturedArea";
+    const string LegacyBlackCapturedAreaName = "BlackCapturedArea";
 
     #region Variables
 
     [SerializeField] ChessBoard board;
+    [SerializeField] Transform capturedAnchorsRoot;
     [SerializeField] Transform whiteCapturedArea;
     [SerializeField] Transform blackCapturedArea;
-    [SerializeField, Min(0.05f)] float horizontalSpacing = 0.22f;
-    [SerializeField, Min(0.05f)] float rowSpacing = 0.2f;
-    [SerializeField] float sideOffset = 1.4f;
-    [SerializeField] float forwardOffset = 0.1f;
-    [SerializeField] float verticalOffset = -0.02f;
+    [SerializeField, Min(0.05f)] float capturedTrayDistanceFromBoard = 0.35f;
+    [SerializeField, Min(0.05f)] float capturedPieceSpacing = 0.22f;
+    [SerializeField, Min(1)] int capturedTrayRows = 6;
+    [SerializeField] float capturedTrayYOffset = -0.02f;
+    [SerializeField, Min(0f)] float capturedTraySidePadding = 0.1f;
     [SerializeField] Vector3 displayEulerOffset = Vector3.zero;
 
     readonly Dictionary<RowKey, int> rowCounts = new();
@@ -53,6 +58,7 @@ public class ChessCapturedPieceTray : MonoBehaviour
     {
         rowCounts.Clear();
         placedPieces.Clear();
+        ResolveTrayTransforms();
     }
 
     #endregion
@@ -84,12 +90,14 @@ public class ChessCapturedPieceTray : MonoBehaviour
         piece.SetTile(null);
         DisableGameplayInteraction(piece);
 
-        int row = GetRowIndex(piece.Type);
+        int row = Mathf.Clamp(GetRowIndex(piece.Type), 0, Mathf.Max(0, capturedTrayRows - 1));
         RowKey key = new(piece.Team, row);
-        rowCounts.TryGetValue(key, out int columnIndex);
-        rowCounts[key] = columnIndex + 1;
+        rowCounts.TryGetValue(key, out int pieceCountInRow);
+        rowCounts[key] = pieceCountInRow + 1;
 
-        Vector3 targetPosition = BuildPosition(trayArea, row, columnIndex);
+        int column = pieceCountInRow / Mathf.Max(1, capturedTrayRows);
+        int rowSlot = pieceCountInRow % Mathf.Max(1, capturedTrayRows);
+        Vector3 targetPosition = BuildPosition(trayArea, rowSlot, column);
         Quaternion targetRotation = trayArea.rotation * Quaternion.Euler(displayEulerOffset);
 
         piece.transform.SetParent(trayArea, true);
@@ -110,55 +118,162 @@ public class ChessCapturedPieceTray : MonoBehaviour
             board = GetComponent<ChessBoard>();
         }
 
+        if (capturedAnchorsRoot == null)
+        {
+            capturedAnchorsRoot = FindOrCreateAnchorsRoot();
+        }
+
         if (whiteCapturedArea == null)
         {
-            whiteCapturedArea = FindOrCreateTrayTransform(WhiteCapturedAreaName, false);
+            whiteCapturedArea = FindOrCreateTrayTransform(WhiteCapturedAreaName, LegacyWhiteCapturedAreaName);
         }
 
         if (blackCapturedArea == null)
         {
-            blackCapturedArea = FindOrCreateTrayTransform(BlackCapturedAreaName, true);
+            blackCapturedArea = FindOrCreateTrayTransform(BlackCapturedAreaName, LegacyBlackCapturedAreaName);
         }
+
+        RepositionTrayAnchors();
     }
 
-    Transform FindOrCreateTrayTransform(string trayName, bool usePositiveSide)
+    Transform FindOrCreateAnchorsRoot()
     {
-        Transform existing = transform.Find(trayName);
+        Transform root = transform.Find(TrayRootName);
+        if (root != null)
+        {
+            return root;
+        }
+
+        GameObject rootObject = new(TrayRootName);
+        root = rootObject.transform;
+        root.SetParent(transform, false);
+        root.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+        return root;
+    }
+
+    Transform FindOrCreateTrayTransform(string trayName, string legacyName)
+    {
+        Transform existing = capturedAnchorsRoot != null ? capturedAnchorsRoot.Find(trayName) : null;
+        if (existing == null && !string.IsNullOrWhiteSpace(legacyName))
+        {
+            existing = transform.Find(legacyName);
+            if (existing != null)
+            {
+                existing.name = trayName;
+                existing.SetParent(capturedAnchorsRoot, true);
+            }
+        }
+
         if (existing != null)
         {
             return existing;
         }
 
-        ChessTile[] tiles = board != null ? board.GetAllTiles() : null;
-        Vector3 boardCenter = transform.position;
-        if (tiles != null && tiles.Length > 0)
-        {
-            Bounds bounds = new Bounds(tiles[0].transform.position, Vector3.zero);
-            for (int i = 1; i < tiles.Length; i++)
-            {
-                bounds.Encapsulate(tiles[i].transform.position);
-            }
+        GameObject trayObject = new(trayName);
+        Transform trayTransform = trayObject.transform;
+        trayTransform.SetParent(capturedAnchorsRoot, false);
+        trayTransform.localRotation = Quaternion.identity;
+        return trayTransform;
+    }
 
-            boardCenter = bounds.center;
+    void RepositionTrayAnchors()
+    {
+        if (whiteCapturedArea == null || blackCapturedArea == null)
+        {
+            return;
         }
 
-        Vector3 sideDirection = usePositiveSide ? transform.right : -transform.right;
-        Vector3 trayPosition = boardCenter + (sideDirection * sideOffset) + (transform.forward * forwardOffset);
-        trayPosition.y += verticalOffset;
+        if (!TryGetBoardMetrics(out BoardMetrics metrics))
+        {
+            Debug.LogWarning("[ChessCapturedPieceTray] Cannot place captured piece anchors because board bounds or tile spacing could not be calculated.");
+            return;
+        }
 
-        GameObject trayObject = new(trayName);
-        trayObject.transform.SetParent(transform, true);
-        trayObject.transform.SetPositionAndRotation(trayPosition, transform.rotation);
-        return trayObject.transform;
+        Vector3 trayForwardOffset = metrics.Forward * capturedTraySidePadding;
+        float sideDistance = (metrics.HalfBoardWidth + capturedTrayDistanceFromBoard + (capturedPieceSpacing * 0.5f));
+
+        Vector3 leftPosition = metrics.Center - (metrics.Right * sideDistance) + trayForwardOffset;
+        leftPosition.y = metrics.SurfaceY + capturedTrayYOffset;
+
+        Vector3 rightPosition = metrics.Center + (metrics.Right * sideDistance) + trayForwardOffset;
+        rightPosition.y = metrics.SurfaceY + capturedTrayYOffset;
+
+        Quaternion trayRotation = Quaternion.LookRotation(metrics.Forward, Vector3.up);
+        whiteCapturedArea.SetPositionAndRotation(leftPosition, trayRotation);
+        blackCapturedArea.SetPositionAndRotation(rightPosition, trayRotation);
     }
 
     Vector3 BuildPosition(Transform trayArea, int row, int column)
     {
-        Vector3 rowDirection = trayArea.forward;
         Vector3 basePosition = trayArea.position;
         return basePosition
-            + (trayArea.right * (column * horizontalSpacing))
-            + (rowDirection * (row * rowSpacing));
+            + (trayArea.forward * (row * capturedPieceSpacing))
+            + (trayArea.right * (column * capturedPieceSpacing));
+    }
+
+    bool TryGetBoardMetrics(out BoardMetrics metrics)
+    {
+        metrics = default;
+        ChessTile[] tiles = board != null ? board.GetAllTiles() : null;
+        if (tiles == null || tiles.Length == 0)
+        {
+            return false;
+        }
+
+        Bounds bounds = new Bounds(tiles[0].transform.position, Vector3.zero);
+        for (int i = 1; i < tiles.Length; i++)
+        {
+            bounds.Encapsulate(tiles[i].transform.position);
+        }
+
+        float tileStep = EstimateTileStep(tiles);
+        if (tileStep <= 0f)
+        {
+            return false;
+        }
+
+        metrics = new BoardMetrics(
+            bounds.center,
+            transform.right,
+            transform.forward,
+            bounds.center.y,
+            tileStep * (BoardSquaresPerSide - 1) * 0.5f);
+        return true;
+    }
+
+    static float EstimateTileStep(ChessTile[] tiles)
+    {
+        float minSqrDistance = float.MaxValue;
+
+        for (int i = 0; i < tiles.Length; i++)
+        {
+            if (tiles[i] == null)
+            {
+                continue;
+            }
+
+            Vector3 tilePosition = tiles[i].transform.position;
+            for (int j = i + 1; j < tiles.Length; j++)
+            {
+                if (tiles[j] == null)
+                {
+                    continue;
+                }
+
+                float sqrDistance = (tiles[j].transform.position - tilePosition).sqrMagnitude;
+                if (sqrDistance > 0.0001f && sqrDistance < minSqrDistance)
+                {
+                    minSqrDistance = sqrDistance;
+                }
+            }
+        }
+
+        if (minSqrDistance == float.MaxValue)
+        {
+            return 0f;
+        }
+
+        return Mathf.Sqrt(minSqrDistance);
     }
 
     static int GetRowIndex(PieceType pieceType)
@@ -200,6 +315,24 @@ public class ChessCapturedPieceTray : MonoBehaviour
         {
             rigidbodies[i].isKinematic = true;
             rigidbodies[i].detectCollisions = false;
+        }
+    }
+
+    readonly struct BoardMetrics
+    {
+        public readonly Vector3 Center;
+        public readonly Vector3 Right;
+        public readonly Vector3 Forward;
+        public readonly float SurfaceY;
+        public readonly float HalfBoardWidth;
+
+        public BoardMetrics(Vector3 center, Vector3 right, Vector3 forward, float surfaceY, float halfBoardWidth)
+        {
+            Center = center;
+            Right = right;
+            Forward = forward;
+            SurfaceY = surfaceY;
+            HalfBoardWidth = halfBoardWidth;
         }
     }
 
