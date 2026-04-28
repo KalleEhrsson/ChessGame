@@ -29,8 +29,8 @@ Transform:
   m_GameObject: {fileID: 9115864557451125168}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 5.546975, y: 3.5029767, z: -0.77975804}
-  m_LocalScale: {x: 0.53897953, y: 0.6, z: 0.53897953}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.6, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -126,8 +126,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChessPieceMotion
   pickupDelay: 2
-  liftHeight: 5
+  normalMoveArcHeight: 4
+  captureMoveArcHeight: 6.5
+  captureDropHeight: 1.1
   moveDuration: 1
+  captureMoveDuration: 1.05
   dropDuration: 0.5
   settleOvershoot: 0.5
   audioSource: {fileID: 0}
