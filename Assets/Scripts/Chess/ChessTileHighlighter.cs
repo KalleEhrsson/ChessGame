@@ -145,12 +145,22 @@ public class ChessTileHighlighter : MonoBehaviour
             await Task.Yield();
         }
 
-        if (tile != null)
+        if (tile == null)
         {
-            bool isCaptureTile = activeCaptureTiles.Contains(tile);
-            ChessTile.HighlightState state = isCaptureTile ? ChessTile.HighlightState.Capture : ChessTile.HighlightState.Move;
-            tile.SetHighlightState(state, isCaptureTile ? captureColor : moveColor);
+            return;
         }
+
+        bool isActiveMoveTile = activeMoveTiles.Contains(tile);
+        bool isActiveCaptureTile = activeCaptureTiles.Contains(tile);
+        
+        if (!isActiveMoveTile && !isActiveCaptureTile)
+        {
+            tile.ClearHighlightState();
+            return;
+        }
+        
+        ChessTile.HighlightState state = isActiveCaptureTile ? ChessTile.HighlightState.Capture : ChessTile.HighlightState.Move;
+        tile.SetHighlightState(state, isActiveCaptureTile ? captureColor : moveColor);
     }
 
     #endregion

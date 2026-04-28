@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 [DisallowMultipleComponent]
 public class StockfishService : MonoBehaviour
@@ -36,7 +37,7 @@ public class StockfishService : MonoBehaviour
 
     #region Variables
 
-    [SerializeField] string executableRelativePath = "stockfish/stockfish-windows-x86-64-avx2.exe";
+    const string StockfishFolder = "stockfish";
     [SerializeField] int defaultDepth = 10;
 
     readonly ConcurrentQueue<string> outputLines = new();
@@ -135,7 +136,7 @@ public class StockfishService : MonoBehaviour
         }
 
         engineReady = true;
-        UnityEngine.Debug.Log("[StockfishService] Engine ready.");
+        Debug.Log("[StockfishService] Engine ready.");
         return true;
     }
 
@@ -143,7 +144,7 @@ public class StockfishService : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(fen))
         {
-            UnityEngine.Debug.LogError("[StockfishService] Cannot request best move with empty FEN.");
+            Debug.LogError("[StockfishService] Cannot request best move with empty FEN.");
             return null;
         }
 
@@ -154,7 +155,7 @@ public class StockfishService : MonoBehaviour
 
         if (pendingBestMoveTask != null && !pendingBestMoveTask.Task.IsCompleted)
         {
-            UnityEngine.Debug.LogWarning("[StockfishService] Best move request already in progress.");
+            Debug.LogWarning("[StockfishService] Best move request already in progress.");
             return null;
         }
 
@@ -218,51 +219,57 @@ public class StockfishService : MonoBehaviour
     #region Process
 
     bool StartProcess()
+{
+    if (stockfishProcess is { HasExited: false })
     {
-        if (stockfishProcess is { HasExited: false })
-        {
-            return true;
-        }
-
-        string executablePath = Path.Combine(Application.dataPath, executableRelativePath);
-        if (!File.Exists(executablePath))
-        {
-            UnityEngine.Debug.LogError($"[StockfishService] Stockfish executable missing at: {executablePath}");
-            return false;
-        }
-
-        try
-        {
-            ProcessStartInfo startInfo = new()
-            {
-                FileName = executablePath,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            stockfishProcess = new Process
-            {
-                StartInfo = startInfo,
-                EnableRaisingEvents = true
-            };
-
-            stockfishProcess.OutputDataReceived += OnProcessOutput;
-            stockfishProcess.Exited += OnProcessExited;
-            stockfishProcess.Start();
-            stockfishProcess.BeginOutputReadLine();
-            processInput = stockfishProcess.StandardInput;
-            engineReady = false;
-            return true;
-        }
-        catch (Exception exception)
-        {
-            UnityEngine.Debug.LogError($"[StockfishService] Failed to start process: {exception.Message}");
-            ShutdownProcess();
-            return false;
-        }
+        return true;
     }
+
+    string executablePath = ResolveExecutablePath();
+
+    if (string.IsNullOrWhiteSpace(executablePath))
+    {
+        Debug.LogError("[StockfishService] Failed to resolve Stockfish executable.");
+        return false;
+    }
+
+    try
+    {
+        ProcessStartInfo startInfo = new()
+        {
+            FileName = executablePath,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        stockfishProcess = new Process
+        {
+            StartInfo = startInfo,
+            EnableRaisingEvents = true
+        };
+
+        stockfishProcess.OutputDataReceived += OnProcessOutput;
+        stockfishProcess.Exited += OnProcessExited;
+
+        stockfishProcess.Start();
+        stockfishProcess.BeginOutputReadLine();
+
+        processInput = stockfishProcess.StandardInput;
+        engineReady = false;
+
+        Debug.Log($"[StockfishService] Started using: {executablePath}");
+
+        return true;
+    }
+    catch (Exception exception)
+    {
+        Debug.LogError($"[StockfishService] Failed to start process: {exception.Message}");
+        ShutdownProcess();
+        return false;
+    }
+}
 
     void ShutdownProcess()
     {
@@ -291,7 +298,7 @@ public class StockfishService : MonoBehaviour
         }
         catch (Exception exception)
         {
-            UnityEngine.Debug.LogWarning($"[StockfishService] Process shutdown warning: {exception.Message}");
+            Debug.LogWarning($"[StockfishService] Process shutdown warning: {exception.Message}");
         }
         finally
         {
@@ -316,7 +323,7 @@ public class StockfishService : MonoBehaviour
         }
         catch (Exception exception)
         {
-            UnityEngine.Debug.LogError($"[StockfishService] Failed to send command '{command}': {exception.Message}");
+            Debug.LogError($"[StockfishService] Failed to send command '{command}': {exception.Message}");
             engineReady = false;
         }
     }
@@ -350,7 +357,7 @@ public class StockfishService : MonoBehaviour
             uciReadyTask?.TrySetResult(false);
             isReadyTask?.TrySetResult(false);
             pendingBestMoveTask?.TrySetResult(null);
-            UnityEngine.Debug.LogError("[StockfishService] Process exited unexpectedly.");
+            Debug.LogError("[StockfishService] Process exited unexpectedly.");
             return;
         }
 
@@ -377,14 +384,14 @@ public class StockfishService : MonoBehaviour
         Task completed = await Task.WhenAny(task, Task.Delay(timeoutMs));
         if (completed != task)
         {
-            UnityEngine.Debug.LogError($"[StockfishService] Timeout waiting for {label}.");
+            Debug.LogError($"[StockfishService] Timeout waiting for {label}.");
             return false;
         }
 
         bool signal = await task;
         if (!signal)
         {
-            UnityEngine.Debug.LogError($"[StockfishService] Engine returned failure while waiting for {label}.");
+            Debug.LogError($"[StockfishService] Engine returned failure while waiting for {label}.");
         }
 
         return signal;
@@ -395,12 +402,51 @@ public class StockfishService : MonoBehaviour
         Task completed = await Task.WhenAny(task, Task.Delay(timeoutMs));
         if (completed != task)
         {
-            UnityEngine.Debug.LogError($"[StockfishService] Timeout waiting for {label}.");
+            Debug.LogError($"[StockfishService] Timeout waiting for {label}.");
             return null;
         }
 
         return await task;
     }
 
+    #endregion
+    
+    #region Path Resolution
+    
+    string ResolveExecutablePath()
+    {
+        string folderPath = Path.Combine(Application.dataPath, StockfishFolder);
+    
+        if (!Directory.Exists(folderPath))
+        {
+            Debug.LogError($"[Stockfish] Folder not found: {folderPath}");
+            return null;
+        }
+    
+        string[] executables = Directory.GetFiles(folderPath, "*.exe", SearchOption.TopDirectoryOnly);
+    
+        if (executables.Length == 0)
+        {
+            Debug.LogError($"[Stockfish] No .exe found in: {folderPath}");
+            return null;
+        }
+    
+        // Prefer AVX2 builds if available
+        foreach (string exe in executables)
+        {
+            if (exe.Contains("avx2", StringComparison.OrdinalIgnoreCase))
+            {
+                return exe;
+            }
+        }
+    
+        if (executables.Length > 1)
+        {
+            Debug.LogWarning($"[Stockfish] Multiple executables found. Using first: {executables[0]}");
+        }
+    
+        return executables[0];
+    }
+    
     #endregion
 }
