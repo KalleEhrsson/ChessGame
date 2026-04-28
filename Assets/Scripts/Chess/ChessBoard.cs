@@ -43,6 +43,7 @@ public class ChessBoard : MonoBehaviour
     int fullMoveNumber = 1;
 
 #if UNITY_EDITOR
+    bool pendingAutoSetup;
     bool delayedHierarchyOrganizeQueued;
     bool delayedHierarchyOrganizeWaitingForUpdate;
 #endif
@@ -114,15 +115,24 @@ public class ChessBoard : MonoBehaviour
         RefreshPiecePrefabReferences();
         if (Application.isPlaying)
         {
-            AutoSetupBoard();
             return;
         }
 
-        AutoSetupBoard(false);
 #if UNITY_EDITOR
-        QueueDelayedHierarchyOrganize();
+        pendingAutoSetup = true;
+        UnityEditor.EditorApplication.delayCall -= PerformAutoSetupIfNeeded;
+        UnityEditor.EditorApplication.delayCall += PerformAutoSetupIfNeeded;
 #endif
     }
+
+#if UNITY_EDITOR
+    void OnDisable()
+    {
+        UnityEditor.EditorApplication.delayCall -= PerformAutoSetupIfNeeded;
+        UnityEditor.EditorApplication.delayCall -= BeginDelayedOrganizeTileHierarchy;
+        UnityEditor.EditorApplication.update -= DelayedOrganizeTileHierarchy;
+    }
+#endif
 
     #endregion
 
@@ -228,6 +238,12 @@ public class ChessBoard : MonoBehaviour
 
         SpawnBackRank(PieceTeam.Black, "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8");
         SpawnPawns(PieceTeam.Black, 7);
+    }
+
+    [ContextMenu("Rebuild Board")]
+    void RebuildBoard()
+    {
+        AutoSetupBoard();
     }
 
     void SpawnBackRank(PieceTeam team, string a, string b, string c, string d, string e, string f, string g, string h)
@@ -507,6 +523,18 @@ public class ChessBoard : MonoBehaviour
     }
     
 #if UNITY_EDITOR
+    void PerformAutoSetupIfNeeded()
+    {
+        UnityEditor.EditorApplication.delayCall -= PerformAutoSetupIfNeeded;
+        if (Application.isPlaying || this == null || !pendingAutoSetup)
+        {
+            return;
+        }
+
+        pendingAutoSetup = false;
+        AutoSetupBoard();
+    }
+
     void QueueDelayedHierarchyOrganize()
     {
         if (delayedHierarchyOrganizeQueued)
