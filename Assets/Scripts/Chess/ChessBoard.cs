@@ -11,8 +11,6 @@ public class ChessBoard : MonoBehaviour
     const int BoardSize = 8;
     const string BlackPieceFolder = "Assets/Prefabs/ChessPieces/Black";
     const string WhitePieceFolder = "Assets/Prefabs/ChessPieces/White";
-    const string BrokenBlackPieceFolder = "Assets/Prefabs/ChessPiecesBroken/Black";
-    const string BrokenWhitePieceFolder = "Assets/Prefabs/ChessPiecesBroken/White";
 
     public static ChessBoard Instance { get; private set; }
 
@@ -22,8 +20,7 @@ public class ChessBoard : MonoBehaviour
     readonly Dictionary<string, ChessTile> tilesByName = new (StringComparer.OrdinalIgnoreCase);
     [SerializeField] GameObject[] whitePiecePrefabs = Array.Empty<GameObject>();
     [SerializeField] GameObject[] blackPiecePrefabs = Array.Empty<GameObject>();
-    [SerializeField] GameObject[] whiteBrokenPiecePrefabs = Array.Empty<GameObject>();
-    [SerializeField] GameObject[] blackBrokenPiecePrefabs = Array.Empty<GameObject>();
+    [SerializeField] BrokenPiecePrefabRegistry brokenPiecePrefabRegistry;
     [SerializeField, Min(0.01f)] float captureImpactDelay = 0.05f;
     [SerializeField] string brokenPiecesRootName = "BrokenPiecesRuntime";
     [SerializeField, Min(0f)] float brokenPieceImpactForce = 10f;
@@ -43,6 +40,7 @@ public class ChessBoard : MonoBehaviour
     int fullMoveNumber = 1;
 
 #if UNITY_EDITOR
+    bool pendingAutoSetup;
     bool delayedHierarchyOrganizeQueued;
     bool delayedHierarchyOrganizeWaitingForUpdate;
 #endif
@@ -112,17 +110,30 @@ public class ChessBoard : MonoBehaviour
         RegisterInstance();
         RenameBoardObject();
         RefreshPiecePrefabReferences();
+        if (brokenPiecePrefabRegistry == null)
+        {
+            brokenPiecePrefabRegistry = GetComponent<BrokenPiecePrefabRegistry>();
+        }
         if (Application.isPlaying)
         {
-            AutoSetupBoard();
             return;
         }
 
-        AutoSetupBoard(false);
 #if UNITY_EDITOR
-        QueueDelayedHierarchyOrganize();
+        pendingAutoSetup = true;
+        UnityEditor.EditorApplication.delayCall -= PerformAutoSetupIfNeeded;
+        UnityEditor.EditorApplication.delayCall += PerformAutoSetupIfNeeded;
 #endif
     }
+
+#if UNITY_EDITOR
+    void OnDisable()
+    {
+        UnityEditor.EditorApplication.delayCall -= PerformAutoSetupIfNeeded;
+        UnityEditor.EditorApplication.delayCall -= BeginDelayedOrganizeTileHierarchy;
+        UnityEditor.EditorApplication.update -= DelayedOrganizeTileHierarchy;
+    }
+#endif
 
     #endregion
 
@@ -230,6 +241,12 @@ public class ChessBoard : MonoBehaviour
         SpawnPawns(PieceTeam.Black, 7);
     }
 
+    [ContextMenu("Rebuild Board")]
+    void RebuildBoard()
+    {
+        AutoSetupBoard();
+    }
+
     void SpawnBackRank(PieceTeam team, string a, string b, string c, string d, string e, string f, string g, string h)
     {
         SpawnPiece(team, PieceType.Rook, a);
@@ -307,8 +324,6 @@ public class ChessBoard : MonoBehaviour
 #if UNITY_EDITOR
         whitePiecePrefabs = LoadPiecePrefabsFromFolder(WhitePieceFolder);
         blackPiecePrefabs = LoadPiecePrefabsFromFolder(BlackPieceFolder);
-        whiteBrokenPiecePrefabs = LoadPiecePrefabsFromFolder(BrokenWhitePieceFolder);
-        blackBrokenPiecePrefabs = LoadPiecePrefabsFromFolder(BrokenBlackPieceFolder);
 #endif
     }
 
@@ -507,6 +522,18 @@ public class ChessBoard : MonoBehaviour
     }
     
 #if UNITY_EDITOR
+    void PerformAutoSetupIfNeeded()
+    {
+        UnityEditor.EditorApplication.delayCall -= PerformAutoSetupIfNeeded;
+        if (Application.isPlaying || this == null || !pendingAutoSetup)
+        {
+            return;
+        }
+
+        pendingAutoSetup = false;
+        AutoSetupBoard();
+    }
+
     void QueueDelayedHierarchyOrganize()
     {
         if (delayedHierarchyOrganizeQueued)
@@ -997,8 +1024,8 @@ public class ChessBoard : MonoBehaviour
             return;
         }
 
-        string expectedPath = GetExpectedBrokenPrefabAssetPath(capturedPiece.Team, capturedPiece.Type);
-        Debug.LogWarning($"[ChessBoard] Missing broken prefab for capture '{capturedPiece.Team}{capturedPiece.Type}'. Expected: {expectedPath}. Falling back to captured tray placement.");
+        string expectedPath = BrokenPiecePrefabRegistry.GetExpectedBrokenPrefabAssetPath(capturedPiece.Team, capturedPiece.Type);
+        Debug.LogWarning($"[ChessBoard] Missing broken prefab. Captured={capturedPiece.Team}{capturedPiece.Type}, ExpectedPath={expectedPath}");
         bool placedInTray = capturedPieceTray != null && capturedPieceTray.PlaceCapturedPiece(capturedPiece);
         if (!placedInTray)
         {
@@ -1074,24 +1101,14 @@ public class ChessBoard : MonoBehaviour
 
     GameObject LoadBrokenPiecePrefab(PieceTeam team, PieceType type)
     {
-        string prefabName = $"{team}{type}Broken";
-        GameObject[] prefabs = team == PieceTeam.White ? whiteBrokenPiecePrefabs : blackBrokenPiecePrefabs;
-        for (int i = 0; i < prefabs.Length; i++)
+        if (brokenPiecePrefabRegistry == null)
         {
-            GameObject prefab = prefabs[i];
-            if (prefab != null && prefab.name.Equals(prefabName, StringComparison.OrdinalIgnoreCase))
-            {
-                return prefab;
-            }
+            brokenPiecePrefabRegistry = GetComponent<BrokenPiecePrefabRegistry>();
         }
 
-        return null;
-    }
-
-    string GetExpectedBrokenPrefabAssetPath(PieceTeam team, PieceType type)
-    {
-        string folder = team == PieceTeam.White ? BrokenWhitePieceFolder : BrokenBlackPieceFolder;
-        return $"{folder}/{team}{type}Broken.prefab";
+        return brokenPiecePrefabRegistry != null
+            ? brokenPiecePrefabRegistry.GetBrokenPrefab(team, type)
+            : null;
     }
 
     Transform GetOrCreateBrokenPiecesRoot()
