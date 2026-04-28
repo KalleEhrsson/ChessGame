@@ -60,7 +60,7 @@ public class ChessAiRoundConsole : MonoBehaviour
 
     [Header("UI References")]
     [SerializeField] RectTransform panelRoot;
-    [SerializeField] TMP_Text logText;
+    [SerializeField] TextMeshProUGUI logText;
     [SerializeField] ScrollRect scrollRect;
     [SerializeField] RectTransform contentRoot;
 
@@ -205,12 +205,19 @@ public class ChessAiRoundConsole : MonoBehaviour
 
     void EnsureUi()
     {
+        if (panelRoot != null || scrollRect != null || contentRoot != null || logText != null)
+        {
+            TryResolveMissingReferences();
+        }
+
         if (panelRoot != null && logText != null && scrollRect != null && contentRoot != null)
         {
             ResolveCanvasFromHierarchy();
             EnsureCanvasSettings();
             EnsurePanelSettings();
             EnsureViewportReference();
+            EnsureContentSettings();
+            EnsureTextSettings();
             return;
         }
 
@@ -380,6 +387,100 @@ public class ChessAiRoundConsole : MonoBehaviour
                 scrollRect.viewport = viewportRect;
             }
         }
+    }
+
+    void TryResolveMissingReferences()
+    {
+        if (panelRoot != null)
+        {
+            if (scrollRect == null)
+            {
+                scrollRect = panelRoot.GetComponentInChildren<ScrollRect>(true);
+            }
+
+            if (contentRoot == null && scrollRect != null)
+            {
+                contentRoot = scrollRect.content;
+            }
+
+            if (logText == null)
+            {
+                logText = panelRoot.GetComponentInChildren<TextMeshProUGUI>(true);
+            }
+        }
+
+        if (scrollRect != null && contentRoot == null)
+        {
+            contentRoot = scrollRect.content;
+        }
+
+        if (scrollRect != null && panelRoot == null)
+        {
+            panelRoot = scrollRect.GetComponentInParent<RectTransform>();
+        }
+    }
+
+    void EnsureContentSettings()
+    {
+        if (contentRoot == null)
+        {
+            return;
+        }
+
+        VerticalLayoutGroup layout = contentRoot.GetComponent<VerticalLayoutGroup>();
+        if (layout == null)
+        {
+            layout = contentRoot.gameObject.AddComponent<VerticalLayoutGroup>();
+        }
+
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.childControlHeight = true;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childForceExpandWidth = false;
+        layout.spacing = 4f;
+
+        ContentSizeFitter fitter = contentRoot.GetComponent<ContentSizeFitter>();
+        if (fitter == null)
+        {
+            fitter = contentRoot.gameObject.AddComponent<ContentSizeFitter>();
+        }
+
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+    }
+
+    void EnsureTextSettings()
+    {
+        if (logText == null)
+        {
+            return;
+        }
+
+        RectTransform textRect = logText.rectTransform;
+        textRect.anchorMin = new Vector2(0f, 1f);
+        textRect.anchorMax = new Vector2(1f, 1f);
+        textRect.pivot = new Vector2(0f, 1f);
+        textRect.anchoredPosition = Vector2.zero;
+        textRect.sizeDelta = new Vector2(0f, 0f);
+
+        logText.fontSize = 20f;
+        logText.enableAutoSizing = true;
+        logText.fontSizeMin = 18f;
+        logText.fontSizeMax = 24f;
+        logText.color = new Color(0.93f, 0.96f, 1f, 1f);
+        logText.alignment = TextAlignmentOptions.TopLeft;
+        logText.textWrappingMode = TextWrappingModes.Normal;
+        logText.overflowMode = TextOverflowModes.Overflow;
+
+        LayoutElement textLayout = logText.GetComponent<LayoutElement>();
+        if (textLayout == null)
+        {
+            textLayout = logText.gameObject.AddComponent<LayoutElement>();
+        }
+
+        textLayout.flexibleWidth = 1f;
+        textLayout.minHeight = 120f;
     }
 
     void ApplyVisibility()
