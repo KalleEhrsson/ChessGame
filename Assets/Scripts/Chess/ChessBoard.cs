@@ -11,6 +11,8 @@ public class ChessBoard : MonoBehaviour
     const int BoardSize = 8;
     const string BlackPieceFolder = "Assets/Prefabs/ChessPieces/Black";
     const string WhitePieceFolder = "Assets/Prefabs/ChessPieces/White";
+    const string BrokenBlackPieceFolder = "Assets/Prefabs/ChessPiecesBroken/Black";
+    const string BrokenWhitePieceFolder = "Assets/Prefabs/ChessPiecesBroken/White";
 
     public static ChessBoard Instance { get; private set; }
 
@@ -20,16 +22,23 @@ public class ChessBoard : MonoBehaviour
     readonly Dictionary<string, ChessTile> tilesByName = new (StringComparer.OrdinalIgnoreCase);
     [SerializeField] GameObject[] whitePiecePrefabs = Array.Empty<GameObject>();
     [SerializeField] GameObject[] blackPiecePrefabs = Array.Empty<GameObject>();
-    [SerializeField] GameObject captureDestructiblePrefab;
-    [SerializeField, Min(0f)] float captureImpactForce = 12f;
-    [SerializeField, Min(0.01f)] float captureImpactRadius = 0.4f;
+    [SerializeField] GameObject[] whiteBrokenPiecePrefabs = Array.Empty<GameObject>();
+    [SerializeField] GameObject[] blackBrokenPiecePrefabs = Array.Empty<GameObject>();
     [SerializeField, Min(0.01f)] float captureImpactDelay = 0.05f;
+    [SerializeField] string brokenPiecesRootName = "BrokenPiecesRuntime";
+    [SerializeField, Min(0f)] float brokenPieceImpactForce = 10f;
+    [SerializeField, Min(0f)] float brokenPieceExplosionForce = 2f;
+    [SerializeField, Min(0.01f)] float brokenPieceExplosionRadius = 0.45f;
+    [SerializeField, Min(0f)] float brokenPieceUpwardModifier = 0.1f;
+    [SerializeField, Min(0f)] float brokenPieceLifetime = 10f;
+    [SerializeField] bool destroyBrokenPiecesAfterLifetime = true;
     ChessMoveValidator moveValidator;
     ChessTurnManager turnManager;
     ChessGameStateController gameStateController;
     ChessCapturedPieceTray capturedPieceTray;
     ChessTile enPassantTargetTile;
     ChessPiece enPassantVulnerablePawn;
+    Transform brokenPiecesRuntimeRoot;
     int halfMoveClock;
     int fullMoveNumber = 1;
 
@@ -298,6 +307,8 @@ public class ChessBoard : MonoBehaviour
 #if UNITY_EDITOR
         whitePiecePrefabs = LoadPiecePrefabsFromFolder(WhitePieceFolder);
         blackPiecePrefabs = LoadPiecePrefabsFromFolder(BlackPieceFolder);
+        whiteBrokenPiecePrefabs = LoadPiecePrefabsFromFolder(BrokenWhitePieceFolder);
+        blackBrokenPiecePrefabs = LoadPiecePrefabsFromFolder(BrokenBlackPieceFolder);
 #endif
     }
 
@@ -958,12 +969,18 @@ public class ChessBoard : MonoBehaviour
             await AwaitSeconds(captureImpactDelay);
         }
 
-        ResolveCaptureOnImpact(capturedPiece);
+        Vector3 attackerDirection = endWorldPosition - startWorldPosition;
+        ResolveCaptureOnImpact(capturedPiece, attackerDirection);
     }
 
     #region Capture Impact
 
     void ResolveCaptureOnImpact(ChessPiece capturedPiece)
+    {
+        ResolveCaptureOnImpact(capturedPiece, Vector3.zero);
+    }
+
+    void ResolveCaptureOnImpact(ChessPiece capturedPiece, Vector3 attackerDirection)
     {
         if (capturedPiece == null)
         {
@@ -971,15 +988,17 @@ public class ChessBoard : MonoBehaviour
         }
 
         Vector3 impactPosition = capturedPiece.transform.position;
-        bool spawnedDebris = TrySpawnCaptureDebris(impactPosition, capturedPiece.transform.rotation);
+        bool spawnedDebris = TrySpawnCaptureDebris(capturedPiece, impactPosition, capturedPiece.transform.rotation, attackerDirection);
 
         if (spawnedDebris)
         {
+            capturedPiece.SetTile(null);
             capturedPiece.gameObject.SetActive(false);
             return;
         }
 
-        Debug.LogWarning("[ChessBoard] Capture destructible prefab is missing. Falling back to captured tray placement.");
+        string expectedPath = GetExpectedBrokenPrefabAssetPath(capturedPiece.Team, capturedPiece.Type);
+        Debug.LogWarning($"[ChessBoard] Missing broken prefab for capture '{capturedPiece.Team}{capturedPiece.Type}'. Expected: {expectedPath}. Falling back to captured tray placement.");
         bool placedInTray = capturedPieceTray != null && capturedPieceTray.PlaceCapturedPiece(capturedPiece);
         if (!placedInTray)
         {
@@ -988,21 +1007,40 @@ public class ChessBoard : MonoBehaviour
         }
     }
 
-    bool TrySpawnCaptureDebris(Vector3 position, Quaternion rotation)
+    bool TrySpawnCaptureDebris(ChessPiece capturedPiece, Vector3 position, Quaternion rotation, Vector3 attackerDirection)
     {
-        if (captureDestructiblePrefab == null)
+        if (capturedPiece == null)
         {
             return false;
         }
 
-        GameObject debrisRoot = Instantiate(captureDestructiblePrefab, position, rotation);
-        Rigidbody[] rigidbodies = debrisRoot.GetComponentsInChildren<Rigidbody>(true);
+        GameObject brokenPrefab = LoadBrokenPiecePrefab(capturedPiece.Team, capturedPiece.Type);
+        if (brokenPrefab == null)
+        {
+            return false;
+        }
+
+        Transform parent = GetOrCreateBrokenPiecesRoot();
+        GameObject debrisRoot = Instantiate(brokenPrefab, position, rotation, parent);
+        debrisRoot.name = $"{capturedPiece.Team}{capturedPiece.Type}BrokenRuntime";
+        if (ShouldApplyCapturedPieceScale(brokenPrefab.transform))
+        {
+            debrisRoot.transform.localScale = capturedPiece.transform.lossyScale;
+        }
+
+        Rigidbody[] rigidbodies = PrepareBrokenPiecePhysics(debrisRoot);
         if (rigidbodies.Length == 0)
         {
             return true;
         }
 
-        Vector3 forceDirection = Vector3.down;
+        Vector3 planarAttackerDirection = new Vector3(attackerDirection.x, 0f, attackerDirection.z);
+        if (!IsFinite(planarAttackerDirection) || planarAttackerDirection.sqrMagnitude < 0.0001f)
+        {
+            planarAttackerDirection = Vector3.zero;
+        }
+
+        Vector3 forceDirection = (planarAttackerDirection.normalized + Vector3.down).normalized;
         for (int i = 0; i < rigidbodies.Length; i++)
         {
             Rigidbody body = rigidbodies[i];
@@ -1013,11 +1051,163 @@ public class ChessBoard : MonoBehaviour
 
             body.isKinematic = false;
             body.detectCollisions = true;
-            body.AddExplosionForce(captureImpactForce, position + Vector3.up * captureImpactRadius, captureImpactRadius, 0f, ForceMode.Impulse);
-            body.AddForce(forceDirection * captureImpactForce, ForceMode.Impulse);
+            body.AddForce(forceDirection * brokenPieceImpactForce, ForceMode.Impulse);
+            body.AddExplosionForce(
+                brokenPieceExplosionForce,
+                position,
+                brokenPieceExplosionRadius,
+                brokenPieceUpwardModifier,
+                ForceMode.Impulse);
+        }
+
+        if (destroyBrokenPiecesAfterLifetime && brokenPieceLifetime > 0f)
+        {
+            Destroy(debrisRoot, brokenPieceLifetime);
         }
 
         return true;
+    }
+
+    #endregion
+
+    #region Broken Piece Prefabs
+
+    GameObject LoadBrokenPiecePrefab(PieceTeam team, PieceType type)
+    {
+        string prefabName = $"{team}{type}Broken";
+        GameObject[] prefabs = team == PieceTeam.White ? whiteBrokenPiecePrefabs : blackBrokenPiecePrefabs;
+        for (int i = 0; i < prefabs.Length; i++)
+        {
+            GameObject prefab = prefabs[i];
+            if (prefab != null && prefab.name.Equals(prefabName, StringComparison.OrdinalIgnoreCase))
+            {
+                return prefab;
+            }
+        }
+
+        return null;
+    }
+
+    string GetExpectedBrokenPrefabAssetPath(PieceTeam team, PieceType type)
+    {
+        string folder = team == PieceTeam.White ? BrokenWhitePieceFolder : BrokenBlackPieceFolder;
+        return $"{folder}/{team}{type}Broken.prefab";
+    }
+
+    Transform GetOrCreateBrokenPiecesRoot()
+    {
+        if (brokenPiecesRuntimeRoot != null)
+        {
+            return brokenPiecesRuntimeRoot;
+        }
+
+        string rootName = string.IsNullOrWhiteSpace(brokenPiecesRootName) ? "BrokenPiecesRuntime" : brokenPiecesRootName;
+        GameObject existing = GameObject.Find(rootName);
+        if (existing != null)
+        {
+            brokenPiecesRuntimeRoot = existing.transform;
+            return brokenPiecesRuntimeRoot;
+        }
+
+        GameObject runtimeRoot = new GameObject(rootName);
+        brokenPiecesRuntimeRoot = runtimeRoot.transform;
+        return brokenPiecesRuntimeRoot;
+    }
+
+    static bool ShouldApplyCapturedPieceScale(Transform prefabTransform)
+    {
+        if (prefabTransform == null)
+        {
+            return false;
+        }
+
+        Vector3 scale = prefabTransform.localScale;
+        return Mathf.Approximately(scale.x, 1f) &&
+               Mathf.Approximately(scale.y, 1f) &&
+               Mathf.Approximately(scale.z, 1f);
+    }
+
+    Rigidbody[] PrepareBrokenPiecePhysics(GameObject brokenRoot)
+    {
+        if (brokenRoot == null)
+        {
+            return Array.Empty<Rigidbody>();
+        }
+
+        List<Rigidbody> bodies = new List<Rigidbody>(16);
+        Transform rootTransform = brokenRoot.transform;
+        bool rootIsVisibleMesh = IsVisibleOrCollisionPart(rootTransform);
+        for (int i = 0; i < rootTransform.childCount; i++)
+        {
+            TryAddPhysicsRecursive(rootTransform.GetChild(i), bodies);
+        }
+
+        if (rootTransform.childCount == 0 && rootIsVisibleMesh)
+        {
+            EnsurePhysicsComponents(rootTransform, bodies);
+        }
+
+        return bodies.ToArray();
+    }
+
+    void TryAddPhysicsRecursive(Transform current, List<Rigidbody> bodies)
+    {
+        if (current == null)
+        {
+            return;
+        }
+
+        if (IsVisibleOrCollisionPart(current))
+        {
+            EnsurePhysicsComponents(current, bodies);
+        }
+
+        for (int i = 0; i < current.childCount; i++)
+        {
+            TryAddPhysicsRecursive(current.GetChild(i), bodies);
+        }
+    }
+
+    static bool IsVisibleOrCollisionPart(Transform part)
+    {
+        if (part == null)
+        {
+            return false;
+        }
+
+        return part.GetComponent<MeshRenderer>() != null || part.GetComponent<Collider>() != null;
+    }
+
+    void EnsurePhysicsComponents(Transform part, List<Rigidbody> bodies)
+    {
+        if (part == null)
+        {
+            return;
+        }
+
+        Collider collider = part.GetComponent<Collider>();
+        if (collider == null)
+        {
+            MeshFilter meshFilter = part.GetComponent<MeshFilter>();
+            if (meshFilter != null && meshFilter.sharedMesh != null)
+            {
+                MeshCollider meshCollider = part.gameObject.AddComponent<MeshCollider>();
+                meshCollider.sharedMesh = meshFilter.sharedMesh;
+                meshCollider.convex = true;
+                collider = meshCollider;
+            }
+        }
+
+        Rigidbody body = part.GetComponent<Rigidbody>();
+        if (body == null)
+        {
+            body = part.gameObject.AddComponent<Rigidbody>();
+        }
+
+        if (body != null)
+        {
+            bodies.Add(body);
+        }
     }
 
     #endregion
