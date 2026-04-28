@@ -18,16 +18,31 @@ public class ChessBoard : MonoBehaviour
 
     readonly ChessTile[,] tiles = new ChessTile[BoardSize, BoardSize];
     readonly Dictionary<string, ChessTile> tilesByName = new (StringComparer.OrdinalIgnoreCase);
+
+    [Header("Piece Prefabs")]
+    [Tooltip("Auto-populated white piece prefabs used when spawning the starting position.")]
     [SerializeField] GameObject[] whitePiecePrefabs = Array.Empty<GameObject>();
+    [Tooltip("Auto-populated black piece prefabs used when spawning the starting position.")]
     [SerializeField] GameObject[] blackPiecePrefabs = Array.Empty<GameObject>();
+
+    [Header("Broken Piece Capture FX")]
+    [Tooltip("Registry that maps intact pieces to their broken-piece prefabs.")]
     [SerializeField] BrokenPiecePrefabRegistry brokenPiecePrefabRegistry;
+    [Tooltip("Delay (seconds) before capture impact force is applied.")]
     [SerializeField, Min(0.01f)] float captureImpactDelay = 0.05f;
+    [Tooltip("Runtime container name created under the board for broken piece instances.")]
     [SerializeField] string brokenPiecesRootName = "BrokenPiecesRuntime";
+    [Tooltip("Direct impact force applied to broken pieces on capture.")]
     [SerializeField, Min(0f)] float brokenPieceImpactForce = 10f;
+    [Tooltip("Radial explosion force applied to nearby broken piece parts.")]
     [SerializeField, Min(0f)] float brokenPieceExplosionForce = 2f;
+    [Tooltip("Explosion radius used when applying radial force.")]
     [SerializeField, Min(0.01f)] float brokenPieceExplosionRadius = 0.45f;
+    [Tooltip("Upward lift modifier applied with explosion force.")]
     [SerializeField, Min(0f)] float brokenPieceUpwardModifier = 0.1f;
+    [Tooltip("Lifetime (seconds) before spawned broken pieces are cleaned up.")]
     [SerializeField, Min(0f)] float brokenPieceLifetime = 10f;
+    [Tooltip("When enabled, broken pieces are destroyed after their lifetime expires.")]
     [SerializeField] bool destroyBrokenPiecesAfterLifetime = true;
     ChessMoveValidator moveValidator;
     ChessTurnManager turnManager;
