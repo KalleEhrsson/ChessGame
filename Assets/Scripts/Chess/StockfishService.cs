@@ -44,7 +44,7 @@ public class StockfishService : MonoBehaviour
 
     Process stockfishProcess;
     StreamWriter processInput;
-    CancellationTokenSource processLifetimeTokenSource;
+    readonly SemaphoreSlim initializeSemaphore = new(1, 1);
 
     TaskCompletionSource<bool> uciReadyTask;
     TaskCompletionSource<bool> isReadyTask;
@@ -109,35 +109,42 @@ public class StockfishService : MonoBehaviour
 
     public async Task<bool> InitializeAsync()
     {
-        if (IsReady)
+        await initializeSemaphore.WaitAsync();
+        try
         {
+            if (IsReady)
+            {
+                return true;
+            }
+
+            if (!StartProcess())
+            {
+                return false;
+            }
+
+            uciReadyTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            isReadyTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            SendCommand("uci");
+            if (!await WaitForSignalWithTimeout(uciReadyTask.Task, "uciok", 5000))
+            {
+                return false;
+            }
+
+            SendCommand("isready");
+            if (!await WaitForSignalWithTimeout(isReadyTask.Task, "readyok", 5000))
+            {
+                return false;
+            }
+
+            engineReady = true;
+            Debug.Log("[StockfishService] Engine ready.");
             return true;
         }
-
-        if (!StartProcess())
+        finally
         {
-            return false;
+            initializeSemaphore.Release();
         }
-
-        processLifetimeTokenSource ??= new CancellationTokenSource();
-        uciReadyTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        isReadyTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        SendCommand("uci");
-        if (!await WaitForSignalWithTimeout(uciReadyTask.Task, "uciok", 5000))
-        {
-            return false;
-        }
-
-        SendCommand("isready");
-        if (!await WaitForSignalWithTimeout(isReadyTask.Task, "readyok", 5000))
-        {
-            return false;
-        }
-
-        engineReady = true;
-        Debug.Log("[StockfishService] Engine ready.");
-        return true;
     }
 
     public async Task<string> RequestBestMoveAsync(string fen, int? depthOverride = null)
@@ -219,66 +226,62 @@ public class StockfishService : MonoBehaviour
     #region Process
 
     bool StartProcess()
-{
-    if (stockfishProcess is { HasExited: false })
     {
-        return true;
-    }
-
-    string executablePath = ResolveExecutablePath();
-
-    if (string.IsNullOrWhiteSpace(executablePath))
-    {
-        Debug.LogError("[StockfishService] Failed to resolve Stockfish executable.");
-        return false;
-    }
-
-    try
-    {
-        ProcessStartInfo startInfo = new()
+        if (stockfishProcess is { HasExited: false })
         {
-            FileName = executablePath,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            return true;
+        }
 
-        stockfishProcess = new Process
+        string executablePath = ResolveExecutablePath();
+
+        if (string.IsNullOrWhiteSpace(executablePath))
         {
-            StartInfo = startInfo,
-            EnableRaisingEvents = true
-        };
+            Debug.LogError("[StockfishService] Failed to resolve Stockfish executable.");
+            return false;
+        }
 
-        stockfishProcess.OutputDataReceived += OnProcessOutput;
-        stockfishProcess.Exited += OnProcessExited;
+        try
+        {
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = executablePath,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
 
-        stockfishProcess.Start();
-        stockfishProcess.BeginOutputReadLine();
+            stockfishProcess = new Process
+            {
+                StartInfo = startInfo,
+                EnableRaisingEvents = true
+            };
 
-        processInput = stockfishProcess.StandardInput;
-        engineReady = false;
+            stockfishProcess.OutputDataReceived += OnProcessOutput;
+            stockfishProcess.Exited += OnProcessExited;
 
-        Debug.Log($"[StockfishService] Started using: {executablePath}");
+            stockfishProcess.Start();
+            stockfishProcess.BeginOutputReadLine();
 
-        return true;
+            processInput = stockfishProcess.StandardInput;
+            engineReady = false;
+
+            Debug.Log($"[StockfishService] Started using: {executablePath}");
+
+            return true;
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError($"[StockfishService] Failed to start process: {exception.Message}");
+            ShutdownProcess();
+            return false;
+        }
     }
-    catch (Exception exception)
-    {
-        Debug.LogError($"[StockfishService] Failed to start process: {exception.Message}");
-        ShutdownProcess();
-        return false;
-    }
-}
 
     void ShutdownProcess()
     {
         try
         {
-            processLifetimeTokenSource?.Cancel();
-            processLifetimeTokenSource?.Dispose();
-            processLifetimeTokenSource = null;
-
             if (stockfishProcess == null)
             {
                 return;

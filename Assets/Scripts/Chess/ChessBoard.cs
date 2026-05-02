@@ -18,17 +18,38 @@ public class ChessBoard : MonoBehaviour
 
     readonly ChessTile[,] tiles = new ChessTile[BoardSize, BoardSize];
     readonly Dictionary<string, ChessTile> tilesByName = new (StringComparer.OrdinalIgnoreCase);
+
+    [Header("Piece Prefabs")]
+    [Tooltip("Auto-populated white piece prefabs used when spawning the starting position.")]
     [SerializeField] GameObject[] whitePiecePrefabs = Array.Empty<GameObject>();
+    [Tooltip("Auto-populated black piece prefabs used when spawning the starting position.")]
     [SerializeField] GameObject[] blackPiecePrefabs = Array.Empty<GameObject>();
+
+    [Header("Broken Piece Capture FX")]
+    [Tooltip("Registry that maps intact pieces to their broken-piece prefabs.")]
     [SerializeField] BrokenPiecePrefabRegistry brokenPiecePrefabRegistry;
+    [Tooltip("Delay (seconds) before capture impact force is applied.")]
     [SerializeField, Min(0.01f)] float captureImpactDelay = 0.05f;
+    [Tooltip("Runtime container name created under the board for broken piece instances.")]
     [SerializeField] string brokenPiecesRootName = "BrokenPiecesRuntime";
+    [Tooltip("Direct impact force applied to broken pieces on capture.")]
     [SerializeField, Min(0f)] float brokenPieceImpactForce = 10f;
+    [Tooltip("Radial explosion force applied to nearby broken piece parts.")]
     [SerializeField, Min(0f)] float brokenPieceExplosionForce = 2f;
+    [Tooltip("Explosion radius used when applying radial force.")]
     [SerializeField, Min(0.01f)] float brokenPieceExplosionRadius = 0.45f;
+    [Tooltip("Upward lift modifier applied with explosion force.")]
     [SerializeField, Min(0f)] float brokenPieceUpwardModifier = 0.1f;
+    [Tooltip("Lifetime (seconds) before spawned broken pieces are cleaned up.")]
     [SerializeField, Min(0f)] float brokenPieceLifetime = 10f;
+    [Tooltip("When enabled, broken pieces are destroyed after their lifetime expires.")]
     [SerializeField] bool destroyBrokenPiecesAfterLifetime = true;
+    [SerializeField, Min(0f)] float brokenScatterLifetime = 0.75f;
+    [SerializeField, Min(0.01f)] float brokenShrinkFadeDuration = 0.45f;
+    [SerializeField] AnimationCurve brokenShrinkCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+    [SerializeField] AnimationCurve brokenFadeCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+    [SerializeField] ParticleSystem brokenImpactParticlesPrefab;
+    [SerializeField] bool destroyBrokenRootAfterCleanup = true;
     ChessMoveValidator moveValidator;
     ChessTurnManager turnManager;
     ChessGameStateController gameStateController;
@@ -984,7 +1005,7 @@ public class ChessBoard : MonoBehaviour
             return;
         }
 
-        await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture);
+        await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture, capturedPiece);
 
         if (!isCapture || capturedPiece == null)
         {
@@ -1087,12 +1108,36 @@ public class ChessBoard : MonoBehaviour
                 ForceMode.Impulse);
         }
 
-        if (destroyBrokenPiecesAfterLifetime && brokenPieceLifetime > 0f)
+        AttachBrokenCleanupEffect(debrisRoot, position);
+        if (destroyBrokenPiecesAfterLifetime && brokenPieceLifetime > 0f && !destroyBrokenRootAfterCleanup)
         {
             Destroy(debrisRoot, brokenPieceLifetime);
         }
 
         return true;
+    }
+
+    void AttachBrokenCleanupEffect(GameObject debrisRoot, Vector3 impactPosition)
+    {
+        if (debrisRoot == null)
+        {
+            return;
+        }
+
+        BrokenPieceCleanupEffect cleanup = debrisRoot.GetComponent<BrokenPieceCleanupEffect>();
+        if (cleanup == null)
+        {
+            cleanup = debrisRoot.AddComponent<BrokenPieceCleanupEffect>();
+        }
+
+        cleanup.Initialize(
+            brokenScatterLifetime,
+            brokenShrinkFadeDuration,
+            brokenShrinkCurve,
+            brokenFadeCurve,
+            brokenImpactParticlesPrefab,
+            destroyBrokenRootAfterCleanup,
+            impactPosition);
     }
 
     #endregion
@@ -1208,10 +1253,17 @@ public class ChessBoard : MonoBehaviour
             MeshFilter meshFilter = part.GetComponent<MeshFilter>();
             if (meshFilter != null && meshFilter.sharedMesh != null)
             {
-                MeshCollider meshCollider = part.gameObject.AddComponent<MeshCollider>();
-                meshCollider.sharedMesh = meshFilter.sharedMesh;
-                meshCollider.convex = true;
-                collider = meshCollider;
+                if (CanBuildConvexCollider(meshFilter.sharedMesh))
+                {
+                    MeshCollider meshCollider = part.gameObject.AddComponent<MeshCollider>();
+                    meshCollider.sharedMesh = meshFilter.sharedMesh;
+                    meshCollider.convex = true;
+                    collider = meshCollider;
+                }
+                else
+                {
+                    collider = part.gameObject.AddComponent<BoxCollider>();
+                }
             }
         }
 
@@ -1225,6 +1277,53 @@ public class ChessBoard : MonoBehaviour
         {
             bodies.Add(body);
         }
+    }
+
+    static bool CanBuildConvexCollider(Mesh mesh)
+    {
+        if (mesh == null)
+        {
+            return false;
+        }
+
+        if (!mesh.isReadable)
+        {
+            return false;
+        }
+
+        Vector3[] vertices = mesh.vertices;
+        if (vertices == null || vertices.Length < 4)
+        {
+            return false;
+        }
+
+        const float minDistanceSqr = 0.000001f;
+        int uniqueCount = 0;
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            bool isUnique = true;
+            for (int j = 0; j < i; j++)
+            {
+                if ((vertices[i] - vertices[j]).sqrMagnitude <= minDistanceSqr)
+                {
+                    isUnique = false;
+                    break;
+                }
+            }
+
+            if (!isUnique)
+            {
+                continue;
+            }
+
+            uniqueCount++;
+            if (uniqueCount >= 4)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     #endregion
