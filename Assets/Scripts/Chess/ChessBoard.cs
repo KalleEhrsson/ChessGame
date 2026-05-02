@@ -44,6 +44,12 @@ public class ChessBoard : MonoBehaviour
     [SerializeField, Min(0f)] float brokenPieceLifetime = 10f;
     [Tooltip("When enabled, broken pieces are destroyed after their lifetime expires.")]
     [SerializeField] bool destroyBrokenPiecesAfterLifetime = true;
+    [SerializeField, Min(0f)] float brokenScatterLifetime = 0.75f;
+    [SerializeField, Min(0.01f)] float brokenShrinkFadeDuration = 0.45f;
+    [SerializeField] AnimationCurve brokenShrinkCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+    [SerializeField] AnimationCurve brokenFadeCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+    [SerializeField] ParticleSystem brokenImpactParticlesPrefab;
+    [SerializeField] bool destroyBrokenRootAfterCleanup = true;
     ChessMoveValidator moveValidator;
     ChessTurnManager turnManager;
     ChessGameStateController gameStateController;
@@ -1102,12 +1108,36 @@ public class ChessBoard : MonoBehaviour
                 ForceMode.Impulse);
         }
 
-        if (destroyBrokenPiecesAfterLifetime && brokenPieceLifetime > 0f)
+        AttachBrokenCleanupEffect(debrisRoot, position);
+        if (destroyBrokenPiecesAfterLifetime && brokenPieceLifetime > 0f && !destroyBrokenRootAfterCleanup)
         {
             Destroy(debrisRoot, brokenPieceLifetime);
         }
 
         return true;
+    }
+
+    void AttachBrokenCleanupEffect(GameObject debrisRoot, Vector3 impactPosition)
+    {
+        if (debrisRoot == null)
+        {
+            return;
+        }
+
+        BrokenPieceCleanupEffect cleanup = debrisRoot.GetComponent<BrokenPieceCleanupEffect>();
+        if (cleanup == null)
+        {
+            cleanup = debrisRoot.AddComponent<BrokenPieceCleanupEffect>();
+        }
+
+        cleanup.Initialize(
+            brokenScatterLifetime,
+            brokenShrinkFadeDuration,
+            brokenShrinkCurve,
+            brokenFadeCurve,
+            brokenImpactParticlesPrefab,
+            destroyBrokenRootAfterCleanup,
+            impactPosition);
     }
 
     #endregion
