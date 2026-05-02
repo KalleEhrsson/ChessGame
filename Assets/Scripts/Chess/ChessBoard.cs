@@ -999,7 +999,7 @@ public class ChessBoard : MonoBehaviour
             return;
         }
 
-        await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture);
+        await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture, capturedPiece);
 
         if (!isCapture || capturedPiece == null)
         {
