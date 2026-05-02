@@ -9,7 +9,15 @@ public class ChessPieceMotion : MonoBehaviour
     [SerializeField] float pickupDelay = 1f;
     [SerializeField] float normalMoveArcHeight = 4f;
     [SerializeField] float captureMoveArcHeight = 6.5f;
-    [SerializeField] float captureDropHeight = 1.1f;
+    [SerializeField, Min(0.01f)] float grabDuration = 0.35f;
+    [SerializeField, Min(0f)] float grabHoldDuration = 0.12f;
+    [SerializeField, Min(0.01f)] float pullUpDuration = 0.55f;
+    [SerializeField, Min(0.01f)] float slamDuration = 0.18f;
+    [SerializeField, Min(0.01f)] float liftHeightMultiplier = 1.25f;
+    [SerializeField, Min(0f)] float minLiftHeight = 0.75f;
+    [SerializeField, Min(0f)] float maxLiftHeight = 2.25f;
+    [SerializeField, Min(0f)] float abovePiecePadding = 0.15f;
+    [SerializeField, Min(0f)] float fallbackCapturedPieceHeight = 1f;
     [SerializeField] float moveDuration = 1f;
     [SerializeField] float captureMoveDuration = 1.05f;
     [SerializeField] float dropDuration = 0.5f;
@@ -48,7 +56,7 @@ public class ChessPieceMotion : MonoBehaviour
 
     #region API
 
-    public async Task PlayMoveAsync(Vector3 startPos, Vector3 endPos, bool isCapture)
+    public async Task PlayMoveAsync(Vector3 startPos, Vector3 endPos, bool isCapture, ChessPiece capturedPiece = null)
     {
         Vector3 fallbackPosition = transform.position;
         startPos = SanitizePosition(startPos, fallbackPosition);
@@ -77,7 +85,7 @@ public class ChessPieceMotion : MonoBehaviour
 
             if (isCapture)
             {
-                await PlayCaptureArcMotionAsync(startPos, endPos, Mathf.Max(0.01f, captureMoveDuration));
+                await PlayCaptureArcMotionAsync(startPos, endPos, Mathf.Max(0.01f, captureMoveDuration), capturedPiece);
             }
             else
             {
@@ -127,49 +135,86 @@ public class ChessPieceMotion : MonoBehaviour
         transform.position = endPos;
     }
 
-    async Task PlayCaptureArcMotionAsync(Vector3 startPos, Vector3 endPos, float duration)
+    async Task PlayCaptureArcMotionAsync(Vector3 startPos, Vector3 endPos, float duration, ChessPiece capturedPiece)
     {
         startPos = SanitizePosition(startPos, transform.position);
         endPos = SanitizePosition(endPos, startPos);
 
-        Vector3 strikeStart = endPos + (Vector3.up * Mathf.Max(0f, captureDropHeight));
-        float riseTravelRatio = 0.72f;
-        float riseDuration = Mathf.Max(0.01f, duration * riseTravelRatio);
-        float dropDurationLocal = Mathf.Max(0.01f, duration - riseDuration);
+        Bounds capturedBounds = ResolveWorldBounds(capturedPiece != null ? capturedPiece.gameObject : null, out bool hasBounds);
+        float capturedPieceHeight = hasBounds
+            ? Mathf.Max(0.01f, capturedBounds.size.y)
+            : Mathf.Max(0.01f, fallbackCapturedPieceHeight);
 
+        if (!hasBounds)
+        {
+            Debug.LogWarning($"[ChessPieceMotion] Could not resolve bounds for captured piece. Using fallback height={fallbackCapturedPieceHeight:0.###}.", this);
+        }
+
+        float computedLiftHeight = Mathf.Clamp(capturedPieceHeight * liftHeightMultiplier, minLiftHeight, maxLiftHeight);
+        Vector3 targetBottom = hasBounds
+            ? new Vector3(endPos.x, capturedBounds.min.y, endPos.z)
+            : endPos;
+        Vector3 strikeStart = targetBottom + (Vector3.up * (capturedPieceHeight + abovePiecePadding));
+        Vector3 liftTarget = strikeStart + (Vector3.up * computedLiftHeight);
+
+        if (!IsFinite(strikeStart) || !IsFinite(liftTarget) || !IsFinite(targetBottom))
+        {
+            Debug.LogWarning("[ChessPieceMotion] Invalid capture motion positions detected. Falling back to standard move.", this);
+            await PlayArcMotionAsync(startPos, endPos, duration);
+            return;
+        }
+
+        await PlaySegmentAsync(startPos, strikeStart, grabDuration);
+        transform.rotation = baseRotation;
+        if (grabHoldDuration > 0f)
+        {
+            await AwaitSeconds(grabHoldDuration);
+        }
+
+        await PlayCaptureLiftAsync(strikeStart, liftTarget, pullUpDuration);
+        await PlayCaptureSlamAsync(liftTarget, targetBottom, slamDuration);
+
+        transform.position = targetBottom;
+    }
+
+
+    async Task PlayCaptureLiftAsync(Vector3 from, Vector3 to, float duration)
+    {
         float elapsed = 0f;
-        while (elapsed < riseDuration)
+        while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / riseDuration);
+            float t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, duration));
             float eased = Mathf.SmoothStep(0f, 1f, t);
 
-            Vector3 horizontal = Vector3.Lerp(startPos, strikeStart, eased);
+            Vector3 pos = Vector3.Lerp(from, to, eased);
             float arc = Mathf.Sin(eased * Mathf.PI);
-            float shapedArc = Mathf.Pow(Mathf.Max(0f, arc), 0.85f);
-            horizontal.y += shapedArc * captureMoveArcHeight;
+            pos.y += Mathf.Pow(Mathf.Max(0f, arc), 0.85f) * captureMoveArcHeight;
 
-            transform.position = SanitizePosition(horizontal, strikeStart);
-            transform.rotation = baseRotation * BuildTilt(eased);
-
+            transform.position = SanitizePosition(pos, to);
+            transform.rotation = baseRotation * BuildTilt(eased * 0.85f);
             await AwaitNextFrame();
         }
 
-        elapsed = 0f;
-        while (elapsed < dropDurationLocal)
+        transform.position = to;
+    }
+
+    async Task PlayCaptureSlamAsync(Vector3 from, Vector3 to, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / dropDurationLocal);
-            float descentT = t * t * t;
+            float t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, duration));
+            float eased = 1f - Mathf.Pow(1f - t, 4f);
+            Vector3 pos = Vector3.Lerp(from, to, eased);
 
-            Vector3 pos = Vector3.Lerp(strikeStart, endPos, descentT);
-            transform.position = SanitizePosition(pos, endPos);
+            transform.position = SanitizePosition(pos, to);
             transform.rotation = baseRotation;
-
             await AwaitNextFrame();
         }
 
-        transform.position = endPos;
+        transform.position = to;
     }
 
     async Task PlayDropSettleAsync(Vector3 endPos, float duration, bool isCapture)
@@ -271,6 +316,75 @@ public class ChessPieceMotion : MonoBehaviour
             elapsed += Time.deltaTime;
             await AwaitNextFrame();
         }
+    }
+
+
+    static Bounds ResolveWorldBounds(GameObject root, out bool hasBounds)
+    {
+        hasBounds = false;
+        Bounds combined = default;
+        if (root == null)
+        {
+            return combined;
+        }
+
+        Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+        if (TryCombineBounds(renderers, out combined))
+        {
+            hasBounds = true;
+            return combined;
+        }
+
+        Collider[] colliders = root.GetComponentsInChildren<Collider>(true);
+        if (TryCombineBounds(colliders, out combined))
+        {
+            hasBounds = true;
+            return combined;
+        }
+
+        return combined;
+    }
+
+    static bool TryCombineBounds<T>(T[] components, out Bounds bounds) where T : Component
+    {
+        bounds = default;
+        bool initialized = false;
+        if (components == null || components.Length == 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < components.Length; i++)
+        {
+            if (components[i] == null)
+            {
+                continue;
+            }
+
+            Bounds componentBounds = components[i] switch
+            {
+                Renderer renderer => renderer.bounds,
+                Collider collider => collider.bounds,
+                _ => default
+            };
+
+            if (!initialized)
+            {
+                bounds = componentBounds;
+                initialized = true;
+            }
+            else
+            {
+                bounds.Encapsulate(componentBounds);
+            }
+        }
+
+        return initialized;
+    }
+
+    static bool IsFinite(Vector3 value)
+    {
+        return float.IsFinite(value.x) && float.IsFinite(value.y) && float.IsFinite(value.z);
     }
 
     static Vector3 SanitizePosition(Vector3 candidate, Vector3 fallback)
