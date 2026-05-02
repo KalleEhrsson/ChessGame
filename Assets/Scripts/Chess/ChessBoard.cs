@@ -1286,6 +1286,11 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
+        if (!mesh.isReadable)
+        {
+            return false;
+        }
+
         Vector3[] vertices = mesh.vertices;
         if (vertices == null || vertices.Length < 4)
         {
