@@ -28,6 +28,9 @@ public class ChessDevSandboxController : MonoBehaviour
     readonly IReadOnlyList<ChessBoardPreset> presets = ChessBoardPresetLibrary.GetPresets();
 
     bool isOpen;
+    CursorLockMode previousCursorLockMode;
+    bool previousCursorVisible;
+    bool hasStoredCursorState;
     SandboxMode currentMode;
     PieceTeam selectedTeam = PieceTeam.White;
     PieceType selectedPieceType = PieceType.Queen;
@@ -62,7 +65,6 @@ public class ChessDevSandboxController : MonoBehaviour
 
         GameObject host = new("ChessDevSandbox");
         host.AddComponent<ChessDevSandboxController>();
-        host.AddComponent<ChessDevSandboxUI>();
 #endif
     }
 
@@ -82,6 +84,7 @@ public class ChessDevSandboxController : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         EnsureToggleInputAction();
         RefreshDependencies();
+        EnsurePanelView();
     }
 
     void OnEnable()
@@ -148,6 +151,19 @@ public class ChessDevSandboxController : MonoBehaviour
         }
     }
 
+    void EnsurePanelView()
+    {
+        ChessDevSandboxPanelView existingView = FindFirstObjectByType<ChessDevSandboxPanelView>();
+        if (existingView != null)
+        {
+            return;
+        }
+
+        GameObject panelHost = new("ChessDevPanel");
+        DontDestroyOnLoad(panelHost);
+        panelHost.AddComponent<ChessDevSandboxPanelView>();
+    }
+
     #endregion
 
     #region State
@@ -155,10 +171,27 @@ public class ChessDevSandboxController : MonoBehaviour
     public void ToggleOpen()
     {
         isOpen = !isOpen;
-        if (!isOpen)
+
+        if (isOpen)
+        {
+            previousCursorLockMode = Cursor.lockState;
+            previousCursorVisible = Cursor.visible;
+            hasStoredCursorState = true;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            EnsurePanelView();
+        }
+        else
         {
             currentMode = SandboxMode.None;
             moveSourceTile = null;
+
+            if (hasStoredCursorState)
+            {
+                Cursor.lockState = previousCursorLockMode;
+                Cursor.visible = previousCursorVisible;
+                hasStoredCursorState = false;
+            }
         }
     }
 
