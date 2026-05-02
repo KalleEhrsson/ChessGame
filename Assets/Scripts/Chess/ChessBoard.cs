@@ -40,11 +40,6 @@ public class ChessBoard : MonoBehaviour
     [SerializeField, Min(0.01f)] float brokenPieceExplosionRadius = 0.45f;
     [Tooltip("Upward lift modifier applied with explosion force.")]
     [SerializeField, Min(0f)] float brokenPieceUpwardModifier = 0.1f;
-    [Tooltip("Lifetime (seconds) before spawned broken pieces are cleaned up.")]
-    [SerializeField, Min(0f)] float brokenPieceLifetime = 10f;
-    [Tooltip("When enabled, broken pieces are destroyed after their lifetime expires.")]
-    [SerializeField] bool destroyBrokenPiecesAfterLifetime = true;
-    [SerializeField, Min(0f)] float brokenScatterLifetime = 0.75f;
     [SerializeField, Min(0.01f)] float brokenShrinkFadeDuration = 0.45f;
     [SerializeField] AnimationCurve brokenShrinkCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
     [SerializeField] AnimationCurve brokenFadeCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
@@ -1109,11 +1104,6 @@ public class ChessBoard : MonoBehaviour
         }
 
         AttachBrokenCleanupEffect(debrisRoot, position);
-        if (destroyBrokenPiecesAfterLifetime && brokenPieceLifetime > 0f && !destroyBrokenRootAfterCleanup)
-        {
-            Destroy(debrisRoot, brokenPieceLifetime);
-        }
-
         return true;
     }
 
@@ -1131,7 +1121,6 @@ public class ChessBoard : MonoBehaviour
         }
 
         cleanup.Initialize(
-            brokenScatterLifetime,
             brokenShrinkFadeDuration,
             brokenShrinkCurve,
             brokenFadeCurve,
