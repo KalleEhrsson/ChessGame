@@ -1223,10 +1223,17 @@ public class ChessBoard : MonoBehaviour
             MeshFilter meshFilter = part.GetComponent<MeshFilter>();
             if (meshFilter != null && meshFilter.sharedMesh != null)
             {
-                MeshCollider meshCollider = part.gameObject.AddComponent<MeshCollider>();
-                meshCollider.sharedMesh = meshFilter.sharedMesh;
-                meshCollider.convex = true;
-                collider = meshCollider;
+                if (CanBuildConvexCollider(meshFilter.sharedMesh))
+                {
+                    MeshCollider meshCollider = part.gameObject.AddComponent<MeshCollider>();
+                    meshCollider.sharedMesh = meshFilter.sharedMesh;
+                    meshCollider.convex = true;
+                    collider = meshCollider;
+                }
+                else
+                {
+                    collider = part.gameObject.AddComponent<BoxCollider>();
+                }
             }
         }
 
@@ -1240,6 +1247,48 @@ public class ChessBoard : MonoBehaviour
         {
             bodies.Add(body);
         }
+    }
+
+    static bool CanBuildConvexCollider(Mesh mesh)
+    {
+        if (mesh == null)
+        {
+            return false;
+        }
+
+        Vector3[] vertices = mesh.vertices;
+        if (vertices == null || vertices.Length < 4)
+        {
+            return false;
+        }
+
+        const float minDistanceSqr = 0.000001f;
+        int uniqueCount = 0;
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            bool isUnique = true;
+            for (int j = 0; j < i; j++)
+            {
+                if ((vertices[i] - vertices[j]).sqrMagnitude <= minDistanceSqr)
+                {
+                    isUnique = false;
+                    break;
+                }
+            }
+
+            if (!isUnique)
+            {
+                continue;
+            }
+
+            uniqueCount++;
+            if (uniqueCount >= 4)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     #endregion
