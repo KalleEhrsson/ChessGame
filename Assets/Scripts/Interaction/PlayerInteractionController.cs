@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 
 [DisallowMultipleComponent]
 public class PlayerInteractionController : MonoBehaviour
@@ -220,7 +221,12 @@ public class PlayerInteractionController : MonoBehaviour
             return;
         }
 
-        if (devSandboxController != null && devSandboxController.TryHandleSandboxTileClick())
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
+        if (devSandboxController != null && devSandboxController.IsOpen && devSandboxController.TryHandleSandboxTileClick())
         {
             return;
         }
