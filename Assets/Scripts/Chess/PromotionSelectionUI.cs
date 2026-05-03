@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -103,7 +104,7 @@ public class PromotionSelectionUI : MonoBehaviour
 
         GameObject eventSystemObject = new("EventSystem");
         eventSystemObject.AddComponent<EventSystem>();
-        eventSystemObject.AddComponent<StandaloneInputModule>();
+        eventSystemObject.AddComponent<InputSystemUIInputModule>();
     }
 
     void EnsureCanvas()
