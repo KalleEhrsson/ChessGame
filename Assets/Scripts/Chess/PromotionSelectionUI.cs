@@ -4,7 +4,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -87,7 +86,6 @@ public class PromotionSelectionUI : MonoBehaviour
 
     void EnsureBuilt()
     {
-        EnsureEventSystem();
         EnsureCanvas();
         EnsurePanel();
 
@@ -97,18 +95,6 @@ public class PromotionSelectionUI : MonoBehaviour
         EnsureOptionButton(PieceType.Knight, "Knight", new Color(0.92f, 0.9f, 0.9f, 1f));
     }
 
-    void EnsureEventSystem()
-    {
-        if (EventSystem.current != null)
-        {
-            return;
-        }
-
-        GameObject eventSystemObject = new("EventSystem");
-        eventSystemObject.AddComponent<EventSystem>();
-        eventSystemObject.AddComponent<InputSystemUIInputModule>();
-    }
-
     void EnsureCanvas()
     {
         if (rootCanvas != null)
@@ -116,18 +102,7 @@ public class PromotionSelectionUI : MonoBehaviour
             return;
         }
 
-        Canvas existingCanvas = FindFirstObjectByType<Canvas>();
-        if (existingCanvas != null)
-        {
-            rootCanvas = existingCanvas;
-            return;
-        }
-
-        GameObject canvasObject = new("PromotionCanvas");
-        rootCanvas = canvasObject.AddComponent<Canvas>();
-        rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvasObject.AddComponent<CanvasScaler>();
-        canvasObject.AddComponent<GraphicRaycaster>();
+        rootCanvas = ChessMasterCanvas.GetOrCreateCanvas();
     }
 
     void EnsurePanel()
@@ -137,7 +112,8 @@ public class PromotionSelectionUI : MonoBehaviour
             return;
         }
 
-        Transform existing = rootCanvas.transform.Find("PromotionSelectionPanel");
+        Transform root = ChessMasterCanvas.GetOrCreateOverlayRoot("PromotionRoot");
+        Transform existing = root.Find("PromotionSelectionPanel");
         if (existing != null)
         {
             panel = existing as RectTransform;
@@ -146,7 +122,7 @@ public class PromotionSelectionUI : MonoBehaviour
 
         GameObject panelObject = new("PromotionSelectionPanel", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         panel = panelObject.GetComponent<RectTransform>();
-        panel.SetParent(rootCanvas.transform, false);
+        panel.SetParent(root, false);
         panel.anchorMin = new Vector2(0.5f, 0.5f);
         panel.anchorMax = new Vector2(0.5f, 0.5f);
         panel.pivot = new Vector2(0.5f, 0.5f);
