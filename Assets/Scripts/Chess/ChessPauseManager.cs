@@ -243,7 +243,7 @@ public class ChessPauseManager : MonoBehaviour
 
     void ResolveUiDependencies()
     {
-        pauseMenuUi ??= FindFirstObjectByType<ChessPauseMenuUI>();
+        pauseMenuUi ??= ChessPauseMenuUI.GetOrCreate();
         sandbox ??= ChessDevSandboxController.Instance;
         resignUi ??= ChessResignUiController.GetOrCreate();
         winScreen ??= ChessWinScreenUI.GetOrCreate();
