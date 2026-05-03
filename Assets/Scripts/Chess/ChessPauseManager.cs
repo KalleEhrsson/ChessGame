@@ -108,7 +108,7 @@ public class ChessPauseManager : MonoBehaviour
 
     public void TogglePauseRequest()
     {
-        Debug.Log("[ChessPauseManager] TogglePauseRequest called", this);
+        Debug.Log("[ChessPauseManager] Toggle called while requested/paused/pending", this);
         LogState("Before toggle");
         if (winScreen != null && winScreen.IsVisible)
         {

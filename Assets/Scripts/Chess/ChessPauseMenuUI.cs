@@ -7,14 +7,17 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class ChessPauseMenuUI : MonoBehaviour
 {
-    public bool IsVisible => overlay != null && overlay.activeSelf;
-
     #region Variables
+    [SerializeField] bool pauseDebugMarkerEnabled = true;
+
     GameObject pauseMenuRoot;
     GameObject dimBackground;
+    CanvasGroup rootCanvasGroup;
     CanvasGroup dimCanvasGroup;
     RectTransform panelRect;
     CanvasGroup panelCanvasGroup;
+    TMP_Text debugMarkerText;
+
     RectTransform contentRootRect;
     RectTransform headerRect;
     RectTransform buttonStackRect;
@@ -59,8 +62,10 @@ public class ChessPauseMenuUI : MonoBehaviour
     #region UI
     void EnsureUi()
     {
+        Canvas canvas = ChessMasterCanvas.GetOrCreateCanvas();
         Transform overlayRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("PauseMenuRoot");
         pauseMenuRoot = overlayRoot.gameObject;
+        rootCanvasGroup = pauseMenuRoot.GetComponent<CanvasGroup>() ?? pauseMenuRoot.AddComponent<CanvasGroup>();
 
         ClearChildren(overlayRoot);
         ConfigureFullscreenRect((RectTransform)overlayRoot);
@@ -72,8 +77,11 @@ public class ChessPauseMenuUI : MonoBehaviour
         dimBackground.GetComponent<Image>().color = new Color(0.03f, 0.04f, 0.07f, 0.78f);
         dimCanvasGroup = dimBackground.GetComponent<CanvasGroup>();
 
-        panelRect = ChessUIFactory.CreatePanel("PausePanel", overlayRoot, new Vector2(580f, 620f), new Vector2(0.5f, 0.5f));
-        panelCanvasGroup = panelRect.gameObject.AddComponent<CanvasGroup>();
+        panelRect = ChessUIFactory.CreatePanel("PausePanel", overlayRoot, new Vector2(560f, 620f), new Vector2(0.5f, 0.5f));
+        ConfigurePanelRect(panelRect);
+        panelCanvasGroup = panelRect.gameObject.GetComponent<CanvasGroup>() ?? panelRect.gameObject.AddComponent<CanvasGroup>();
+
+        CreateDebugMarker(canvas.transform);
 
         Image accent = new GameObject("AccentTopLine", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
         accent.transform.SetParent(panelRect, false);
@@ -155,6 +163,7 @@ public class ChessPauseMenuUI : MonoBehaviour
         footerLe.preferredHeight = 28f;
         footerLe.flexibleHeight = 0f;
 
+        SetDebugMarkerVisible(false);
         pauseMenuRoot.SetActive(false);
     }
 
@@ -168,19 +177,13 @@ public class ChessPauseMenuUI : MonoBehaviour
         bool show = pauseManager.IsPauseRequested;
         if (show && !pauseMenuRoot.activeSelf)
         {
-            pauseMenuRoot.SetActive(true);
-            PlayShowAnimation();
+            Show();
             hasLoggedThisVisibleCycle = false;
         }
         else if (!show && pauseMenuRoot.activeSelf)
         {
-            pauseMenuRoot.SetActive(false);
+            Hide();
             hasLoggedThisVisibleCycle = false;
-            if (showRoutine != null)
-            {
-                StopCoroutine(showRoutine);
-                showRoutine = null;
-            }
         }
 
         if (!show)
@@ -212,13 +215,62 @@ public class ChessPauseMenuUI : MonoBehaviour
 
         if (!hasLoggedThisVisibleCycle)
         {
+            LogShowDiagnostics();
             LogLayoutMetrics();
             hasLoggedThisVisibleCycle = true;
         }
     }
     #endregion
 
-    #region Helpers
+    #region ShowHide
+    void Show()
+    {
+        Debug.Log("[ChessPauseMenuUI] Show called", this);
+        ForceVisibleSafeState();
+        SetDebugMarkerVisible(pauseDebugMarkerEnabled);
+        PlayShowAnimation();
+    }
+
+    void Hide()
+    {
+        Debug.Log("[ChessPauseMenuUI] Hide called", this);
+        SetDebugMarkerVisible(false);
+        if (showRoutine != null)
+        {
+            StopCoroutine(showRoutine);
+            showRoutine = null;
+        }
+        pauseMenuRoot.SetActive(false);
+    }
+
+    void ForceVisibleSafeState()
+    {
+        Canvas masterCanvas = ChessMasterCanvas.GetOrCreateCanvas();
+        masterCanvas.gameObject.SetActive(true);
+        masterCanvas.enabled = true;
+        masterCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        masterCanvas.sortingOrder = Mathf.Max(masterCanvas.sortingOrder, 5000);
+
+        ConfigureFullscreenRect((RectTransform)pauseMenuRoot.transform);
+        pauseMenuRoot.SetActive(true);
+        pauseMenuRoot.transform.localScale = Vector3.one;
+        rootCanvasGroup.alpha = 1f;
+        rootCanvasGroup.interactable = true;
+        rootCanvasGroup.blocksRaycasts = true;
+
+        dimBackground.SetActive(true);
+        dimCanvasGroup.alpha = 1f;
+        dimCanvasGroup.interactable = true;
+        dimCanvasGroup.blocksRaycasts = true;
+
+        panelRect.gameObject.SetActive(true);
+        ConfigurePanelRect(panelRect);
+        panelRect.localScale = Vector3.one;
+        panelCanvasGroup.alpha = 1f;
+        panelCanvasGroup.interactable = true;
+        panelCanvasGroup.blocksRaycasts = true;
+    }
+
     void PlayShowAnimation()
     {
         if (showRoutine != null)
@@ -231,26 +283,80 @@ public class ChessPauseMenuUI : MonoBehaviour
 
     IEnumerator AnimateShow()
     {
-        panelRect.localScale = new Vector3(0.96f, 0.96f, 1f);
-        panelCanvasGroup.alpha = 0f;
-        dimCanvasGroup.alpha = 0f;
+        dimCanvasGroup.alpha = 0.85f;
+        panelCanvasGroup.alpha = 0.5f;
+        panelRect.localScale = new Vector3(0.98f, 0.98f, 1f);
 
-        float duration = ChessUITheme.FadeDuration;
+        float duration = Mathf.Max(0.01f, ChessUITheme.FadeDuration);
         float t = 0f;
         while (t < duration)
         {
             t += Time.unscaledDeltaTime;
             float k = Mathf.Clamp01(t / duration);
-            dimCanvasGroup.alpha = Mathf.Lerp(0f, 1f, k);
-            panelCanvasGroup.alpha = k;
-            panelRect.localScale = Vector3.Lerp(new Vector3(0.96f, 0.96f, 1f), Vector3.one, k);
+            panelCanvasGroup.alpha = Mathf.Lerp(0.5f, 1f, k);
+            panelRect.localScale = Vector3.Lerp(new Vector3(0.98f, 0.98f, 1f), Vector3.one, k);
             yield return null;
         }
 
-        dimCanvasGroup.alpha = 1f;
+        // final visibility clamp
+        rootCanvasGroup.alpha = 1f;
         panelCanvasGroup.alpha = 1f;
         panelRect.localScale = Vector3.one;
+        pauseMenuRoot.SetActive(true);
         showRoutine = null;
+    }
+    #endregion
+
+    #region Helpers
+    void CreateDebugMarker(Transform canvasTransform)
+    {
+        GameObject marker = new("PauseDebugOverlayRoot", typeof(RectTransform), typeof(Image));
+        marker.transform.SetParent(canvasTransform, false);
+        RectTransform rect = marker.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = new Vector2(20f, -20f);
+        rect.sizeDelta = new Vector2(460f, 60f);
+        marker.GetComponent<Image>().color = new Color(1f, 0f, 0.25f, 0.92f);
+
+        debugMarkerText = ChessUIFactory.CreateText("PauseDebugText", marker.transform, "PAUSE UI DEBUG VISIBLE", 30f, TextAlignmentOptions.Center);
+        RectTransform textRect = (RectTransform)debugMarkerText.transform;
+        ConfigureFullscreenRect(textRect);
+        debugMarkerText.color = Color.white;
+        marker.SetActive(false);
+    }
+
+    void SetDebugMarkerVisible(bool visible)
+    {
+        if (debugMarkerText != null)
+        {
+            debugMarkerText.transform.parent.gameObject.SetActive(visible);
+        }
+    }
+
+    void LogShowDiagnostics()
+    {
+        Canvas canvas = ChessMasterCanvas.GetOrCreateCanvas();
+        RectTransform rootRect = pauseMenuRoot != null ? pauseMenuRoot.GetComponent<RectTransform>() : null;
+        RectTransform panel = panelRect;
+
+        Debug.Log($"[ChessPauseMenuUI] Root activeSelf={pauseMenuRoot.activeSelf}", this);
+        Debug.Log($"[ChessPauseMenuUI] Root activeInHierarchy={pauseMenuRoot.activeInHierarchy}", this);
+        Debug.Log($"[ChessPauseMenuUI] Root canvas group alpha={rootCanvasGroup.alpha:0.###}", this);
+        Debug.Log($"[ChessPauseMenuUI] Root canvas group interactable={rootCanvasGroup.interactable}", this);
+        Debug.Log($"[ChessPauseMenuUI] Root canvas group blocksRaycasts={rootCanvasGroup.blocksRaycasts}", this);
+        Debug.Log($"[ChessPauseMenuUI] Root localScale={pauseMenuRoot.transform.localScale}", this);
+        Debug.Log($"[ChessPauseMenuUI] Root anchoredPosition={rootRect.anchoredPosition}", this);
+        Debug.Log($"[ChessPauseMenuUI] Root sizeDelta={rootRect.sizeDelta}", this);
+        Debug.Log($"[ChessPauseMenuUI] Panel activeInHierarchy={panel.gameObject.activeInHierarchy}", this);
+        Debug.Log($"[ChessPauseMenuUI] Panel localScale={panel.localScale}", this);
+        Debug.Log($"[ChessPauseMenuUI] Panel anchoredPosition={panel.anchoredPosition}", this);
+        Debug.Log($"[ChessPauseMenuUI] Panel sizeDelta={panel.sizeDelta}", this);
+        Debug.Log($"[ChessPauseMenuUI] Master canvas activeInHierarchy={canvas.gameObject.activeInHierarchy}", this);
+        Debug.Log($"[ChessPauseMenuUI] Master canvas renderMode={canvas.renderMode}", this);
+        Debug.Log($"[ChessPauseMenuUI] Master canvas sortingOrder={canvas.sortingOrder}", this);
+        Debug.Log($"[ChessPauseMenuUI] Master canvas enabled={canvas.enabled}", this);
     }
 
     string ResolvePendingHint()
@@ -263,6 +369,18 @@ public class ChessPauseMenuUI : MonoBehaviour
         return "Waiting for AI...";
     }
 
+    static void ConfigurePanelRect(RectTransform rect)
+    {
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        if (rect.sizeDelta.x < 1f || rect.sizeDelta.y < 1f)
+        {
+            rect.sizeDelta = new Vector2(560f, 620f);
+        }
+    }
+
     static void ConfigureFullscreenRect(RectTransform rect)
     {
         rect.anchorMin = Vector2.zero;
@@ -270,6 +388,8 @@ public class ChessPauseMenuUI : MonoBehaviour
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
         rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.localScale = Vector3.one;
     }
 
     static void ClearChildren(Transform parent)
@@ -293,6 +413,17 @@ public class ChessPauseMenuUI : MonoBehaviour
             text.enableWordWrapping = false;
             text.overflowMode = TextOverflowModes.Ellipsis;
             text.alignment = TextAlignmentOptions.Center;
+            Color color = text.color;
+            color.a = Mathf.Max(color.a, 1f);
+            text.color = color;
+        }
+
+        Image buttonImage = button.GetComponent<Image>();
+        if (buttonImage != null)
+        {
+            Color color = buttonImage.color;
+            color.a = Mathf.Max(0.9f, color.a);
+            buttonImage.color = color;
         }
 
         return button;
