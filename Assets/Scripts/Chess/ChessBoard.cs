@@ -253,6 +253,7 @@ public class ChessBoard : MonoBehaviour
         ResetSpecialState();
         ChessTurnManager.GetOrCreate().SetTurn(PieceTeam.White);
         ChessGameStateController.GetOrCreate().ResetToPlaying();
+        ChessResignUiController.GetOrCreate().ResetForNewGame();
 
         SpawnBackRank(PieceTeam.White, "A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1");
         SpawnPawns(PieceTeam.White, 2);

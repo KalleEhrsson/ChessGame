@@ -49,6 +49,7 @@ public class ChessTurnManager : MonoBehaviour
     CancellationTokenSource aiTurnCancellation;
     bool boardEventsBound;
     bool stockfishEventsBound;
+    bool gameStateEventsBound;
     bool debugPositionValid = true;
 
     #endregion
@@ -100,6 +101,12 @@ public class ChessTurnManager : MonoBehaviour
         {
             stockfishService.EngineLineReceived -= OnStockfishEngineLine;
             stockfishEventsBound = false;
+        }
+
+        if (gameStateEventsBound && gameStateController != null)
+        {
+            gameStateController.GameEnded -= OnGameEnded;
+            gameStateEventsBound = false;
         }
     }
 
@@ -237,6 +244,12 @@ public class ChessTurnManager : MonoBehaviour
         {
             stockfishService.EngineLineReceived += OnStockfishEngineLine;
             stockfishEventsBound = true;
+        }
+
+        if (!gameStateEventsBound && gameStateController != null)
+        {
+            gameStateController.GameEnded += OnGameEnded;
+            gameStateEventsBound = true;
         }
     }
 
@@ -397,6 +410,12 @@ public class ChessTurnManager : MonoBehaviour
             aiRoundConsole?.SetStockfishMove(line);
             aiRoundConsole?.SetThinking(false);
         }
+    }
+
+    void OnGameEnded(ChessGameEndResult _)
+    {
+        CancelAiTurn("game ended");
+        stockfishService?.CancelThinking();
     }
 
     static string BuildReadableMove(ChessPiece piece, ChessTile fromTile, ChessTile toTile)

@@ -6,7 +6,8 @@ public enum ChessGameState
 {
     Playing,
     Checkmate,
-    Stalemate
+    Stalemate,
+    Resignation
 }
 
 public readonly struct ChessGameEndResult
@@ -15,13 +16,15 @@ public readonly struct ChessGameEndResult
     public PieceTeam? WinningTeam { get; }
     public PieceTeam? LosingTeam { get; }
     public PieceTeam AffectedTurn { get; }
+    public string Reason { get; }
 
-    public ChessGameEndResult(ChessGameState finalState, PieceTeam? winningTeam, PieceTeam? losingTeam, PieceTeam affectedTurn)
+    public ChessGameEndResult(ChessGameState finalState, PieceTeam? winningTeam, PieceTeam? losingTeam, PieceTeam affectedTurn, string reason)
     {
         FinalState = finalState;
         WinningTeam = winningTeam;
         LosingTeam = losingTeam;
         AffectedTurn = affectedTurn;
+        Reason = reason;
     }
 }
 
@@ -123,15 +126,29 @@ public class ChessGameStateController : MonoBehaviour
             PieceTeam winner = GetOpponentTeam(currentTurn);
             SetTerminalState(
                 ChessGameState.Checkmate,
-                new ChessGameEndResult(ChessGameState.Checkmate, winner, currentTurn, currentTurn),
+                new ChessGameEndResult(ChessGameState.Checkmate, winner, currentTurn, currentTurn, "Checkmate"),
                 $"Checkmate. {winner} wins.");
             return;
         }
 
         SetTerminalState(
             ChessGameState.Stalemate,
-            new ChessGameEndResult(ChessGameState.Stalemate, null, null, currentTurn),
+            new ChessGameEndResult(ChessGameState.Stalemate, null, null, currentTurn, "Stalemate"),
             "Stalemate.");
+    }
+
+    public void ResignCurrentPlayer()
+    {
+        ResignSide(ChessTurnManager.GetOrCreate().GetCurrentTurn());
+    }
+
+    public void ResignSide(PieceTeam side)
+    {
+        PieceTeam winner = GetOpponentTeam(side);
+        SetTerminalState(
+            ChessGameState.Resignation,
+            new ChessGameEndResult(ChessGameState.Resignation, winner, side, side, $"{side} resigned"),
+            $"Resignation. {side} resigned. {winner} wins.");
     }
 
     public bool HasAnyLegalMove(PieceTeam team)
