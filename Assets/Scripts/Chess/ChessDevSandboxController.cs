@@ -25,9 +25,6 @@ public class ChessDevSandboxController : MonoBehaviour
     readonly IReadOnlyList<ChessBoardPreset> presets = ChessBoardPresetLibrary.GetPresets();
 
     bool isOpen;
-    CursorLockMode previousCursorLockMode;
-    bool previousCursorVisible;
-    bool hasStoredCursorState;
     SandboxMode currentMode;
     PieceTeam selectedTeam = PieceTeam.White;
     PieceType selectedPieceType = PieceType.Queen;
@@ -144,11 +141,6 @@ public class ChessDevSandboxController : MonoBehaviour
 
         if (isOpen)
         {
-            previousCursorLockMode = Cursor.lockState;
-            previousCursorVisible = Cursor.visible;
-            hasStoredCursorState = true;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
             EnsurePanelView();
             return;
         }
@@ -156,12 +148,6 @@ public class ChessDevSandboxController : MonoBehaviour
         currentMode = SandboxMode.None;
         moveSourceTile = null;
 
-        if (hasStoredCursorState)
-        {
-            Cursor.lockState = previousCursorLockMode;
-            Cursor.visible = previousCursorVisible;
-            hasStoredCursorState = false;
-        }
     }
 
     public void SetMode(SandboxMode mode)

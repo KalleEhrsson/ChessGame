@@ -228,12 +228,6 @@ public class ChessCameraController : MonoBehaviour
 
     #endregion
 
-    void SetCursorForMode(CameraMode mode)
-    {
-        bool tacticalMode = mode == CameraMode.TacticalView;
-        Cursor.lockState = tacticalMode ? CursorLockMode.None : CursorLockMode.Locked;
-        Cursor.visible = tacticalMode;
-    }
     
     #region Tactical Solver
 

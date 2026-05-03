@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
 public class ChessPauseManager : MonoBehaviour
@@ -33,6 +34,10 @@ public class ChessPauseManager : MonoBehaviour
     int activeRoundActions;
     bool isPauseRequested;
     bool isPaused;
+    ChessPauseMenuUI pauseMenuUi;
+    ChessDevSandboxController sandbox;
+    ChessResignUiController resignUi;
+    ChessWinScreenUI winScreen;
 
     #endregion
 
@@ -42,6 +47,7 @@ public class ChessPauseManager : MonoBehaviour
     public bool IsPaused => isPaused;
     public bool IsPausePending => isPauseRequested && !isPaused;
     public bool CanPauseImmediately => activeRoundActions <= 0;
+    public bool ShouldUnlockCursor => IsPauseRequested || IsBlockingOverlayOpen();
 
     #endregion
 
@@ -61,29 +67,59 @@ public class ChessPauseManager : MonoBehaviour
 
     #endregion
 
+    void Update()
+    {
+        HandleEscapeInput();
+        RefreshCursorState();
+    }
+
     #region API
 
     public void RequestPause()
     {
+        if (!isPauseRequested)
+        {
+            Debug.Log("[ChessPauseManager] Pause requested", this);
+        }
+
         isPauseRequested = true;
         TryEnterPausedState();
+        Debug.Log("[ChessPauseManager] Pause menu shown", this);
     }
 
     public void Resume()
     {
         isPauseRequested = false;
         isPaused = false;
+        Debug.Log("[ChessPauseManager] Resumed", this);
     }
 
     public void TogglePauseRequest()
     {
-        if (isPauseRequested)
+        if (winScreen != null && winScreen.IsVisible)
         {
-            Resume();
             return;
         }
 
-        RequestPause();
+        if (!isPauseRequested)
+        {
+            RequestPause();
+            return;
+        }
+
+        if (resignUi != null && resignUi.IsConfirmOpen())
+        {
+            resignUi.CloseConfirmFromPauseMenu();
+            return;
+        }
+
+        if (sandbox != null && sandbox.IsOpen)
+        {
+            sandbox.SetOpenFromPauseMenu(false);
+            return;
+        }
+
+        Resume();
     }
 
     public void NotifyRoundActionStarted()
@@ -123,4 +159,53 @@ public class ChessPauseManager : MonoBehaviour
     }
 
     #endregion
+
+    void HandleEscapeInput()
+    {
+        if (Keyboard.current == null)
+        {
+            return;
+        }
+
+        if (!Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            return;
+        }
+
+        Debug.Log("[ChessPauseManager] Escape pressed", this);
+        TogglePauseRequest();
+    }
+
+    void RefreshCursorState()
+    {
+        ResolveUiDependencies();
+
+        if (ShouldUnlockCursor)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            return;
+        }
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    bool IsBlockingOverlayOpen()
+    {
+        ResolveUiDependencies();
+        return (pauseMenuUi != null && pauseMenuUi.IsVisible)
+            || (sandbox != null && sandbox.IsOpen)
+            || (resignUi != null && resignUi.IsConfirmOpen())
+            || (winScreen != null && winScreen.IsVisible);
+    }
+
+    void ResolveUiDependencies()
+    {
+        pauseMenuUi ??= FindFirstObjectByType<ChessPauseMenuUI>();
+        sandbox ??= ChessDevSandboxController.Instance;
+        resignUi ??= ChessResignUiController.GetOrCreate();
+        winScreen ??= ChessWinScreenUI.GetOrCreate();
+    }
 }
+

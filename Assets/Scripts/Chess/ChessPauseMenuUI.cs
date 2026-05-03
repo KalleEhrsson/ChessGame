@@ -1,8 +1,6 @@
-using UnityEngine.SceneManagement;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
@@ -22,8 +20,8 @@ public class ChessPauseMenuUI : MonoBehaviour
     ChessAiRoundConsole aiConsole;
     ChessDevSandboxController sandbox;
     ChessResignUiController resignUi;
-    ChessWinScreenUI winScreen;
 
+    public bool IsVisible => overlay != null && overlay.activeSelf;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsureRuntimeInstance()
@@ -44,40 +42,12 @@ public class ChessPauseMenuUI : MonoBehaviour
         aiConsole = ChessAiRoundConsole.GetOrCreate();
         sandbox = ChessDevSandboxController.Instance;
         resignUi = ChessResignUiController.GetOrCreate();
-        winScreen = ChessWinScreenUI.GetOrCreate();
         EnsureUi();
     }
 
     void Update()
     {
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            HandleEscape();
-        }
-
         Refresh();
-    }
-
-    void HandleEscape()
-    {
-        if (winScreen != null && winScreen.IsVisible)
-        {
-            return;
-        }
-
-        if (!pauseManager.IsPauseRequested)
-        {
-            pauseManager.RequestPause();
-            return;
-        }
-
-        if (pauseManager.IsPausePending)
-        {
-            pauseManager.Resume();
-            return;
-        }
-
-        pauseManager.Resume();
     }
 
     void EnsureUi()
@@ -108,20 +78,26 @@ public class ChessPauseMenuUI : MonoBehaviour
         overlay = new GameObject("PauseOverlay", typeof(RectTransform), typeof(Image));
         overlay.transform.SetParent(canvas.transform, false);
         RectTransform oRect = overlay.GetComponent<RectTransform>();
-        oRect.anchorMin = Vector2.zero; oRect.anchorMax = Vector2.one; oRect.offsetMin = Vector2.zero; oRect.offsetMax = Vector2.zero;
+        oRect.anchorMin = Vector2.zero;
+        oRect.anchorMax = Vector2.one;
+        oRect.offsetMin = Vector2.zero;
+        oRect.offsetMax = Vector2.zero;
         overlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.7f);
 
         GameObject panel = new("PausePanel", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         panel.transform.SetParent(overlay.transform, false);
         RectTransform pRect = panel.GetComponent<RectTransform>();
-        pRect.anchorMin = pRect.anchorMax = new Vector2(0.5f, 0.5f); pRect.sizeDelta = new Vector2(420f, 0f);
+        pRect.anchorMin = pRect.anchorMax = new Vector2(0.5f, 0.5f);
+        pRect.sizeDelta = new Vector2(420f, 0f);
         panel.GetComponent<Image>().color = new Color(0.12f, 0.12f, 0.12f, 0.95f);
         VerticalLayoutGroup v = panel.GetComponent<VerticalLayoutGroup>();
-        v.padding = new RectOffset(20, 20, 20, 20); v.spacing = 8; v.childControlHeight = false;
+        v.padding = new RectOffset(20, 20, 20, 20);
+        v.spacing = 8;
+        v.childControlHeight = false;
         panel.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         CreateText(panel.transform, "Paused", 42);
-        statusText = CreateText(panel.transform, "", 24);
+        statusText = CreateText(panel.transform, string.Empty, 24);
         resumeButton = CreateButton(panel.transform, "Resume", () => pauseManager.Resume());
         aiConsoleButton = CreateButton(panel.transform, "AI / Stockfish Console", () => aiConsole.SetVisible(true));
         sandboxButton = CreateButton(panel.transform, "Sandbox Tools", () => { if (sandbox != null) sandbox.SetOpenFromPauseMenu(true); });
@@ -156,9 +132,13 @@ public class ChessPauseMenuUI : MonoBehaviour
     {
         GameObject go = new("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
         go.transform.SetParent(parent, false);
-        RectTransform rect = go.GetComponent<RectTransform>(); rect.sizeDelta = new Vector2(0, 42);
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(0f, 42f);
         TMP_Text text = go.GetComponent<TextMeshProUGUI>();
-        text.text = value; text.fontSize = size; text.alignment = TextAlignmentOptions.Center; text.color = Color.white;
+        text.text = value;
+        text.fontSize = size;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = Color.white;
         return text;
     }
 
@@ -166,11 +146,13 @@ public class ChessPauseMenuUI : MonoBehaviour
     {
         GameObject go = new(label.Replace(" ", string.Empty), typeof(RectTransform), typeof(Image), typeof(Button));
         go.transform.SetParent(parent, false);
-        RectTransform rect = go.GetComponent<RectTransform>(); rect.sizeDelta = new Vector2(0, 44);
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(0f, 44f);
         go.GetComponent<Image>().color = new Color(0.86f, 0.86f, 0.9f, 1f);
-        Button b = go.GetComponent<Button>(); b.onClick.AddListener(onClick);
-        TMP_Text labelText = CreateText(go.transform, label, 24);
+        Button button = go.GetComponent<Button>();
+        button.onClick.AddListener(onClick);
+        TMP_Text labelText = CreateText(go.transform, label, 24f);
         labelText.color = new Color(0.12f, 0.12f, 0.12f, 1f);
-        return b;
+        return button;
     }
 }
