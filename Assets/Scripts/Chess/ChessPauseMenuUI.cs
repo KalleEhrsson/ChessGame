@@ -1,7 +1,5 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -79,48 +77,15 @@ public class ChessPauseMenuUI : MonoBehaviour
 
     void EnsureUi()
     {
-        if (EventSystem.current == null)
-        {
-            GameObject es = new("EventSystem");
-            es.AddComponent<EventSystem>();
-            es.AddComponent<InputSystemUIInputModule>();
-        }
-
-        Canvas existing = FindFirstObjectByType<Canvas>();
-        if (existing == null)
-        {
-            GameObject canvasObject = new("ChessPauseCanvas");
-            canvas = canvasObject.AddComponent<Canvas>();
-            DontDestroyOnLoad(canvasObject);
-        }
-        else
-        {
-            canvas = existing;
-        }
-
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = Mathf.Max(canvas.sortingOrder, 5000);
-        GraphicRaycaster raycaster = canvas.GetComponent<GraphicRaycaster>();
-        if (raycaster == null)
-        {
-            canvas.gameObject.AddComponent<GraphicRaycaster>();
-        }
-
-        CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
-        if (scaler == null)
-        {
-            scaler = canvas.gameObject.AddComponent<CanvasScaler>();
-        }
-
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        canvas = ChessMasterCanvas.GetOrCreateCanvas();
+        Transform pauseRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("PauseMenuRoot");
         Debug.Log($"[ChessPauseMenuUI] Canvas found/created: {canvas.name}", this);
         Debug.Log($"[ChessPauseMenuUI] Canvas render mode: {canvas.renderMode}", this);
         Debug.Log($"[ChessPauseMenuUI] Canvas sorting order: {canvas.sortingOrder}", this);
         Debug.Log($"[ChessPauseMenuUI] Canvas scale factor: {canvas.scaleFactor}", this);
 
         overlay = new GameObject("PauseOverlay", typeof(RectTransform), typeof(Image));
-        overlay.transform.SetParent(canvas.transform, false);
+        overlay.transform.SetParent(pauseRoot, false);
         RectTransform oRect = overlay.GetComponent<RectTransform>();
         oRect.anchorMin = Vector2.zero;
         oRect.anchorMax = Vector2.one;

@@ -100,7 +100,8 @@ public class ChessWinScreenUI : MonoBehaviour
             return;
         }
 
-        overlay = CreateUiObject("ChessWinScreenOverlay", rootCanvas.transform, true);
+        Transform winRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("WinScreenRoot");
+        overlay = CreateUiObject("ChessWinScreenOverlay", winRoot, true);
         RectTransform overlayRect = overlay.GetComponent<RectTransform>();
         overlayRect.anchorMin = Vector2.zero;
         overlayRect.anchorMax = Vector2.one;
@@ -138,32 +139,7 @@ public class ChessWinScreenUI : MonoBehaviour
             return;
         }
 
-        Canvas canvas = FindFirstObjectByType<Canvas>();
-        if (canvas == null)
-        {
-            GameObject canvasObject = new("ChessRuntimeCanvas");
-            rootCanvas = canvasObject.AddComponent<Canvas>();
-            rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
-            canvasObject.AddComponent<GraphicRaycaster>();
-            return;
-        }
-
-        rootCanvas = canvas;
-        CanvasScaler existingScaler = rootCanvas.GetComponent<CanvasScaler>();
-        if (existingScaler == null)
-        {
-            existingScaler = rootCanvas.gameObject.AddComponent<CanvasScaler>();
-        }
-
-        existingScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        existingScaler.referenceResolution = new Vector2(1920f, 1080f);
-        existingScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-        existingScaler.matchWidthOrHeight = 0.5f;
+        rootCanvas = ChessMasterCanvas.GetOrCreateCanvas();
     }
 
     void RestartMatch()

@@ -239,14 +239,11 @@ public class ChessAiRoundConsole : MonoBehaviour
 
     void BuildRuntimeUi()
     {
-        GameObject canvasObject = new("ChessAiRoundConsoleCanvas");
-        canvasObject.transform.SetParent(transform, false);
-        rootCanvas = canvasObject.AddComponent<Canvas>();
-        rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        rootCanvas.sortingOrder = short.MaxValue;
+        rootCanvas = ChessMasterCanvas.GetOrCreateCanvas();
+        Transform consoleRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("StockfishConsoleRoot");
         EnsureCanvasSettings();
 
-        panelRoot = CreateRect("Panel", canvasObject.transform);
+        panelRoot = CreateRect("Panel", consoleRoot);
         Image panelImage = panelRoot.gameObject.AddComponent<Image>();
         panelImage.color = new Color(0f, 0f, 0f, 0.72f);
         EnsurePanelSettings();
@@ -500,7 +497,10 @@ public class ChessAiRoundConsole : MonoBehaviour
             return;
         }
 
-        rootCanvas.enabled = isVisible;
+        if (panelRoot != null)
+        {
+            panelRoot.gameObject.SetActive(isVisible);
+        }
     }
 
     void UpdateScrollState()

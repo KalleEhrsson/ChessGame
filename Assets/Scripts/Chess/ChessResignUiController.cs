@@ -1,6 +1,5 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -77,7 +76,6 @@ public class ChessResignUiController : MonoBehaviour
     {
         ResolveSystems();
         EnsureCanvas();
-        EnsureEventSystem();
         EnsureResignButton();
         EnsureConfirmPanel();
         ResetForNewGame();
@@ -111,32 +109,7 @@ public class ChessResignUiController : MonoBehaviour
             return;
         }
 
-        rootCanvas = FindFirstObjectByType<Canvas>();
-        if (rootCanvas != null)
-        {
-            return;
-        }
-
-        GameObject canvasObject = new("ChessRuntimeCanvas");
-        rootCanvas = canvasObject.AddComponent<Canvas>();
-        rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
-        canvasObject.AddComponent<GraphicRaycaster>();
-    }
-
-    static void EnsureEventSystem()
-    {
-        if (EventSystem.current != null)
-        {
-            return;
-        }
-
-        GameObject eventSystemObject = new("EventSystem");
-        eventSystemObject.AddComponent<EventSystem>();
-        eventSystemObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+        rootCanvas = ChessMasterCanvas.GetOrCreateCanvas();
     }
 
     void EnsureResignButton()
@@ -146,7 +119,8 @@ public class ChessResignUiController : MonoBehaviour
             return;
         }
 
-        GameObject buttonObject = CreatePanelObject("ResignButton", rootCanvas.transform, new Vector2(180f, 48f), new Vector2(1f, 0f), new Vector2(-18f, 18f));
+        Transform resignRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("ResignPopupRoot");
+        GameObject buttonObject = CreatePanelObject("ResignButton", resignRoot, new Vector2(180f, 48f), new Vector2(1f, 0f), new Vector2(-18f, 18f));
         buttonObject.AddComponent<Image>().color = new Color(0.75f, 0.2f, 0.2f, 0.95f);
         resignButton = buttonObject.AddComponent<Button>();
         resignButton.onClick.AddListener(OpenConfirm);
@@ -167,7 +141,8 @@ public class ChessResignUiController : MonoBehaviour
             return;
         }
 
-        confirmPanel = CreatePanelObject("ResignConfirmPanel", rootCanvas.transform, new Vector2(460f, 240f), new Vector2(0.5f, 0.5f), Vector2.zero);
+        Transform resignRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("ResignPopupRoot");
+        confirmPanel = CreatePanelObject("ResignConfirmPanel", resignRoot, new Vector2(460f, 240f), new Vector2(0.5f, 0.5f), Vector2.zero);
         confirmPanel.AddComponent<Image>().color = new Color(0.08f, 0.08f, 0.08f, 0.95f);
         confirmPanel.SetActive(false);
 
