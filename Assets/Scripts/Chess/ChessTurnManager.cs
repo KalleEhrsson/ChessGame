@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -44,6 +45,8 @@ public class ChessTurnManager : MonoBehaviour
     StockfishService stockfishService;
     ChessAiRoundConsole aiRoundConsole;
     bool aiTurnInProgress;
+    int aiTurnSequence;
+    CancellationTokenSource aiTurnCancellation;
     bool boardEventsBound;
     bool stockfishEventsBound;
 
@@ -84,6 +87,8 @@ public class ChessTurnManager : MonoBehaviour
 
     void OnDestroy()
     {
+        CancelAiTurn("turn manager destroyed");
+
         if (boardEventsBound && board != null)
         {
             board.PieceMoved -= OnBoardPieceMoved;
@@ -95,6 +100,11 @@ public class ChessTurnManager : MonoBehaviour
             stockfishService.EngineLineReceived -= OnStockfishEngineLine;
             stockfishEventsBound = false;
         }
+    }
+
+    void OnDisable()
+    {
+        CancelAiTurn("turn manager disabled");
     }
 
     #endregion
@@ -128,6 +138,7 @@ public class ChessTurnManager : MonoBehaviour
 
     public void SwitchTurn()
     {
+        CancelAiTurn("turn switched");
         currentTurn = currentTurn == PieceTeam.White ? PieceTeam.Black : PieceTeam.White;
         TurnChanged?.Invoke(currentTurn);
         HandleTurnStarted();
@@ -135,6 +146,7 @@ public class ChessTurnManager : MonoBehaviour
 
     public void SetTurn(PieceTeam team)
     {
+        CancelAiTurn("turn set");
         currentTurn = team;
         TurnChanged?.Invoke(currentTurn);
         HandleTurnStarted();
@@ -154,7 +166,10 @@ public class ChessTurnManager : MonoBehaviour
         if (IsAiTurn())
         {
             HandleTurnStarted();
+            return;
         }
+
+        CancelAiTurn("active turn changed to human");
     }
 
     public void SetAiEnabledForBothTeams(bool enabled)
@@ -165,7 +180,10 @@ public class ChessTurnManager : MonoBehaviour
         if (IsAiTurn())
         {
             HandleTurnStarted();
+            return;
         }
+
+        CancelAiTurn("ai disabled for active turn");
     }
 
     #endregion
@@ -196,7 +214,7 @@ public class ChessTurnManager : MonoBehaviour
     {
         if (aiTurnInProgress)
         {
-            return;
+            CancelAiTurn("restarting ai turn");
         }
 
         ResolveSystems();
@@ -210,16 +228,21 @@ public class ChessTurnManager : MonoBehaviour
             return;
         }
 
-        _ = ExecuteAiTurnAsync();
+        int turnId = ++aiTurnSequence;
+        aiTurnCancellation?.Cancel();
+        aiTurnCancellation?.Dispose();
+        aiTurnCancellation = new CancellationTokenSource();
+        _ = ExecuteAiTurnAsync(turnId, aiTurnCancellation.Token);
     }
 
-    async Task ExecuteAiTurnAsync()
+    async Task ExecuteAiTurnAsync(int turnId, CancellationToken cancellationToken)
     {
         aiTurnInProgress = true;
 
         try
         {
-            await WaitForPieceMotionAsync();
+            await WaitForPieceMotionAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
             ResolveSystems();
             if (board == null || stockfishService == null)
@@ -238,7 +261,13 @@ public class ChessTurnManager : MonoBehaviour
             aiRoundConsole?.SetFen(fen);
             aiRoundConsole?.SetThinking(true);
 
-            string bestMoveRaw = await stockfishService.RequestBestMoveAsync(fen, aiSearchDepth);
+            string bestMoveRaw = await stockfishService.RequestBestMoveAsync(fen, cancellationToken, aiSearchDepth);
+            if (cancellationToken.IsCancellationRequested || turnId != aiTurnSequence)
+            {
+                UnityEngine.Debug.Log("[ChessTurnManager] Stale AI response ignored.");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(bestMoveRaw))
             {
                 aiRoundConsole?.SetThinking(false);
@@ -265,14 +294,25 @@ public class ChessTurnManager : MonoBehaviour
 
             float delaySeconds = UnityEngine.Random.Range(aiMoveDelayMin, aiMoveDelayMax);
             int delayMs = Mathf.RoundToInt(delaySeconds * 1000f);
-            await Task.Delay(delayMs);
-            await WaitForPieceMotionAsync();
+            await Task.Delay(delayMs, cancellationToken);
+            await WaitForPieceMotionAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (turnId != aiTurnSequence)
+            {
+                UnityEngine.Debug.Log("[ChessTurnManager] Stale AI move ignored.");
+                return;
+            }
 
             bool moved = board.MovePiece(fromTile, toTile, promotionPiece);
             if (!moved)
             {
                 UnityEngine.Debug.LogError($"[ChessTurnManager] AI move rejected by move system: {fromName}->{toName}.");
             }
+        }
+        catch (OperationCanceledException)
+        {
+            aiRoundConsole?.SetThinking(false);
+            UnityEngine.Debug.Log("[ChessTurnManager] AI turn cancelled.");
         }
         catch (Exception exception)
         {
@@ -337,6 +377,32 @@ public class ChessTurnManager : MonoBehaviour
         {
             await Task.Yield();
         }
+    }
+
+    static async Task WaitForPieceMotionAsync(CancellationToken cancellationToken)
+    {
+        while (ChessPieceMotion.IsAnyAnimating)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Yield();
+        }
+    }
+
+    void CancelAiTurn(string reason)
+    {
+        if (aiTurnCancellation == null)
+        {
+            return;
+        }
+
+        if (!aiTurnCancellation.IsCancellationRequested)
+        {
+            UnityEngine.Debug.Log($"[ChessTurnManager] AI turn cancelled: {reason}.");
+            aiTurnCancellation.Cancel();
+        }
+
+        aiTurnCancellation.Dispose();
+        aiTurnCancellation = null;
     }
 
     #endregion
