@@ -52,7 +52,6 @@ public class PlayerController : MonoBehaviour
     private IEnumerator LockCursorNextFrame()
     {
         yield return null;
-        ApplyCursorStateForCameraMode();
     }
     
     private void Awake()
@@ -60,14 +59,12 @@ public class PlayerController : MonoBehaviour
         EnsureCoreComponents();
         EnsureCameraHierarchy();
         EnsureInputActions();
-        ApplyCursorStateForCameraMode();
     }
 
     private void OnEnable()
     {
         moveAction?.Enable();
         lookAction?.Enable();
-        ApplyCursorStateForCameraMode();
     }
 
     private void OnDisable()
@@ -78,6 +75,14 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        ChessPauseManager pauseManager = ChessPauseManager.GetOrCreate();
+        if (pauseManager.IsPauseRequested)
+        {
+            moveInput = Vector2.zero;
+            lookInput = Vector2.zero;
+            return;
+        }
+
         moveInput = moveAction.ReadValue<Vector2>();
         lookInput = lookAction.ReadValue<Vector2>();
         ApplyLook();
@@ -88,13 +93,6 @@ public class PlayerController : MonoBehaviour
         ApplyMovement();
     }
 
-    private void OnApplicationFocus(bool hasFocus)
-    {
-        if (hasFocus)
-        {
-            ApplyCursorStateForCameraMode();
-        }
-    }
 
     #endregion
 
@@ -182,30 +180,7 @@ public class PlayerController : MonoBehaviour
         lookAction = new InputAction(name: "Look", type: InputActionType.Value, binding: "<Mouse>/delta");
     }
 
-    private void LockCursor()
-    {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
 
-    private void UnlockCursor()
-    {
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-    }
-
-    private void ApplyCursorStateForCameraMode()
-    {
-        ChessCameraController cameraController = ChessCameraController.Instance;
-        if (cameraController != null && cameraController.IsInTacticalMode())
-        {
-            UnlockCursor();
-            return;
-        }
-
-        LockCursor();
-    }
-    
     #endregion
 
     #region Movement
