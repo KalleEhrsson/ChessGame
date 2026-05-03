@@ -32,6 +32,8 @@ public class ChessPauseManager : MonoBehaviour
     #region Variables
 
     int activeRoundActions;
+    [SerializeField] Key pauseKey = Key.P;
+    [SerializeField] bool verbosePauseLogs = true;
     bool isPauseRequested;
     bool isPaused;
     bool lastPPressedThisFrame;
@@ -184,15 +186,18 @@ public class ChessPauseManager : MonoBehaviour
             return;
         }
 
-        if (Keyboard.current.pKey.wasPressedThisFrame)
+        if (Keyboard.current[pauseKey].wasPressedThisFrame)
         {
             lastPPressedThisFrame = true;
-            Debug.Log("[ChessPauseInput] P pressed", this);
-            Debug.Log("[ChessPauseInput] Calling pause toggle", this);
+            if (verbosePauseLogs)
+            {
+                Debug.Log($"[ChessPauseInput] {pauseKey} pressed", this);
+                Debug.Log("[ChessPauseInput] Calling pause toggle", this);
+            }
             TogglePauseRequest();
         }
 
-        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (verbosePauseLogs && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             Debug.Log("[ChessPauseInput] Escape pressed, ignored for pause debug", this);
         }
@@ -243,4 +248,3 @@ public class ChessPauseManager : MonoBehaviour
         winScreen ??= ChessWinScreenUI.GetOrCreate();
     }
 }
-
