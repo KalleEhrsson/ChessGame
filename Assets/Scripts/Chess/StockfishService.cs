@@ -210,6 +210,32 @@ public class StockfishService : MonoBehaviour
         return bestMove;
     }
 
+    public async Task<bool> TrySyncPositionAsync(string fen, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(fen))
+        {
+            return false;
+        }
+
+        if (!await InitializeAsync())
+        {
+            return false;
+        }
+
+        CancelThinking();
+        isReadyTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        SendCommand($"position fen {fen}");
+        SendCommand("isready");
+        return await WaitForSignalWithTimeout(isReadyTask.Task, "readyok", 5000);
+    }
+
+    public void CancelThinking()
+    {
+        SendCommand("stop");
+        pendingBestMoveTask?.TrySetCanceled();
+        pendingBestMoveTask = null;
+    }
+
     public bool TryParseBestMove(string bestMoveRaw, out string from, out string to, out PieceType? promotionPiece)
     {
         from = null;

@@ -22,6 +22,7 @@ public class ChessDevSandboxController : MonoBehaviour
     ChessGameStateController gameStateController;
     ChessTileHoverController tileHoverController;
     ChessBoardStateTools boardTools;
+    StockfishService stockfishService;
     InputAction toggleSandboxAction;
     KeyCode actionBoundToggleKey = KeyCode.None;
 
@@ -246,21 +247,20 @@ public class ChessDevSandboxController : MonoBehaviour
         boardTools?.ClearBoard();
     }
 
-    public bool LoadSelectedPreset()
+    public async void LoadSelectedPreset()
     {
         RefreshDependencies();
         if (boardTools == null || presets.Count == 0)
         {
-            return false;
+            return;
         }
 
-        bool success = boardTools.LoadPreset(presets[presetIndex]);
+        bool success = await boardTools.LoadPresetAsync(presets[presetIndex]);
         if (success)
         {
             fenBuffer = boardTools.ExportFen();
         }
 
-        return success;
     }
 
     public void SetSideToMove(PieceTeam team)
@@ -283,16 +283,15 @@ public class ChessDevSandboxController : MonoBehaviour
         return fenBuffer;
     }
 
-    public bool ImportFen()
+    public async void ImportFen()
     {
         RefreshDependencies();
-        bool success = boardTools != null && boardTools.ImportFen(fenBuffer);
+        bool success = boardTools != null && await boardTools.ImportFenAsync(fenBuffer);
         if (success)
         {
             fenBuffer = boardTools.ExportFen();
         }
 
-        return success;
     }
 
     public bool TryHandleSandboxTileClick()
@@ -314,7 +313,8 @@ public class ChessDevSandboxController : MonoBehaviour
             return true;
         }
 
-        return HandleTileClick(tile);
+        _ = HandleTileClickAsync(tile);
+        return true;
     }
 
     #endregion
@@ -330,13 +330,14 @@ public class ChessDevSandboxController : MonoBehaviour
 
         if (board != null && turnManager != null)
         {
-            boardTools = new ChessBoardStateTools(board, turnManager, gameStateController);
+            stockfishService ??= StockfishService.GetOrCreate();
+            boardTools = new ChessBoardStateTools(board, turnManager, gameStateController, stockfishService);
         }
 
         aiEnabled = turnManager != null && turnManager.IsAiTeam(PieceTeam.White) && turnManager.IsAiTeam(PieceTeam.Black);
     }
 
-    bool HandleTileClick(ChessTile tile)
+    async System.Threading.Tasks.Task<bool> HandleTileClickAsync(ChessTile tile)
     {
         if (boardTools == null)
         {
@@ -346,9 +347,9 @@ public class ChessDevSandboxController : MonoBehaviour
         switch (currentMode)
         {
             case SandboxMode.Place:
-                return boardTools.SpawnPiece(selectedTeam, selectedPieceType, tile);
+                return await boardTools.SpawnPieceAsync(selectedTeam, selectedPieceType, tile);
             case SandboxMode.Remove:
-                return boardTools.RemovePiece(tile);
+                return await boardTools.RemovePieceAsync(tile);
             case SandboxMode.Move:
                 if (moveSourceTile == null)
                 {
@@ -364,7 +365,7 @@ public class ChessDevSandboxController : MonoBehaviour
 
                 ChessTile fromTile = moveSourceTile;
                 moveSourceTile = null;
-                return boardTools.MovePiece(fromTile, tile);
+                return await boardTools.MovePieceAsync(fromTile, tile);
             default:
                 return false;
         }

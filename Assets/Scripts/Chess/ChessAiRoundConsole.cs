@@ -48,6 +48,10 @@ public class ChessAiRoundConsole : MonoBehaviour
     bool isThinking;
     string stockfishMove;
     string aiMove;
+    string syncedFen;
+    bool stockfishSynced;
+    string debugValidationError;
+    string debugCancellationReason;
 
     int? currentDepth;
     string currentEval;
@@ -118,7 +122,17 @@ public class ChessAiRoundConsole : MonoBehaviour
 
     public void SetFen(string nextFen)
     {
-        _ = nextFen;
+        syncedFen = nextFen;
+        RefreshDisplayIfChanged();
+    }
+
+    public void SetDebugSyncStatus(string fen, bool isValid, string validationError, bool thinkingCancelled, string cancellationReason)
+    {
+        syncedFen = fen;
+        stockfishSynced = isValid;
+        debugValidationError = validationError;
+        debugCancellationReason = thinkingCancelled ? cancellationReason : null;
+        RefreshDisplayIfChanged();
     }
 
     public void SetThinking(bool thinking)
@@ -556,6 +570,18 @@ public class ChessAiRoundConsole : MonoBehaviour
         builder.AppendLine($"Stockfish best move: {(string.IsNullOrWhiteSpace(stockfishMove) ? "-" : stockfishMove)}");
         builder.AppendLine("AI move:");
         builder.AppendLine(string.IsNullOrWhiteSpace(aiMove) ? "-" : aiMove);
+        builder.AppendLine();
+        builder.AppendLine($"Stockfish synced: {(stockfishSynced ? "Yes" : "No")}");
+        builder.AppendLine($"Synced FEN: {(string.IsNullOrWhiteSpace(syncedFen) ? "-" : syncedFen)}");
+        if (!string.IsNullOrWhiteSpace(debugValidationError))
+        {
+            builder.AppendLine($"Rejected state: {debugValidationError}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(debugCancellationReason))
+        {
+            builder.AppendLine($"AI cancelled: {debugCancellationReason}");
+        }
         return builder.ToString();
     }
 
