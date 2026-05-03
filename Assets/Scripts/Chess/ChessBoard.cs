@@ -254,12 +254,19 @@ public class ChessBoard : MonoBehaviour
         ChessTurnManager.GetOrCreate().SetTurn(PieceTeam.White);
         ChessGameStateController.GetOrCreate().ResetToPlaying();
         ChessResignUiController.GetOrCreate().ResetForNewGame();
+        ChessWinScreenUI.GetOrCreate().Hide();
 
         SpawnBackRank(PieceTeam.White, "A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1");
         SpawnPawns(PieceTeam.White, 2);
 
         SpawnBackRank(PieceTeam.Black, "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8");
         SpawnPawns(PieceTeam.Black, 7);
+    }
+
+
+    public void RestartMatch()
+    {
+        SpawnStartingPosition();
     }
 
     [ContextMenu("Rebuild Board")]

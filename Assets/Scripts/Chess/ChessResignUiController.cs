@@ -36,12 +36,11 @@ public class ChessResignUiController : MonoBehaviour
 
     ChessGameStateController gameStateController;
     ChessTurnManager turnManager;
+    ChessSelectionController selectionController;
+    ChessWinScreenUI winScreen;
     Canvas rootCanvas;
     Button resignButton;
     GameObject confirmPanel;
-    GameObject gameOverPanel;
-    TextMeshProUGUI gameOverTitle;
-    TextMeshProUGUI gameOverReason;
 
     #endregion
 
@@ -81,22 +80,13 @@ public class ChessResignUiController : MonoBehaviour
         EnsureEventSystem();
         EnsureResignButton();
         EnsureConfirmPanel();
-        EnsureGameOverPanel();
         ResetForNewGame();
     }
 
     public void ResetForNewGame()
     {
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.SetActive(false);
-        }
-
-        if (confirmPanel != null)
-        {
-            confirmPanel.SetActive(false);
-        }
-
+        CloseConfirm();
+        winScreen?.Hide();
         RefreshButtonState();
     }
 
@@ -108,6 +98,8 @@ public class ChessResignUiController : MonoBehaviour
     {
         gameStateController = ChessGameStateController.GetOrCreate();
         turnManager = ChessTurnManager.GetOrCreate();
+        selectionController = ChessSelectionController.GetOrCreate();
+        winScreen = ChessWinScreenUI.GetOrCreate();
         gameStateController.GameEnded -= OnGameEnded;
         gameStateController.GameEnded += OnGameEnded;
     }
@@ -119,17 +111,19 @@ public class ChessResignUiController : MonoBehaviour
             return;
         }
 
-        Canvas existingCanvas = FindFirstObjectByType<Canvas>();
-        if (existingCanvas != null)
+        rootCanvas = FindFirstObjectByType<Canvas>();
+        if (rootCanvas != null)
         {
-            rootCanvas = existingCanvas;
             return;
         }
 
         GameObject canvasObject = new("ChessRuntimeCanvas");
         rootCanvas = canvasObject.AddComponent<Canvas>();
         rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvasObject.AddComponent<CanvasScaler>();
+        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
         canvasObject.AddComponent<GraphicRaycaster>();
     }
 
@@ -152,14 +146,12 @@ public class ChessResignUiController : MonoBehaviour
             return;
         }
 
-        GameObject buttonObject = CreatePanelObject("ResignButton", rootCanvas.transform, new Vector2(140f, 40f), new Vector2(1f, 0f), new Vector2(-16f, 16f));
-        Image buttonImage = buttonObject.AddComponent<Image>();
-        buttonImage.color = new Color(0.75f, 0.2f, 0.2f, 0.95f);
-
+        GameObject buttonObject = CreatePanelObject("ResignButton", rootCanvas.transform, new Vector2(180f, 48f), new Vector2(1f, 0f), new Vector2(-18f, 18f));
+        buttonObject.AddComponent<Image>().color = new Color(0.75f, 0.2f, 0.2f, 0.95f);
         resignButton = buttonObject.AddComponent<Button>();
         resignButton.onClick.AddListener(OpenConfirm);
 
-        TextMeshProUGUI label = CreateLabel("Label", buttonObject.transform, "Resign", 24);
+        TextMeshProUGUI label = CreateLabel("Label", buttonObject.transform, "Resign", 26);
         label.alignment = TextAlignmentOptions.Center;
         RectTransform labelRect = label.rectTransform;
         labelRect.anchorMin = Vector2.zero;
@@ -175,33 +167,18 @@ public class ChessResignUiController : MonoBehaviour
             return;
         }
 
-        confirmPanel = CreatePanelObject("ResignConfirmPanel", rootCanvas.transform, new Vector2(420f, 210f), new Vector2(0.5f, 0.5f), Vector2.zero);
+        confirmPanel = CreatePanelObject("ResignConfirmPanel", rootCanvas.transform, new Vector2(460f, 240f), new Vector2(0.5f, 0.5f), Vector2.zero);
         confirmPanel.AddComponent<Image>().color = new Color(0.08f, 0.08f, 0.08f, 0.95f);
         confirmPanel.SetActive(false);
 
-        CreateLabel("Title", confirmPanel.transform, "Resign?", 36, new Vector2(0.5f, 1f), new Vector2(0f, -24f));
-        CreateLabel("Body", confirmPanel.transform, "Are you sure you want to resign?", 24, new Vector2(0.5f, 0.65f), Vector2.zero);
+        CreateLabel("Title", confirmPanel.transform, "Resign?", 38, new Vector2(0.5f, 0.78f), Vector2.zero);
+        CreateLabel("Body", confirmPanel.transform, "Are you sure you want to resign?", 24, new Vector2(0.5f, 0.58f), Vector2.zero);
 
-        Button yesButton = CreateActionButton(confirmPanel.transform, "YesButton", "Yes, resign", new Vector2(-95f, -70f));
+        Button yesButton = CreateActionButton(confirmPanel.transform, "YesButton", "Yes, resign", new Vector2(-105f, -74f));
         yesButton.onClick.AddListener(ConfirmResign);
 
-        Button cancelButton = CreateActionButton(confirmPanel.transform, "CancelButton", "Cancel", new Vector2(95f, -70f));
+        Button cancelButton = CreateActionButton(confirmPanel.transform, "CancelButton", "Cancel", new Vector2(105f, -74f));
         cancelButton.onClick.AddListener(CloseConfirm);
-    }
-
-    void EnsureGameOverPanel()
-    {
-        if (gameOverPanel != null)
-        {
-            return;
-        }
-
-        gameOverPanel = CreatePanelObject("ChessGameOverPanel", rootCanvas.transform, new Vector2(520f, 220f), new Vector2(0.5f, 0.78f), Vector2.zero);
-        gameOverPanel.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.8f);
-        gameOverPanel.SetActive(false);
-
-        gameOverTitle = CreateLabel("Result", gameOverPanel.transform, string.Empty, 40, new Vector2(0.5f, 0.7f), Vector2.zero);
-        gameOverReason = CreateLabel("Reason", gameOverPanel.transform, string.Empty, 26, new Vector2(0.5f, 0.35f), Vector2.zero);
     }
 
     #endregion
@@ -232,20 +209,15 @@ public class ChessResignUiController : MonoBehaviour
     void OnGameEnded(ChessGameEndResult result)
     {
         CloseConfirm();
+        selectionController?.Deselect();
         RefreshButtonState();
 
-        if (gameOverPanel == null || gameOverTitle == null || gameOverReason == null)
-        {
-            Debug.LogWarning("[ChessResignUiController] Game-over UI is missing references.");
-            return;
-        }
-
         string title;
-        if (result.WinningTeam.HasValue && turnManager != null && result.LosingTeam.HasValue && turnManager.IsHumanTurn(result.LosingTeam.Value))
+        if (result.WinningTeam.HasValue && result.LosingTeam.HasValue && turnManager != null && turnManager.IsHumanTurn(result.LosingTeam.Value))
         {
             title = "You Lose";
         }
-        else if (result.WinningTeam.HasValue && turnManager != null && result.WinningTeam.HasValue && turnManager.IsHumanTurn(result.WinningTeam.Value))
+        else if (result.WinningTeam.HasValue && turnManager != null && turnManager.IsHumanTurn(result.WinningTeam.Value))
         {
             title = "You Win";
         }
@@ -258,9 +230,13 @@ public class ChessResignUiController : MonoBehaviour
             title = "Draw";
         }
 
-        gameOverTitle.text = title;
-        gameOverReason.text = string.IsNullOrWhiteSpace(result.Reason) ? result.FinalState.ToString() : result.Reason;
-        gameOverPanel.SetActive(true);
+        if (result.WinningTeam.HasValue)
+        {
+            winScreen?.ShowWin(title, result.Reason, $"{result.WinningTeam.Value} wins");
+            return;
+        }
+
+        winScreen?.ShowDraw(result.Reason);
     }
 
     void RefreshButtonState()
@@ -270,9 +246,10 @@ public class ChessResignUiController : MonoBehaviour
             return;
         }
 
-        resignButton.interactable = gameStateController.IsGameplayActive();
-        resignButton.gameObject.SetActive(gameStateController.IsGameplayActive());
-        if (!gameStateController.IsGameplayActive())
+        bool active = gameStateController.IsGameplayActive();
+        resignButton.interactable = active;
+        resignButton.gameObject.SetActive(active);
+        if (!active)
         {
             CloseConfirm();
         }
@@ -310,13 +287,13 @@ public class ChessResignUiController : MonoBehaviour
         rect.anchorMax = resolvedAnchor;
         rect.pivot = new Vector2(0.5f, 0.5f);
         rect.anchoredPosition = anchoredPos ?? Vector2.zero;
-        rect.sizeDelta = new Vector2(380f, 56f);
+        rect.sizeDelta = new Vector2(400f, 56f);
         return label;
     }
 
     static Button CreateActionButton(Transform parent, string name, string labelText, Vector2 anchoredPos)
     {
-        GameObject buttonObject = CreatePanelObject(name, parent, new Vector2(170f, 44f), new Vector2(0.5f, 0.5f), anchoredPos);
+        GameObject buttonObject = CreatePanelObject(name, parent, new Vector2(180f, 48f), new Vector2(0.5f, 0.5f), anchoredPos);
         buttonObject.AddComponent<Image>().color = new Color(0.25f, 0.25f, 0.25f, 1f);
         Button button = buttonObject.AddComponent<Button>();
         TextMeshProUGUI label = CreateLabel("Label", buttonObject.transform, labelText, 22);

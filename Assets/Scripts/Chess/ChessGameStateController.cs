@@ -7,6 +7,7 @@ public enum ChessGameState
     Playing,
     Checkmate,
     Stalemate,
+    Draw,
     Resignation
 }
 
@@ -124,17 +125,11 @@ public class ChessGameStateController : MonoBehaviour
         if (inCheck)
         {
             PieceTeam winner = GetOpponentTeam(currentTurn);
-            SetTerminalState(
-                ChessGameState.Checkmate,
-                new ChessGameEndResult(ChessGameState.Checkmate, winner, currentTurn, currentTurn, "Checkmate"),
-                $"Checkmate. {winner} wins.");
+            EndGame(ChessGameState.Checkmate, winner, currentTurn, "Checkmate", currentTurn);
             return;
         }
 
-        SetTerminalState(
-            ChessGameState.Stalemate,
-            new ChessGameEndResult(ChessGameState.Stalemate, null, null, currentTurn, "Stalemate"),
-            "Stalemate.");
+        EndGame(ChessGameState.Stalemate, null, null, "Stalemate", currentTurn);
     }
 
     public void ResignCurrentPlayer()
@@ -145,12 +140,29 @@ public class ChessGameStateController : MonoBehaviour
     public void ResignSide(PieceTeam side)
     {
         PieceTeam winner = GetOpponentTeam(side);
-        SetTerminalState(
-            ChessGameState.Resignation,
-            new ChessGameEndResult(ChessGameState.Resignation, winner, side, side, $"{side} resigned"),
-            $"Resignation. {side} resigned. {winner} wins.");
+        EndGame(ChessGameState.Resignation, winner, side, $"{side} resigned", side);
     }
 
+
+    public bool EndGame(ChessGameState reason, PieceTeam? winner, PieceTeam? loser, string reasonText, PieceTeam affectedTurn)
+    {
+        if (currentState != ChessGameState.Playing)
+        {
+            return false;
+        }
+
+        currentState = reason;
+        ChessGameEndResult result = new(reason, winner, loser, affectedTurn, reasonText);
+        Debug.Log($"Game ended: {reasonText}");
+        GameEnded?.Invoke(result);
+        return true;
+    }
+
+    public void DeclareDraw(string reasonText = "Draw")
+    {
+        PieceTeam turn = ChessTurnManager.GetOrCreate().GetCurrentTurn();
+        EndGame(ChessGameState.Draw, null, null, reasonText, turn);
+    }
     public bool HasAnyLegalMove(PieceTeam team)
     {
         ResolveSystems();
@@ -186,18 +198,6 @@ public class ChessGameStateController : MonoBehaviour
     #endregion
 
     #region Helpers
-
-    void SetTerminalState(ChessGameState terminalState, ChessGameEndResult result, string logMessage)
-    {
-        if (currentState != ChessGameState.Playing)
-        {
-            return;
-        }
-
-        currentState = terminalState;
-        Debug.Log(logMessage);
-        GameEnded?.Invoke(result);
-    }
 
     void ResolveSystems()
     {
