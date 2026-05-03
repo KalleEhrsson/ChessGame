@@ -17,6 +17,8 @@ public class PlayerInteractionController : MonoBehaviour
     InputAction rightClickAction;
     InputAction leftClickAction;
 
+    bool pendingLeftClick;
+    
     ChessBoard board;
     ChessSelectionController selectionController;
     ChessCameraController cameraController;
@@ -82,6 +84,17 @@ public class PlayerInteractionController : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        if (!pendingLeftClick)
+        {
+            return;
+        }
+
+        pendingLeftClick = false;
+        ProcessLeftClick();
+    }
+    
     #endregion
 
     #region Setup
@@ -214,6 +227,11 @@ public class PlayerInteractionController : MonoBehaviour
     }
 
     void OnLeftClickPerformed(InputAction.CallbackContext _)
+    {
+        pendingLeftClick = true;
+    }
+
+    void ProcessLeftClick()
     {
         EnsureSystems();
         if (IsInteractionLockedForPromotion())

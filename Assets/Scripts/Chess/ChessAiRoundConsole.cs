@@ -233,8 +233,6 @@ public class ChessAiRoundConsole : MonoBehaviour
         }
 
         BuildRuntimeUi();
-        Debug.LogWarning("ChessAiRoundConsole UI references were missing. Runtime debug panel was auto-created.", this);
-
         ApplyVisibility();
     }
 
