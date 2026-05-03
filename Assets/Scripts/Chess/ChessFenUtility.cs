@@ -4,6 +4,21 @@ using UnityEngine;
 
 public static class ChessFenUtility
 {
+    public readonly struct FenDataView
+    {
+        public readonly int WhiteKingCount;
+        public readonly int BlackKingCount;
+        public readonly bool HasPawnOnInvalidRank;
+        public readonly bool IsActiveTurnValid;
+
+        public FenDataView(int whiteKingCount, int blackKingCount, bool hasPawnOnInvalidRank, bool isActiveTurnValid)
+        {
+            WhiteKingCount = whiteKingCount;
+            BlackKingCount = blackKingCount;
+            HasPawnOnInvalidRank = hasPawnOnInvalidRank;
+            IsActiveTurnValid = isActiveTurnValid;
+        }
+    }
     #region API
 
     public static string ExportFen(ChessBoard board, PieceTeam activeTurn)
@@ -57,6 +72,42 @@ public static class ChessFenUtility
     #endregion
 
     #region Parse
+
+    public static bool TryParseFen(string fen, out FenDataView view, out string error)
+    {
+        view = default;
+        error = string.Empty;
+        if (!TryParseFen(fen, out FenData data))
+        {
+            error = "FEN parse failed.";
+            return false;
+        }
+
+        int whiteKings = 0;
+        int blackKings = 0;
+        bool pawnOnInvalidRank = false;
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                FenPiece piece = data.Board[x, y];
+                if (!piece.HasPiece)
+                {
+                    continue;
+                }
+                if (piece.Type == PieceType.King)
+                {
+                    if (piece.Team == PieceTeam.White) whiteKings++; else blackKings++;
+                }
+                if (piece.Type == PieceType.Pawn && (y == 0 || y == 7))
+                {
+                    pawnOnInvalidRank = true;
+                }
+            }
+        }
+        view = new FenDataView(whiteKings, blackKings, pawnOnInvalidRank, true);
+        return true;
+    }
 
     static bool TryParseFen(string fen, out FenData fenData)
     {

@@ -49,6 +49,7 @@ public class ChessTurnManager : MonoBehaviour
     CancellationTokenSource aiTurnCancellation;
     bool boardEventsBound;
     bool stockfishEventsBound;
+    bool debugPositionValid = true;
 
     #endregion
 
@@ -186,6 +187,35 @@ public class ChessTurnManager : MonoBehaviour
         CancelAiTurn("ai disabled for active turn");
     }
 
+    public async Task<bool> HandleDebugBoardSyncAsync(string fen, bool positionValid, string validationError)
+    {
+        ResolveSystems();
+        CancelAiTurn("debug board edit");
+        stockfishService?.CancelThinking();
+        debugPositionValid = positionValid && !string.IsNullOrWhiteSpace(fen);
+
+        aiRoundConsole?.SetDebugSyncStatus(fen, debugPositionValid, validationError, true, "debug board edit");
+
+        if (!debugPositionValid)
+        {
+            UnityEngine.Debug.LogWarning($"[ChessTurnManager] AI request blocked because debug state is invalid: {validationError}");
+            return false;
+        }
+
+        bool synced = stockfishService != null && await stockfishService.TrySyncPositionAsync(fen);
+        if (!synced)
+        {
+            debugPositionValid = false;
+            aiRoundConsole?.SetDebugSyncStatus(fen, false, "Stockfish rejected synchronized position.", true, "debug board edit");
+            return false;
+        }
+
+        aiRoundConsole?.SetFen(fen);
+        UnityEngine.Debug.Log("[ChessTurnManager] Stockfish synchronized from debug state.");
+        HandleTurnStarted();
+        return true;
+    }
+
     #endregion
 
     #region AI Turn
@@ -220,6 +250,11 @@ public class ChessTurnManager : MonoBehaviour
         ResolveSystems();
         if (!IsAiTurn())
         {
+            return;
+        }
+        if (!debugPositionValid)
+        {
+            UnityEngine.Debug.LogWarning("[ChessTurnManager] AI turn blocked due to invalid debug position.");
             return;
         }
 
