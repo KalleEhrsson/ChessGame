@@ -7,8 +7,6 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class ChessPauseMenuUI : MonoBehaviour
 {
-    public bool IsVisible => overlay != null && overlay.activeSelf;
-
     #region Variables
     GameObject pauseMenuRoot;
     GameObject dimBackground;
@@ -41,9 +39,7 @@ public class ChessPauseMenuUI : MonoBehaviour
     bool hasLoggedThisVisibleCycle;
     #endregion
 
-    #region Properties
     public bool IsVisible => pauseMenuRoot != null && pauseMenuRoot.activeSelf;
-    #endregion
 
     void Awake()
     {
@@ -290,7 +286,7 @@ public class ChessPauseMenuUI : MonoBehaviour
         TMP_Text text = button.GetComponentInChildren<TextMeshProUGUI>();
         if (text != null)
         {
-            text.enableWordWrapping = false;
+            text.textWrappingMode = TextWrappingModes.NoWrap;
             text.overflowMode = TextOverflowModes.Ellipsis;
             text.alignment = TextAlignmentOptions.Center;
         }
