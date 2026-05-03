@@ -108,7 +108,7 @@ public class ChessPauseManager : MonoBehaviour
 
     public void TogglePauseRequest()
     {
-        Debug.Log("[ChessPauseManager] TogglePauseRequest called", this);
+        Debug.Log("[ChessPauseManager] Toggle called while requested/paused/pending", this);
         LogState("Before toggle");
         if (winScreen != null && winScreen.IsVisible)
         {
@@ -243,7 +243,7 @@ public class ChessPauseManager : MonoBehaviour
 
     void ResolveUiDependencies()
     {
-        pauseMenuUi ??= FindFirstObjectByType<ChessPauseMenuUI>();
+        pauseMenuUi ??= ChessPauseMenuUI.GetOrCreate();
         sandbox ??= ChessDevSandboxController.Instance;
         resignUi ??= ChessResignUiController.GetOrCreate();
         winScreen ??= ChessWinScreenUI.GetOrCreate();
