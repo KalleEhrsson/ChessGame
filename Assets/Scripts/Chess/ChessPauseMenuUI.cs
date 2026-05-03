@@ -46,6 +46,18 @@ public class ChessPauseMenuUI : MonoBehaviour
 
     public bool IsVisible => pauseMenuRoot != null && pauseMenuRoot.activeSelf;
 
+    public static ChessPauseMenuUI GetOrCreate()
+    {
+        ChessPauseMenuUI existing = FindFirstObjectByType<ChessPauseMenuUI>(FindObjectsInactive.Include);
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        GameObject host = new("ChessPauseMenuUI");
+        return host.AddComponent<ChessPauseMenuUI>();
+    }
+
     void Awake()
     {
         pauseManager = ChessPauseManager.GetOrCreate();
