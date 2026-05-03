@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,15 +8,20 @@ using UnityEngine.UI;
 public class ChessPauseMenuUI : MonoBehaviour
 {
     #region Variables
-    GameObject overlay;
+    GameObject pauseMenuRoot;
+    GameObject dimBackground;
+    CanvasGroup dimCanvasGroup;
     RectTransform panelRect;
+    CanvasGroup panelCanvasGroup;
+    RectTransform contentRootRect;
     RectTransform headerRect;
-    RectTransform buttonsRect;
-    VerticalLayoutGroup panelLayout;
-    VerticalLayoutGroup buttonsLayout;
-    TMP_Text statusText;
-    TMP_Text hintText;
+    RectTransform buttonStackRect;
+    VerticalLayoutGroup contentLayout;
+    VerticalLayoutGroup buttonStackLayout;
     TMP_Text titleText;
+    TMP_Text statusText;
+    TMP_Text footerHintText;
+
     Button resumeButton;
     Button devButton;
     Button debugButton;
@@ -27,7 +34,13 @@ public class ChessPauseMenuUI : MonoBehaviour
     ChessAiRoundConsole aiConsole;
     ChessDevSandboxController sandbox;
     ChessResignUiController resignUi;
-    bool hasLoggedLayoutMetrics;
+
+    Coroutine showRoutine;
+    bool hasLoggedThisVisibleCycle;
+    #endregion
+
+    #region Properties
+    public bool IsVisible => pauseMenuRoot != null && pauseMenuRoot.activeSelf;
     #endregion
 
     void Awake()
@@ -44,108 +57,280 @@ public class ChessPauseMenuUI : MonoBehaviour
     #region UI
     void EnsureUi()
     {
-        Transform root = ChessMasterCanvas.GetOrCreateOverlayRoot("PauseMenuRoot");
-        overlay = ChessUIFactory.CreateFullscreenOverlay("PauseOverlay", root);
-        panelRect = ChessUIFactory.CreatePanel("PausePanel", overlay.transform, new Vector2(640f, 700f), new Vector2(0.5f, 0.5f));
-        panelLayout = panelRect.gameObject.AddComponent<VerticalLayoutGroup>();
-        panelLayout.padding = new RectOffset(44, 44, 44, 44);
-        panelLayout.spacing = 18f;
-        panelLayout.childAlignment = TextAnchor.MiddleCenter;
-        panelLayout.childControlHeight = false;
-        panelLayout.childControlWidth = false;
-        panelLayout.childForceExpandHeight = false;
-        panelLayout.childForceExpandWidth = false;
+        Transform overlayRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("PauseMenuRoot");
+        pauseMenuRoot = overlayRoot.gameObject;
 
-        GameObject header = new("HeaderContainer", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
-        header.transform.SetParent(panelRect, false);
-        headerRect = header.GetComponent<RectTransform>();
-        var headerLayout = header.GetComponent<VerticalLayoutGroup>();
-        headerLayout.spacing = 6f;
-        headerLayout.padding = new RectOffset(0, 0, 0, 0);
-        headerLayout.childAlignment = TextAnchor.MiddleCenter;
+        ClearChildren(overlayRoot);
+        ConfigureFullscreenRect((RectTransform)overlayRoot);
+
+        dimBackground = new GameObject("DimBackground", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+        dimBackground.transform.SetParent(overlayRoot, false);
+        RectTransform dimRect = dimBackground.GetComponent<RectTransform>();
+        ConfigureFullscreenRect(dimRect);
+        dimBackground.GetComponent<Image>().color = new Color(0.03f, 0.04f, 0.07f, 0.78f);
+        dimCanvasGroup = dimBackground.GetComponent<CanvasGroup>();
+
+        panelRect = ChessUIFactory.CreatePanel("PausePanel", overlayRoot, new Vector2(580f, 620f), new Vector2(0.5f, 0.5f));
+        panelCanvasGroup = panelRect.gameObject.AddComponent<CanvasGroup>();
+
+        Image accent = new GameObject("AccentTopLine", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+        accent.transform.SetParent(panelRect, false);
+        RectTransform accentRect = (RectTransform)accent.transform;
+        accentRect.anchorMin = new Vector2(0f, 1f);
+        accentRect.anchorMax = new Vector2(1f, 1f);
+        accentRect.pivot = new Vector2(0.5f, 1f);
+        accentRect.sizeDelta = new Vector2(0f, 3f);
+        accentRect.anchoredPosition = Vector2.zero;
+        accent.color = ChessUITheme.GoldAccent;
+
+        GameObject contentRoot = new("ContentRoot", typeof(RectTransform), typeof(VerticalLayoutGroup));
+        contentRoot.transform.SetParent(panelRect, false);
+        contentRootRect = contentRoot.GetComponent<RectTransform>();
+        contentRootRect.anchorMin = Vector2.zero;
+        contentRootRect.anchorMax = Vector2.one;
+        contentRootRect.offsetMin = new Vector2(36f, 32f);
+        contentRootRect.offsetMax = new Vector2(-36f, -36f);
+        contentLayout = contentRoot.GetComponent<VerticalLayoutGroup>();
+        contentLayout.spacing = 22f;
+        contentLayout.padding = new RectOffset(0, 0, 0, 0);
+        contentLayout.childAlignment = TextAnchor.UpperCenter;
+        contentLayout.childControlHeight = false;
+        contentLayout.childControlWidth = true;
+        contentLayout.childForceExpandHeight = false;
+        contentLayout.childForceExpandWidth = false;
+
+        GameObject headerRoot = new("HeaderRoot", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
+        headerRoot.transform.SetParent(contentRoot.transform, false);
+        headerRect = headerRoot.GetComponent<RectTransform>();
+        var headerLayout = headerRoot.GetComponent<VerticalLayoutGroup>();
+        headerLayout.spacing = 8f;
+        headerLayout.childAlignment = TextAnchor.UpperCenter;
         headerLayout.childControlHeight = false;
         headerLayout.childControlWidth = true;
         headerLayout.childForceExpandHeight = false;
         headerLayout.childForceExpandWidth = false;
-        var headerElement = header.GetComponent<LayoutElement>();
-        headerElement.flexibleHeight = 0f;
-        headerElement.preferredHeight = 120f;
+        var headerLe = headerRoot.GetComponent<LayoutElement>();
+        headerLe.preferredHeight = 116f;
+        headerLe.flexibleHeight = 0f;
 
-        titleText = ChessUIFactory.CreateText("TitleText", headerRect, "PAUSED", ChessUITheme.TitleSize, TextAlignmentOptions.Center);
+        titleText = ChessUIFactory.CreateText("TitleText", headerRoot.transform, "PAUSED", 54f, TextAlignmentOptions.Center);
         titleText.color = ChessUITheme.GoldAccent;
-        var titleElement = titleText.gameObject.AddComponent<LayoutElement>();
-        titleElement.preferredHeight = 62f;
-        titleElement.flexibleHeight = 0f;
+        var titleLe = titleText.gameObject.AddComponent<LayoutElement>();
+        titleLe.preferredHeight = 62f;
+        titleLe.flexibleHeight = 0f;
 
-        statusText = ChessUIFactory.CreateText("SubtitleText", headerRect, "Game paused", ChessUITheme.BodySize, TextAlignmentOptions.Center);
-        var statusElement = statusText.gameObject.AddComponent<LayoutElement>();
-        statusElement.preferredHeight = 30f;
-        statusElement.flexibleHeight = 0f;
+        statusText = ChessUIFactory.CreateText("StatusText", headerRoot.transform, "Game paused", 24f, TextAlignmentOptions.Center);
+        statusText.color = ChessUITheme.MutedText;
+        var statusLe = statusText.gameObject.AddComponent<LayoutElement>();
+        statusLe.preferredHeight = 34f;
+        statusLe.flexibleHeight = 0f;
 
-        hintText = ChessUIFactory.CreateText("HintText", headerRect, "", 20f, TextAlignmentOptions.Center);
-        hintText.color = ChessUITheme.MutedText;
-        var hintElement = hintText.gameObject.AddComponent<LayoutElement>();
-        hintElement.preferredHeight = 24f;
-        hintElement.flexibleHeight = 0f;
+        GameObject buttonStack = new("ButtonStack", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
+        buttonStack.transform.SetParent(contentRoot.transform, false);
+        buttonStackRect = buttonStack.GetComponent<RectTransform>();
+        buttonStackLayout = buttonStack.GetComponent<VerticalLayoutGroup>();
+        buttonStackLayout.spacing = 12f;
+        buttonStackLayout.childAlignment = TextAnchor.UpperCenter;
+        buttonStackLayout.childControlHeight = false;
+        buttonStackLayout.childControlWidth = true;
+        buttonStackLayout.childForceExpandHeight = false;
+        buttonStackLayout.childForceExpandWidth = false;
+        var stackLe = buttonStack.GetComponent<LayoutElement>();
+        stackLe.preferredWidth = 432f;
+        stackLe.flexibleHeight = 0f;
 
-        GameObject buttons = new("ButtonsContainer", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
-        buttons.transform.SetParent(panelRect, false);
-        buttonsRect = buttons.GetComponent<RectTransform>();
-        buttonsLayout = buttons.GetComponent<VerticalLayoutGroup>();
-        buttonsLayout.spacing = 10f;
-        buttonsLayout.padding = new RectOffset(0, 0, 0, 0);
-        buttonsLayout.childAlignment = TextAnchor.UpperCenter;
-        buttonsLayout.childControlHeight = false;
-        buttonsLayout.childControlWidth = true;
-        buttonsLayout.childForceExpandHeight = false;
-        buttonsLayout.childForceExpandWidth = false;
-        var buttonsElement = buttons.GetComponent<LayoutElement>();
-        buttonsElement.preferredWidth = 420f;
-        buttonsElement.flexibleHeight = 0f;
+        resumeButton = CreateThemedButton("ResumeButton", buttonStack.transform, "Resume", () => pauseManager.Resume());
+        devButton = CreateThemedButton("DevMenuButton", buttonStack.transform, "Dev Menu", () => sandbox?.SetOpenFromPauseMenu(true));
+        debugButton = CreateThemedButton("DebugMenuButton", buttonStack.transform, "Debug Menu", () => sandbox?.SetOpenFromPauseMenu(true));
+        boardButton = CreateThemedButton("BoardPresetsButton", buttonStack.transform, "Board Presets", () => sandbox?.SetOpenFromPauseMenu(true));
+        aiConsoleButton = CreateThemedButton("StockfishConsoleButton", buttonStack.transform, "Stockfish Console", () => aiConsole.SetVisible(true));
+        restartButton = CreateThemedButton("RestartButton", buttonStack.transform, "Restart / New Game", () => { ChessBoard.Instance?.RestartMatch(); pauseManager.ResetPauseState(); });
+        resignButton = CreateThemedButton("ResignButton", buttonStack.transform, "Resign", () => resignUi.OpenConfirmFromPauseMenu());
 
-        resumeButton = ChessUIFactory.CreateButton("ResumeButton", buttons.transform, "Resume", () => pauseManager.Resume());
-        devButton = ChessUIFactory.CreateButton("DevButton", buttons.transform, "Dev Menu", () => sandbox?.SetOpenFromPauseMenu(true));
-        debugButton = ChessUIFactory.CreateButton("DebugButton", buttons.transform, "Debug Menu", () => sandbox?.SetOpenFromPauseMenu(true));
-        boardButton = ChessUIFactory.CreateButton("BoardButton", buttons.transform, "Board Presets", () => sandbox?.SetOpenFromPauseMenu(true));
-        aiConsoleButton = ChessUIFactory.CreateButton("AiButton", buttons.transform, "AI / Stockfish Console", () => aiConsole.SetVisible(true));
-        restartButton = ChessUIFactory.CreateButton("RestartButton", buttons.transform, "Restart / New Game", () => { ChessBoard.Instance?.RestartMatch(); pauseManager.ResetPauseState(); });
-        resignButton = ChessUIFactory.CreateButton("ResignButton", buttons.transform, "Resign", () => resignUi.OpenConfirmFromPauseMenu());
+        footerHintText = ChessUIFactory.CreateText("FooterHintText", contentRoot.transform, string.Empty, 18f, TextAlignmentOptions.Center);
+        footerHintText.color = ChessUITheme.MutedText;
+        var footerLe = footerHintText.gameObject.AddComponent<LayoutElement>();
+        footerLe.preferredHeight = 28f;
+        footerLe.flexibleHeight = 0f;
 
-        overlay.SetActive(false);
-        hasLoggedLayoutMetrics = false;
+        pauseMenuRoot.SetActive(false);
     }
 
     void Refresh()
     {
-        if (overlay == null || pauseManager == null) return;
+        if (pauseMenuRoot == null || pauseManager == null)
+        {
+            return;
+        }
+
         bool show = pauseManager.IsPauseRequested;
-        if (overlay.activeSelf != show) overlay.SetActive(show);
-        if (!show) return;
+        if (show && !pauseMenuRoot.activeSelf)
+        {
+            pauseMenuRoot.SetActive(true);
+            PlayShowAnimation();
+            hasLoggedThisVisibleCycle = false;
+        }
+        else if (!show && pauseMenuRoot.activeSelf)
+        {
+            pauseMenuRoot.SetActive(false);
+            hasLoggedThisVisibleCycle = false;
+            if (showRoutine != null)
+            {
+                StopCoroutine(showRoutine);
+                showRoutine = null;
+            }
+        }
+
+        if (!show)
+        {
+            return;
+        }
 
         bool fullyPaused = pauseManager.IsPaused;
-        statusText.text = fullyPaused ? "Game paused" : "Finishing current move...";
-        hintText.text = fullyPaused ? "Dev tools are available while paused." : "Waiting for AI...";
-        (resumeButton.GetComponentInChildren<TextMeshProUGUI>()).text = fullyPaused ? "Resume" : "Cancel Pause";
+        statusText.text = fullyPaused ? "Game paused" : "Waiting for safe pause...";
+        footerHintText.text = fullyPaused ? "Gameplay paused. Open tools or resume." : ResolvePendingHint();
+        SetButtonLabel(resumeButton, fullyPaused ? "Resume" : "Cancel Pause");
 
-        devButton.interactable = fullyPaused;
-        debugButton.interactable = fullyPaused;
-        boardButton.interactable = fullyPaused;
-        aiConsoleButton.interactable = fullyPaused;
-        restartButton.interactable = fullyPaused;
-        resignButton.interactable = fullyPaused;
+        bool hasSandbox = sandbox != null;
+        SetButtonVisibility(devButton, hasSandbox);
+        SetButtonVisibility(debugButton, hasSandbox);
+        SetButtonVisibility(boardButton, hasSandbox);
+        SetButtonVisibility(aiConsoleButton, aiConsole != null);
+        SetButtonVisibility(restartButton, ChessBoard.Instance != null);
+        SetButtonVisibility(resignButton, resignUi != null);
 
-        if (!hasLoggedLayoutMetrics)
+        bool unsafeEnabled = fullyPaused;
+        devButton.interactable = unsafeEnabled;
+        debugButton.interactable = unsafeEnabled;
+        boardButton.interactable = unsafeEnabled;
+        aiConsoleButton.interactable = unsafeEnabled;
+        restartButton.interactable = unsafeEnabled;
+        resignButton.interactable = unsafeEnabled;
+        resumeButton.interactable = true;
+
+        if (!hasLoggedThisVisibleCycle)
         {
-            Canvas.ForceUpdateCanvases();
-            float panelHeight = panelRect != null ? panelRect.rect.height : 0f;
-            float headerHeight = headerRect != null ? headerRect.rect.height : 0f;
-            float buttonHeight = buttonsRect != null ? buttonsRect.rect.height : 0f;
-            float titleHeight = titleText != null ? ((RectTransform)titleText.transform).rect.height : 0f;
-            float subtitleHeight = statusText != null ? ((RectTransform)statusText.transform).rect.height : 0f;
-            Debug.Log($"[ChessPauseMenuUI] Panel={panelHeight:0.#}h Header={headerHeight:0.#}h Buttons={buttonHeight:0.#}h Title={titleHeight:0.#}h Subtitle={subtitleHeight:0.#}h");
-            Debug.Log($"[ChessPauseMenuUI] Layout spacing: panelSpacing={panelLayout.spacing:0.#} buttonSpacing={buttonsLayout.spacing:0.#} paddingTop={panelLayout.padding.top}");
-            hasLoggedLayoutMetrics = true;
+            LogLayoutMetrics();
+            hasLoggedThisVisibleCycle = true;
         }
+    }
+    #endregion
+
+    #region Helpers
+    void PlayShowAnimation()
+    {
+        if (showRoutine != null)
+        {
+            StopCoroutine(showRoutine);
+        }
+
+        showRoutine = StartCoroutine(AnimateShow());
+    }
+
+    IEnumerator AnimateShow()
+    {
+        panelRect.localScale = new Vector3(0.96f, 0.96f, 1f);
+        panelCanvasGroup.alpha = 0f;
+        dimCanvasGroup.alpha = 0f;
+
+        float duration = ChessUITheme.FadeDuration;
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.unscaledDeltaTime;
+            float k = Mathf.Clamp01(t / duration);
+            dimCanvasGroup.alpha = Mathf.Lerp(0f, 1f, k);
+            panelCanvasGroup.alpha = k;
+            panelRect.localScale = Vector3.Lerp(new Vector3(0.96f, 0.96f, 1f), Vector3.one, k);
+            yield return null;
+        }
+
+        dimCanvasGroup.alpha = 1f;
+        panelCanvasGroup.alpha = 1f;
+        panelRect.localScale = Vector3.one;
+        showRoutine = null;
+    }
+
+    string ResolvePendingHint()
+    {
+        if (pauseManager.CanPauseImmediately)
+        {
+            return "Finishing current move...";
+        }
+
+        return "Waiting for AI...";
+    }
+
+    static void ConfigureFullscreenRect(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+    }
+
+    static void ClearChildren(Transform parent)
+    {
+        for (int i = parent.childCount - 1; i >= 0; i--)
+        {
+            Destroy(parent.GetChild(i).gameObject);
+        }
+    }
+
+    static Button CreateThemedButton(string name, Transform parent, string label, UnityEngine.Events.UnityAction onClick)
+    {
+        Button button = ChessUIFactory.CreateButton(name, parent, label, onClick);
+        var le = button.GetComponent<LayoutElement>();
+        le.preferredHeight = 56f;
+        le.flexibleHeight = 0f;
+
+        TMP_Text text = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (text != null)
+        {
+            text.enableWordWrapping = false;
+            text.overflowMode = TextOverflowModes.Ellipsis;
+            text.alignment = TextAlignmentOptions.Center;
+        }
+
+        return button;
+    }
+
+    static void SetButtonLabel(Button button, string label)
+    {
+        TMP_Text text = button != null ? button.GetComponentInChildren<TextMeshProUGUI>() : null;
+        if (text != null)
+        {
+            text.text = label;
+        }
+    }
+
+    static void SetButtonVisibility(Button button, bool visible)
+    {
+        if (button != null)
+        {
+            button.gameObject.SetActive(visible);
+        }
+    }
+
+    void LogLayoutMetrics()
+    {
+        Canvas.ForceUpdateCanvases();
+        List<Button> buttons = new() { resumeButton, devButton, debugButton, boardButton, aiConsoleButton, restartButton, resignButton };
+        int visibleButtons = 0;
+        foreach (Button button in buttons)
+        {
+            if (button != null && button.gameObject.activeInHierarchy)
+            {
+                visibleButtons++;
+            }
+        }
+
+        float panelW = panelRect.rect.width;
+        float panelH = panelRect.rect.height;
+        float headerH = headerRect.rect.height;
+        float stackH = buttonStackRect.rect.height;
+        Debug.Log($"[ChessPauseMenuUI] Rebuilt layout: buttons={visibleButtons} panel={panelW:0.#}x{panelH:0.#} header={headerH:0.#} stack={stackH:0.#} scroll=false");
     }
     #endregion
 }
