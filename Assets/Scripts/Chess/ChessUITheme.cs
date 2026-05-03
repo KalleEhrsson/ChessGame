@@ -33,7 +33,7 @@ public static class ChessUITheme
         text.fontSize = size;
         text.color = color;
         text.alignment = alignment;
-        text.enableWordWrapping = wrap;
+        text.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
         text.overflowMode = wrap ? TextOverflowModes.Overflow : TextOverflowModes.Ellipsis;
         text.enableAutoSizing = false;
     }

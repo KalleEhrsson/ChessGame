@@ -88,6 +88,7 @@ public class ChessCameraController : MonoBehaviour
 
         Instance = this;
         ResolveCamera();
+        SetCursorForMode(currentMode);
     }
 
     void LateUpdate()
@@ -224,6 +225,13 @@ public class ChessCameraController : MonoBehaviour
             controlledCamera.transform.localPosition = firstPersonLocalPosition;
             controlledCamera.transform.localRotation = firstPersonLocalRotation;
         }
+    }
+    
+    void SetCursorForMode(CameraMode mode)
+    {
+        bool shouldUnlockCursor = mode == CameraMode.TacticalView;
+        Cursor.lockState = shouldUnlockCursor ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = shouldUnlockCursor;
     }
 
     #endregion

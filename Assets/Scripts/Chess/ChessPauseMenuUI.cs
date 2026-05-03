@@ -5,6 +5,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class ChessPauseMenuUI : MonoBehaviour
 {
+    public bool IsVisible => overlay != null && overlay.activeSelf;
+
     #region Variables
     GameObject overlay;
     RectTransform panelRect;
