@@ -254,6 +254,7 @@ public class ChessBoard : MonoBehaviour
         ChessTurnManager.GetOrCreate().SetTurn(PieceTeam.White);
         ChessGameStateController.GetOrCreate().ResetToPlaying();
         ChessResignUiController.GetOrCreate().ResetForNewGame();
+        ChessPauseManager.GetOrCreate().ResetPauseState();
         ChessWinScreenUI.GetOrCreate().Hide();
 
         SpawnBackRank(PieceTeam.White, "A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1");
@@ -904,6 +905,12 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
+        ChessPauseManager pauseManager = ChessPauseManager.GetOrCreate();
+        if (pauseManager.IsPauseRequested)
+        {
+            return false;
+        }
+
         ChessPiece movingPiece = from.CurrentPiece;
         if (movingPiece == null)
         {
@@ -1015,6 +1022,7 @@ public class ChessBoard : MonoBehaviour
 
         try
         {
+            ChessPauseManager.GetOrCreate().NotifyRoundActionStarted();
             LogMoveAnimation($"{(isCapture ? "Capture" : "Move")} animation started. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
             await PlayMoveMotionAsync(piece, startWorldPosition, endWorldPosition, isCapture, capturedPiece, fromTile, toTile);
             LogMoveAnimation($"Animation completed. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
@@ -1022,6 +1030,7 @@ public class ChessBoard : MonoBehaviour
         finally
         {
             activeMoveAnimationOwners.Remove(ownerId);
+            ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
         }
     }
 

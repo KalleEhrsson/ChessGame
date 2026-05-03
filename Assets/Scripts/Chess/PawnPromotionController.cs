@@ -97,11 +97,13 @@ public class PawnPromotionController : MonoBehaviour
 
         pendingMove = new PendingPromotionMove(piece.CurrentTile, destination, piece.Team);
         isPromotionPending = true;
+        ChessPauseManager.GetOrCreate().NotifyRoundActionStarted();
 
         EnsureUi();
         if (selectionUi == null)
         {
             isPromotionPending = false;
+            ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
             return false;
         }
 
@@ -113,6 +115,7 @@ public class PawnPromotionController : MonoBehaviour
     {
         isPromotionPending = false;
         pendingMove = default;
+        ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
         if (selectionUi != null)
         {
             selectionUi.Hide();
@@ -156,6 +159,7 @@ public class PawnPromotionController : MonoBehaviour
 
         isPromotionPending = false;
         pendingMove = default;
+        ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
     }
 
     #endregion

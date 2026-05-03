@@ -265,6 +265,12 @@ public class ChessTurnManager : MonoBehaviour
         {
             return;
         }
+
+        ChessPauseManager pauseManager = ChessPauseManager.GetOrCreate();
+        if (pauseManager.IsPauseRequested)
+        {
+            return;
+        }
         if (!debugPositionValid)
         {
             UnityEngine.Debug.LogWarning("[ChessTurnManager] AI turn blocked due to invalid debug position.");
@@ -286,6 +292,7 @@ public class ChessTurnManager : MonoBehaviour
     async Task ExecuteAiTurnAsync(int turnId, CancellationToken cancellationToken)
     {
         aiTurnInProgress = true;
+        ChessPauseManager.GetOrCreate().NotifyRoundActionStarted();
 
         try
         {
@@ -310,6 +317,11 @@ public class ChessTurnManager : MonoBehaviour
             aiRoundConsole?.SetThinking(true);
 
             string bestMoveRaw = await stockfishService.RequestBestMoveAsync(fen, cancellationToken, aiSearchDepth);
+
+            while ((ChessPauseManager.GetOrCreate().IsPaused || ChessPauseManager.GetOrCreate().IsPausePending) && !cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(50, cancellationToken);
+            }
             if (gameStateController != null && !gameStateController.IsGameplayActive())
             {
                 aiRoundConsole?.SetThinking(false);
@@ -375,6 +387,7 @@ public class ChessTurnManager : MonoBehaviour
         finally
         {
             aiTurnInProgress = false;
+            ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
         }
     }
 
