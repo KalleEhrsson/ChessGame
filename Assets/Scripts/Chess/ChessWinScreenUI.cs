@@ -107,7 +107,7 @@ public class ChessWinScreenUI : MonoBehaviour
         overlayRect.anchorMax = Vector2.one;
         overlayRect.offsetMin = Vector2.zero;
         overlayRect.offsetMax = Vector2.zero;
-        overlay.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.72f);
+        overlay.AddComponent<Image>().color = ChessUITheme.MainBackground;
 
         GameObject panel = CreateUiObject("Panel", overlay.transform, true);
         RectTransform panelRect = panel.GetComponent<RectTransform>();
@@ -115,7 +115,7 @@ public class ChessWinScreenUI : MonoBehaviour
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
         panelRect.sizeDelta = new Vector2(680f, 420f);
-        panel.AddComponent<Image>().color = new Color(0.12f, 0.12f, 0.12f, 0.96f);
+        panel.AddComponent<Image>().color = ChessUITheme.Panel;
 
         titleLabel = CreateLabel(panel.transform, "Title", 64f, new Vector2(0.5f, 0.76f), new Vector2(580f, 86f));
         reasonLabel = CreateLabel(panel.transform, "Reason", 34f, new Vector2(0.5f, 0.56f), new Vector2(580f, 74f));
