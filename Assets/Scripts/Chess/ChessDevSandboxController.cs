@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
 public class ChessDevSandboxController : MonoBehaviour
@@ -15,16 +14,13 @@ public class ChessDevSandboxController : MonoBehaviour
 
     public static ChessDevSandboxController Instance { get; private set; }
 
-    [SerializeField] KeyCode toggleKey = KeyCode.F1;
-
+    
     ChessBoard board;
     ChessTurnManager turnManager;
     ChessGameStateController gameStateController;
     ChessTileHoverController tileHoverController;
     ChessBoardStateTools boardTools;
     StockfishService stockfishService;
-    InputAction toggleSandboxAction;
-    KeyCode actionBoundToggleKey = KeyCode.None;
 
     readonly IReadOnlyList<ChessBoardPreset> presets = ChessBoardPresetLibrary.GetPresets();
 
@@ -83,7 +79,6 @@ public class ChessDevSandboxController : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        EnsureToggleInputAction();
         RefreshDependencies();
         EnsurePanelView();
     }
@@ -93,13 +88,10 @@ public class ChessDevSandboxController : MonoBehaviour
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
         return;
 #endif
-        EnsureToggleInputAction();
-        toggleSandboxAction?.Enable();
     }
 
     void OnDisable()
     {
-        toggleSandboxAction?.Disable();
     }
 
     void OnDestroy()
@@ -109,9 +101,6 @@ public class ChessDevSandboxController : MonoBehaviour
             Instance = null;
         }
 
-        toggleSandboxAction?.Dispose();
-        toggleSandboxAction = null;
-        actionBoundToggleKey = KeyCode.None;
     }
 
     void Update()
@@ -119,36 +108,11 @@ public class ChessDevSandboxController : MonoBehaviour
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
         return;
 #endif
-        EnsureToggleInputAction();
 
-        if (toggleSandboxAction != null && toggleSandboxAction.WasPressedThisFrame())
-        {
-            ToggleOpen();
-        }
 
         if (board == null || turnManager == null)
         {
             RefreshDependencies();
-        }
-    }
-
-    void EnsureToggleInputAction()
-    {
-        if (toggleSandboxAction != null && actionBoundToggleKey == toggleKey)
-        {
-            return;
-        }
-
-        toggleSandboxAction?.Disable();
-        toggleSandboxAction?.Dispose();
-
-        string keyPath = $"<Keyboard>/{toggleKey.ToString().ToLowerInvariant()}";
-        toggleSandboxAction = new InputAction("ToggleSandbox", InputActionType.Button, keyPath);
-        actionBoundToggleKey = toggleKey;
-
-        if (isActiveAndEnabled)
-        {
-            toggleSandboxAction.Enable();
         }
     }
 
@@ -171,7 +135,12 @@ public class ChessDevSandboxController : MonoBehaviour
 
     public void ToggleOpen()
     {
-        isOpen = !isOpen;
+        SetOpenFromPauseMenu(!isOpen);
+    }
+
+    public void SetOpenFromPauseMenu(bool open)
+    {
+        isOpen = open;
 
         if (isOpen)
         {
@@ -181,18 +150,17 @@ public class ChessDevSandboxController : MonoBehaviour
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             EnsurePanelView();
+            return;
         }
-        else
-        {
-            currentMode = SandboxMode.None;
-            moveSourceTile = null;
 
-            if (hasStoredCursorState)
-            {
-                Cursor.lockState = previousCursorLockMode;
-                Cursor.visible = previousCursorVisible;
-                hasStoredCursorState = false;
-            }
+        currentMode = SandboxMode.None;
+        moveSourceTile = null;
+
+        if (hasStoredCursorState)
+        {
+            Cursor.lockState = previousCursorLockMode;
+            Cursor.visible = previousCursorVisible;
+            hasStoredCursorState = false;
         }
     }
 

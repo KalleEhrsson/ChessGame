@@ -185,6 +185,21 @@ public class ChessResignUiController : MonoBehaviour
 
     #region UI Actions
 
+    public void OpenConfirmFromPauseMenu()
+    {
+        OpenConfirm();
+    }
+
+    public bool IsConfirmOpen()
+    {
+        return confirmPanel != null && confirmPanel.activeSelf;
+    }
+
+    public void CloseConfirmFromPauseMenu()
+    {
+        CloseConfirm();
+    }
+
     void OpenConfirm()
     {
         if (gameStateController == null || !gameStateController.IsGameplayActive())
