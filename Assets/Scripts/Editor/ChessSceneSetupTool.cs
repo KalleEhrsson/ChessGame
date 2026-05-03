@@ -62,6 +62,27 @@ public static class ChessSceneSetupTool
             }
 
             for (int i = 0; i < OverlayRoots.Length; i++) report.Add(canvas.transform.Find(OverlayRoots[i]) != null ? $"OK: {OverlayRoots[i]} present." : $"WARN: {OverlayRoots[i]} missing.");
+
+
+            Transform pauseRoot = canvas.transform.Find("PauseMenuRoot");
+            report.Add(pauseRoot != null ? "OK: PauseMenuRoot exists." : "ERROR: PauseMenuRoot missing.");
+            if (pauseRoot != null)
+            {
+                report.Add(pauseRoot.gameObject.activeSelf ? "OK: PauseMenuRoot activeSelf=true." : "WARN: PauseMenuRoot activeSelf=false.");
+                Transform panel = pauseRoot.Find("PausePanel");
+                report.Add(panel != null ? "OK: PausePanel exists." : "ERROR: PausePanel missing.");
+                if (panel is RectTransform panelRect)
+                {
+                    report.Add(panelRect.sizeDelta.sqrMagnitude > 1f ? $"OK: PausePanel size={panelRect.sizeDelta}." : "ERROR: PausePanel size is zero.");
+                }
+
+                CanvasGroup rootCg = pauseRoot.GetComponent<CanvasGroup>();
+                if (rootCg != null)
+                {
+                    report.Add(rootCg.alpha >= 0.99f ? "OK: PauseMenuRoot CanvasGroup alpha ready." : $"WARN: PauseMenuRoot CanvasGroup alpha={rootCg.alpha:0.###}.");
+                }
+            }
+            report.Add(canvas.sortingOrder >= 5000 ? "OK: ChessMasterCanvas sortingOrder high enough." : $"WARN: ChessMasterCanvas sortingOrder={canvas.sortingOrder} (<5000).");
         }
 
         EventSystem[] eventSystems = Object.FindObjectsByType<EventSystem>(FindObjectsInactive.Include, FindObjectsSortMode.None);
