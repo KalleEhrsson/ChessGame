@@ -34,6 +34,7 @@ public class ChessPauseManager : MonoBehaviour
     int activeRoundActions;
     bool isPauseRequested;
     bool isPaused;
+    bool lastPPressedThisFrame;
     ChessPauseMenuUI pauseMenuUi;
     ChessDevSandboxController sandbox;
     ChessResignUiController resignUi;
@@ -69,7 +70,7 @@ public class ChessPauseManager : MonoBehaviour
 
     void Update()
     {
-        HandleEscapeInput();
+        HandlePauseInput();
         RefreshCursorState();
     }
 
@@ -77,6 +78,7 @@ public class ChessPauseManager : MonoBehaviour
 
     public void RequestPause()
     {
+        Debug.Log("[ChessPauseManager] RequestPause called", this);
         if (!isPauseRequested)
         {
             Debug.Log("[ChessPauseManager] Pause requested", this);
@@ -84,18 +86,27 @@ public class ChessPauseManager : MonoBehaviour
 
         isPauseRequested = true;
         TryEnterPausedState();
-        Debug.Log("[ChessPauseManager] Pause menu shown", this);
+        LogState("Pause pending");
+        if (isPaused)
+        {
+            Debug.Log("[ChessPauseManager] Fully paused", this);
+            LogState("Fully paused");
+        }
     }
 
     public void Resume()
     {
+        Debug.Log("[ChessPauseManager] Resume called", this);
         isPauseRequested = false;
         isPaused = false;
         Debug.Log("[ChessPauseManager] Resumed", this);
+        LogState("Resumed");
     }
 
     public void TogglePauseRequest()
     {
+        Debug.Log("[ChessPauseManager] TogglePauseRequest called", this);
+        LogState("Before toggle");
         if (winScreen != null && winScreen.IsVisible)
         {
             return;
@@ -156,24 +167,35 @@ public class ChessPauseManager : MonoBehaviour
         {
             isPaused = true;
         }
+
+        if (isPaused)
+        {
+            Debug.Log("[ChessPauseManager] Fully paused", this);
+        }
     }
 
     #endregion
 
-    void HandleEscapeInput()
+    void HandlePauseInput()
     {
+        lastPPressedThisFrame = false;
         if (Keyboard.current == null)
         {
             return;
         }
 
-        if (!Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (Keyboard.current.pKey.wasPressedThisFrame)
         {
-            return;
+            lastPPressedThisFrame = true;
+            Debug.Log("[ChessPauseInput] P pressed", this);
+            Debug.Log("[ChessPauseInput] Calling pause toggle", this);
+            TogglePauseRequest();
         }
 
-        Debug.Log("[ChessPauseManager] Escape pressed", this);
-        TogglePauseRequest();
+        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            Debug.Log("[ChessPauseInput] Escape pressed, ignored for pause debug", this);
+        }
     }
 
     void RefreshCursorState()
@@ -198,6 +220,19 @@ public class ChessPauseManager : MonoBehaviour
             || (sandbox != null && sandbox.IsOpen)
             || (resignUi != null && resignUi.IsConfirmOpen())
             || (winScreen != null && winScreen.IsVisible);
+    }
+
+
+    void LogState(string phase)
+    {
+        Debug.Log($"[ChessPauseManager] {phase} | IsPauseRequested={IsPauseRequested} IsPausePending={IsPausePending} IsPaused={IsPaused} CanPauseImmediately={CanPauseImmediately} ActiveRoundActions={activeRoundActions}", this);
+    }
+
+    public bool ConsumeLastPPressedThisFrame()
+    {
+        bool wasPressed = lastPPressedThisFrame;
+        lastPPressedThisFrame = false;
+        return wasPressed;
     }
 
     void ResolveUiDependencies()
