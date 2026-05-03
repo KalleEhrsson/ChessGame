@@ -17,7 +17,8 @@ public class ChessWinScreenUI : MonoBehaviour
             return Instance;
         }
 
-        ChessWinScreenUI existing = FindFirstObjectByType<ChessWinScreenUI>();
+        ChessWinScreenUI[] found = FindObjectsByType<ChessWinScreenUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        ChessWinScreenUI existing = found.Length > 0 ? found[0] : null;
         if (existing != null)
         {
             Instance = existing;
@@ -27,6 +28,7 @@ public class ChessWinScreenUI : MonoBehaviour
 
         GameObject host = new("ChessWinScreenUI");
         Instance = host.AddComponent<ChessWinScreenUI>();
+        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessWinScreenUI");
         return Instance;
     }
 
@@ -59,7 +61,6 @@ public class ChessWinScreenUI : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
         EnsureUi();
         Hide();
     }

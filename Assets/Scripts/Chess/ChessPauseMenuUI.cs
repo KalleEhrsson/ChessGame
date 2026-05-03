@@ -23,15 +23,6 @@ public class ChessPauseMenuUI : MonoBehaviour
     ChessResignUiController resignUi;
     #endregion
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    static void EnsureRuntimeInstance()
-    {
-        if (FindFirstObjectByType<ChessPauseMenuUI>() != null) return;
-        GameObject host = new("ChessPauseMenuUI");
-        DontDestroyOnLoad(host);
-        host.AddComponent<ChessPauseMenuUI>();
-    }
-
     void Awake()
     {
         pauseManager = ChessPauseManager.GetOrCreate();

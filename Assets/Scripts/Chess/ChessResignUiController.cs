@@ -16,7 +16,8 @@ public class ChessResignUiController : MonoBehaviour
             return Instance;
         }
 
-        ChessResignUiController existing = FindFirstObjectByType<ChessResignUiController>();
+        ChessResignUiController[] found = FindObjectsByType<ChessResignUiController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        ChessResignUiController existing = found.Length > 0 ? found[0] : null;
         if (existing != null)
         {
             Instance = existing;
@@ -26,6 +27,7 @@ public class ChessResignUiController : MonoBehaviour
 
         GameObject host = new("ChessResignUiController");
         Instance = host.AddComponent<ChessResignUiController>();
+        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessResignUiController");
         return Instance;
     }
 
@@ -54,7 +56,6 @@ public class ChessResignUiController : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
         ResolveSystems();
         EnsureUi();
         RefreshButtonState();

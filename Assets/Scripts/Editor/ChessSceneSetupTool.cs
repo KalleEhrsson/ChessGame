@@ -73,6 +73,13 @@ public static class ChessSceneSetupTool
         ValidateDuplicate<ChessResignUiController>(report);
         ValidateDuplicate<ChessWinScreenUI>(report);
         ValidateDuplicate<StockfishService>(report);
+        ValidateDuplicate<ChessAiRoundConsole>(report);
+        ValidateDontDestroySceneLocal<ChessPauseManager>(report);
+        ValidateDontDestroySceneLocal<ChessPauseMenuUI>(report);
+        ValidateDontDestroySceneLocal<ChessWinScreenUI>(report);
+        ValidateDontDestroySceneLocal<ChessResignUiController>(report);
+        ValidateDontDestroySceneLocal<ChessAiRoundConsole>(report);
+        report.Add("INFO: Runtime fallback uses scene lookup with inactive objects for updated UI/manager systems.");
 
         Debug.Log($"[ChessSceneSetup Validation]\n- {string.Join("\n- ", report)}");
     }
@@ -171,6 +178,18 @@ public static class ChessSceneSetupTool
     {
         T[] items = Object.FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         report.Add(items.Length <= 1 ? $"OK: {typeof(T).Name} count={items.Length}." : $"WARN: Duplicate {typeof(T).Name} count={items.Length}.");
+    }
+
+    static void ValidateDontDestroySceneLocal<T>(List<string> report) where T : Component
+    {
+        T[] items = Object.FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < items.Length; i++)
+        {
+            if (items[i].gameObject.scene.name == "DontDestroyOnLoad")
+            {
+                report.Add($"WARN: {typeof(T).Name} is in DontDestroyOnLoad scene but is expected scene-local.");
+            }
+        }
     }
     #endregion
 }

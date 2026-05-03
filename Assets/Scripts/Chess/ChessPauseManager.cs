@@ -15,15 +15,17 @@ public class ChessPauseManager : MonoBehaviour
             return Instance;
         }
 
-        ChessPauseManager existing = FindFirstObjectByType<ChessPauseManager>();
+        ChessPauseManager existing = FindExisting();
         if (existing != null)
         {
             Instance = existing;
+            Debug.Log("[ChessRuntimeBootstrap] Reused existing instance: ChessPauseManager");
             return Instance;
         }
 
         GameObject host = new("ChessPauseManager");
         Instance = host.AddComponent<ChessPauseManager>();
+        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessPauseManager");
         return Instance;
     }
 
@@ -65,7 +67,6 @@ public class ChessPauseManager : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
     }
 
     #endregion
@@ -246,5 +247,11 @@ public class ChessPauseManager : MonoBehaviour
         sandbox ??= ChessDevSandboxController.Instance;
         resignUi ??= ChessResignUiController.GetOrCreate();
         winScreen ??= ChessWinScreenUI.GetOrCreate();
+    }
+
+    static ChessPauseManager FindExisting()
+    {
+        ChessPauseManager[] items = FindObjectsByType<ChessPauseManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        return items.Length > 0 ? items[0] : null;
     }
 }

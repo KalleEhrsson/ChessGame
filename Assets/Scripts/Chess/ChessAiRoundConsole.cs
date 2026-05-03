@@ -19,7 +19,8 @@ public class ChessAiRoundConsole : MonoBehaviour
             return Instance;
         }
 
-        ChessAiRoundConsole existing = FindFirstObjectByType<ChessAiRoundConsole>();
+        ChessAiRoundConsole[] found = FindObjectsByType<ChessAiRoundConsole>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        ChessAiRoundConsole existing = found.Length > 0 ? found[0] : null;
         if (existing != null)
         {
             Instance = existing;
@@ -29,6 +30,7 @@ public class ChessAiRoundConsole : MonoBehaviour
 
         GameObject host = new("ChessAiRoundConsole");
         Instance = host.AddComponent<ChessAiRoundConsole>();
+        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessAiRoundConsole");
         return Instance;
     }
 
@@ -83,7 +85,6 @@ public class ChessAiRoundConsole : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
         EnsureUi();
         RefreshDisplayIfChanged();
     }
