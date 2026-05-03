@@ -57,7 +57,7 @@ public class ChessAiRoundConsole : MonoBehaviour
     string currentEval;
     string currentPv;
 
-    bool isVisible = true;
+    bool isVisible;
 
     Canvas rootCanvas;
     RectTransform viewportRect;
@@ -90,17 +90,6 @@ public class ChessAiRoundConsole : MonoBehaviour
 
     void Update()
     {
-        if (Keyboard.current.f3Key.wasPressedThisFrame)
-        {
-            isVisible = !isVisible;
-            ApplyVisibility();
-        }
-
-        if (Keyboard.current.f4Key.wasPressedThisFrame)
-        {
-            ClearCurrentRound();
-        }
-
         UpdateScrollState();
     }
 
@@ -199,6 +188,13 @@ public class ChessAiRoundConsole : MonoBehaviour
 
         aiMove = readableMove;
         RefreshDisplayIfChanged();
+    }
+
+
+    public void SetVisible(bool visible)
+    {
+        isVisible = visible;
+        ApplyVisibility();
     }
 
     public void ClearCurrentRound()

@@ -97,6 +97,11 @@ public class ChessSelectionController : MonoBehaviour
             return false;
         }
 
+        if (ChessPauseManager.GetOrCreate().IsPauseRequested)
+        {
+            return false;
+        }
+
         turnManager ??= ChessTurnManager.GetOrCreate();
         if (turnManager == null)
         {
