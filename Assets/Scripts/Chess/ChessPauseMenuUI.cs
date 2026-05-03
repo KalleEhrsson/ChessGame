@@ -7,6 +7,7 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class ChessPauseMenuUI : MonoBehaviour
 {
+    #region Variables
     Canvas canvas;
     GameObject overlay;
     TMP_Text statusText;
@@ -20,8 +21,15 @@ public class ChessPauseMenuUI : MonoBehaviour
     ChessAiRoundConsole aiConsole;
     ChessDevSandboxController sandbox;
     ChessResignUiController resignUi;
+    Rect debugRect = new(12f, 12f, 460f, 170f);
+
+    [SerializeField] bool enablePauseDebugOverlay = true;
 
     public bool IsVisible => overlay != null && overlay.activeSelf;
+    public bool IsRootActive => overlay != null && overlay.activeSelf;
+    public bool IsCanvasActive => canvas != null && canvas.gameObject.activeInHierarchy;
+
+    #endregion
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsureRuntimeInstance()
@@ -35,6 +43,8 @@ public class ChessPauseMenuUI : MonoBehaviour
         DontDestroyOnLoad(host);
         host.AddComponent<ChessPauseMenuUI>();
     }
+
+    #region Unity
 
     void Awake()
     {
@@ -50,6 +60,23 @@ public class ChessPauseMenuUI : MonoBehaviour
         Refresh();
     }
 
+    void OnGUI()
+    {
+        if (!enablePauseDebugOverlay)
+        {
+            return;
+        }
+
+        GUI.color = new Color(1f, 0.95f, 0.2f, 0.95f);
+        bool pPressed = pauseManager != null && pauseManager.ConsumeLastPPressedThisFrame();
+        string text = $"P pressed: {(pPressed ? "yes" : "no")}\nPause requested: {pauseManager != null && pauseManager.IsPauseRequested}\nPause pending: {pauseManager != null && pauseManager.IsPausePending}\nPaused: {pauseManager != null && pauseManager.IsPaused}\nPause menu root active: {IsRootActive}\nCanvas active: {IsCanvasActive}";
+        GUI.Box(debugRect, text);
+    }
+
+    #endregion
+
+    #region UI
+
     void EnsureUi()
     {
         if (EventSystem.current == null)
@@ -62,18 +89,35 @@ public class ChessPauseMenuUI : MonoBehaviour
         Canvas existing = FindFirstObjectByType<Canvas>();
         if (existing == null)
         {
-            GameObject canvasObject = new("ChessRuntimeCanvas");
+            GameObject canvasObject = new("ChessPauseCanvas");
             canvas = canvasObject.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvasObject.AddComponent<GraphicRaycaster>();
-            CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            DontDestroyOnLoad(canvasObject);
         }
         else
         {
             canvas = existing;
         }
+
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = Mathf.Max(canvas.sortingOrder, 5000);
+        GraphicRaycaster raycaster = canvas.GetComponent<GraphicRaycaster>();
+        if (raycaster == null)
+        {
+            canvas.gameObject.AddComponent<GraphicRaycaster>();
+        }
+
+        CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+        if (scaler == null)
+        {
+            scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+        }
+
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        Debug.Log($"[ChessPauseMenuUI] Canvas found/created: {canvas.name}", this);
+        Debug.Log($"[ChessPauseMenuUI] Canvas render mode: {canvas.renderMode}", this);
+        Debug.Log($"[ChessPauseMenuUI] Canvas sorting order: {canvas.sortingOrder}", this);
+        Debug.Log($"[ChessPauseMenuUI] Canvas scale factor: {canvas.scaleFactor}", this);
 
         overlay = new GameObject("PauseOverlay", typeof(RectTransform), typeof(Image));
         overlay.transform.SetParent(canvas.transform, false);
@@ -96,7 +140,8 @@ public class ChessPauseMenuUI : MonoBehaviour
         v.childControlHeight = false;
         panel.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        CreateText(panel.transform, "Paused", 42);
+        CreateText(panel.transform, "PAUSED", 54);
+        CreateText(panel.transform, "Pause UI is visible", 30);
         statusText = CreateText(panel.transform, string.Empty, 24);
         resumeButton = CreateButton(panel.transform, "Resume", () => pauseManager.Resume());
         aiConsoleButton = CreateButton(panel.transform, "AI / Stockfish Console", () => aiConsole.SetVisible(true));
@@ -105,11 +150,25 @@ public class ChessPauseMenuUI : MonoBehaviour
         resignButton = CreateButton(panel.transform, "Resign", () => resignUi.OpenConfirmFromPauseMenu());
 
         overlay.SetActive(false);
+        Debug.Log($"[ChessPauseMenuUI] Root active: {overlay.activeSelf}", this);
     }
 
     void Refresh()
     {
-        overlay.SetActive(pauseManager.IsPauseRequested);
+        if (overlay == null || pauseManager == null)
+        {
+            return;
+        }
+
+        bool shouldShow = pauseManager.IsPauseRequested;
+        if (shouldShow && !overlay.activeSelf)
+        {
+            Show();
+        }
+        else if (!shouldShow && overlay.activeSelf)
+        {
+            Hide();
+        }
         if (!pauseManager.IsPauseRequested)
         {
             aiConsole?.SetVisible(false);
@@ -127,6 +186,39 @@ public class ChessPauseMenuUI : MonoBehaviour
         restartButton.interactable = fullyPaused;
         resignButton.interactable = fullyPaused;
     }
+
+    void Show()
+    {
+        Debug.Log("[ChessPauseMenuUI] Show called", this);
+        overlay.SetActive(true);
+        RectTransform rootRect = overlay.GetComponent<RectTransform>();
+        rootRect.anchorMin = Vector2.zero;
+        rootRect.anchorMax = Vector2.one;
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
+        CanvasGroup group = overlay.GetComponent<CanvasGroup>();
+        if (group == null)
+        {
+            group = overlay.AddComponent<CanvasGroup>();
+        }
+
+        group.alpha = 1f;
+        group.interactable = true;
+        group.blocksRaycasts = true;
+        Debug.Log($"[ChessPauseMenuUI] Root active: {overlay.activeSelf}", this);
+        Debug.Log($"[ChessPauseMenuUI] Root position/anchored position: {rootRect.position}/{rootRect.anchoredPosition}", this);
+        Debug.Log($"[ChessPauseMenuUI] Root alpha if CanvasGroup exists: {group.alpha}", this);
+        Debug.Log("[ChessPauseMenuUI] Pause menu should now be visible", this);
+    }
+
+    void Hide()
+    {
+        Debug.Log("[ChessPauseMenuUI] Hide called", this);
+        overlay.SetActive(false);
+        Debug.Log($"[ChessPauseMenuUI] Root active: {overlay.activeSelf}", this);
+    }
+
+    #endregion
 
     static TMP_Text CreateText(Transform parent, string value, float size)
     {
