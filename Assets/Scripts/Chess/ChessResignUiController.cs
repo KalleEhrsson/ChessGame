@@ -40,7 +40,6 @@ public class ChessResignUiController : MonoBehaviour
     ChessSelectionController selectionController;
     ChessWinScreenUI winScreen;
     Canvas rootCanvas;
-    Button resignButton;
     GameObject confirmPanel;
 
     #endregion
@@ -77,7 +76,6 @@ public class ChessResignUiController : MonoBehaviour
     {
         ResolveSystems();
         EnsureCanvas();
-        EnsureResignButton();
         EnsureConfirmPanel();
         ResetForNewGame();
     }
@@ -111,28 +109,6 @@ public class ChessResignUiController : MonoBehaviour
         }
 
         rootCanvas = ChessMasterCanvas.GetOrCreateCanvas();
-    }
-
-    void EnsureResignButton()
-    {
-        if (resignButton != null)
-        {
-            return;
-        }
-
-        Transform resignRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("ResignPopupRoot");
-        GameObject buttonObject = CreatePanelObject("ResignButton", resignRoot, new Vector2(180f, 48f), new Vector2(1f, 0f), new Vector2(-18f, 18f));
-        buttonObject.AddComponent<Image>().color = new Color(0.75f, 0.2f, 0.2f, 0.95f);
-        resignButton = buttonObject.AddComponent<Button>();
-        resignButton.onClick.AddListener(OpenConfirm);
-
-        TextMeshProUGUI label = CreateLabel("Label", buttonObject.transform, "Resign", 26);
-        label.alignment = TextAlignmentOptions.Center;
-        RectTransform labelRect = label.rectTransform;
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = Vector2.zero;
-        labelRect.offsetMax = Vector2.zero;
     }
 
     void EnsureConfirmPanel()
@@ -232,15 +208,12 @@ public class ChessResignUiController : MonoBehaviour
 
     void RefreshButtonState()
     {
-        if (resignButton == null || gameStateController == null)
+        if (gameStateController == null)
         {
             return;
         }
 
-        bool active = gameStateController.IsGameplayActive();
-        resignButton.interactable = active;
-        resignButton.gameObject.SetActive(active);
-        if (!active)
+        if (!gameStateController.IsGameplayActive())
         {
             CloseConfirm();
         }
