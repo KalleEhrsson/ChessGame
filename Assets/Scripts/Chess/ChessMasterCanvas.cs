@@ -33,9 +33,7 @@ public static class ChessMasterCanvas
                 }
                 else
                 {
-                    MoveChildrenTo(firstValid.transform, canvases[i].transform);
-                    Object.Destroy(canvases[i].gameObject);
-                    Debug.LogWarning("[ChessMasterCanvas] Duplicate ChessMasterCanvas found and merged.");
+                    Debug.LogWarning($"[ChessRuntimeBootstrap] Found duplicate: {CanvasName} on {canvases[i].gameObject.scene.name}/{canvases[i].name}");
                 }
             }
         }
@@ -59,7 +57,6 @@ public static class ChessMasterCanvas
             firstValid = canvasObject.AddComponent<Canvas>();
         }
 
-        Object.DontDestroyOnLoad(firstValid.gameObject);
         firstValid.renderMode = RenderMode.ScreenSpaceOverlay;
         firstValid.sortingOrder = Mathf.Max(firstValid.sortingOrder, 5000);
         EnsureCanvasComponents(firstValid);
@@ -114,22 +111,12 @@ public static class ChessMasterCanvas
             GameObject eventSystemObject = new("EventSystem");
             eventSystemObject.AddComponent<EventSystem>();
             eventSystemObject.AddComponent<InputSystemUIInputModule>();
-            Object.DontDestroyOnLoad(eventSystemObject);
+            Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: EventSystem");
             return;
         }
-
-        for (int i = 1; i < systems.Length; i++)
+        if (systems.Length > 1)
         {
-            Object.Destroy(systems[i].gameObject);
-            Debug.LogWarning("[ChessMasterCanvas] Duplicate EventSystem found and removed.");
-        }
-    }
-
-    static void MoveChildrenTo(Transform destination, Transform source)
-    {
-        for (int i = source.childCount - 1; i >= 0; i--)
-        {
-            source.GetChild(i).SetParent(destination, false);
+            Debug.LogWarning($"[ChessRuntimeBootstrap] Found duplicate: EventSystem count={systems.Length}");
         }
     }
 }

@@ -15,15 +15,17 @@ public class ChessPauseManager : MonoBehaviour
             return Instance;
         }
 
-        ChessPauseManager existing = FindFirstObjectByType<ChessPauseManager>();
+        ChessPauseManager existing = FindExisting();
         if (existing != null)
         {
             Instance = existing;
+            Debug.Log("[ChessRuntimeBootstrap] Reused existing instance: ChessPauseManager");
             return Instance;
         }
 
         GameObject host = new("ChessPauseManager");
         Instance = host.AddComponent<ChessPauseManager>();
+        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessPauseManager");
         return Instance;
     }
 
@@ -32,6 +34,8 @@ public class ChessPauseManager : MonoBehaviour
     #region Variables
 
     int activeRoundActions;
+    [SerializeField] Key pauseKey = Key.P;
+    [SerializeField] bool verbosePauseLogs = true;
     bool isPauseRequested;
     bool isPaused;
     bool lastPPressedThisFrame;
@@ -63,7 +67,6 @@ public class ChessPauseManager : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
     }
 
     #endregion
@@ -184,15 +187,18 @@ public class ChessPauseManager : MonoBehaviour
             return;
         }
 
-        if (Keyboard.current.pKey.wasPressedThisFrame)
+        if (Keyboard.current[pauseKey].wasPressedThisFrame)
         {
             lastPPressedThisFrame = true;
-            Debug.Log("[ChessPauseInput] P pressed", this);
-            Debug.Log("[ChessPauseInput] Calling pause toggle", this);
+            if (verbosePauseLogs)
+            {
+                Debug.Log($"[ChessPauseInput] {pauseKey} pressed", this);
+                Debug.Log("[ChessPauseInput] Calling pause toggle", this);
+            }
             TogglePauseRequest();
         }
 
-        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (verbosePauseLogs && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             Debug.Log("[ChessPauseInput] Escape pressed, ignored for pause debug", this);
         }
@@ -242,5 +248,10 @@ public class ChessPauseManager : MonoBehaviour
         resignUi ??= ChessResignUiController.GetOrCreate();
         winScreen ??= ChessWinScreenUI.GetOrCreate();
     }
-}
 
+    static ChessPauseManager FindExisting()
+    {
+        ChessPauseManager[] items = FindObjectsByType<ChessPauseManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        return items.Length > 0 ? items[0] : null;
+    }
+}

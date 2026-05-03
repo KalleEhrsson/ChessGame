@@ -21,15 +21,18 @@ public class StockfishService : MonoBehaviour
             return Instance;
         }
 
-        StockfishService existing = FindFirstObjectByType<StockfishService>();
+        StockfishService[] existingServices = FindObjectsByType<StockfishService>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        StockfishService existing = existingServices.Length > 0 ? existingServices[0] : null;
         if (existing != null)
         {
             Instance = existing;
+            Debug.Log("[ChessRuntimeBootstrap] Reused existing instance: StockfishService");
             return Instance;
         }
 
         GameObject host = new("StockfishService");
         Instance = host.AddComponent<StockfishService>();
+        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: StockfishService");
         return Instance;
     }
 
@@ -74,7 +77,8 @@ public class StockfishService : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(this);
+            Debug.LogWarning("[ChessRuntimeBootstrap] Persistent instance kept: StockfishService");
+            Destroy(gameObject);
             return;
         }
 

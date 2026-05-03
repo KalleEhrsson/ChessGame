@@ -52,7 +52,7 @@ public class ChessDevSandboxController : MonoBehaviour
     static void EnsureRuntimeInstance()
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (FindFirstObjectByType<ChessDevSandboxController>() != null)
+        if (FindObjectsByType<ChessDevSandboxController>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length > 0)
         {
             return;
         }
@@ -75,7 +75,6 @@ public class ChessDevSandboxController : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
         RefreshDependencies();
         EnsurePanelView();
     }
@@ -115,14 +114,13 @@ public class ChessDevSandboxController : MonoBehaviour
 
     void EnsurePanelView()
     {
-        ChessDevSandboxPanelView existingView = FindFirstObjectByType<ChessDevSandboxPanelView>();
+        ChessDevSandboxPanelView existingView = FindFirstObjectByType<ChessDevSandboxPanelView>(FindObjectsInactive.Include);
         if (existingView != null)
         {
             return;
         }
 
         GameObject panelHost = new("ChessDevPanel");
-        DontDestroyOnLoad(panelHost);
         panelHost.AddComponent<ChessDevSandboxPanelView>();
     }
 
