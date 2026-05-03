@@ -232,7 +232,7 @@ public class PromotionSelectionUI : MonoBehaviour
         text.text = label;
         text.alignment = TextAlignmentOptions.Center;
         text.fontSize = 20;
-        text.color = new Color(0.12f, 0.12f, 0.12f, 1f);
+        text.color = ChessUITheme.MainText;
 
         buttonsByType[type] = button;
     }

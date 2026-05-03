@@ -245,7 +245,7 @@ public class ChessAiRoundConsole : MonoBehaviour
 
         panelRoot = CreateRect("Panel", consoleRoot);
         Image panelImage = panelRoot.gameObject.AddComponent<Image>();
-        panelImage.color = new Color(0f, 0f, 0f, 0.72f);
+        panelImage.color = ChessUITheme.MainBackground;
         EnsurePanelSettings();
 
         RectTransform scrollRectTransform = CreateRect("ScrollView", panelRoot);
@@ -267,7 +267,7 @@ public class ChessAiRoundConsole : MonoBehaviour
         viewportRect.offsetMin = Vector2.zero;
         viewportRect.offsetMax = Vector2.zero;
         Image viewportImage = viewportRect.gameObject.AddComponent<Image>();
-        viewportImage.color = new Color(0f, 0f, 0f, 0.001f);
+        viewportImage.color = ChessUITheme.PanelSecondary;
         Mask viewportMask = viewportRect.gameObject.AddComponent<Mask>();
         viewportMask.showMaskGraphic = false;
 
