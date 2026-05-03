@@ -310,6 +310,12 @@ public class ChessTurnManager : MonoBehaviour
             aiRoundConsole?.SetThinking(true);
 
             string bestMoveRaw = await stockfishService.RequestBestMoveAsync(fen, cancellationToken, aiSearchDepth);
+            if (gameStateController != null && !gameStateController.IsGameplayActive())
+            {
+                aiRoundConsole?.SetThinking(false);
+                return;
+            }
+
             if (cancellationToken.IsCancellationRequested || turnId != aiTurnSequence)
             {
                 UnityEngine.Debug.Log("[ChessTurnManager] Stale AI response ignored.");
@@ -345,7 +351,7 @@ public class ChessTurnManager : MonoBehaviour
             await Task.Delay(delayMs, cancellationToken);
             await WaitForPieceMotionAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            if (turnId != aiTurnSequence)
+            if (turnId != aiTurnSequence || (gameStateController != null && !gameStateController.IsGameplayActive()))
             {
                 UnityEngine.Debug.Log("[ChessTurnManager] Stale AI move ignored.");
                 return;
