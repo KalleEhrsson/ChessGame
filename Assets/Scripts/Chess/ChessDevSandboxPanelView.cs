@@ -2,6 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -47,7 +48,7 @@ public class ChessDevSandboxPanelView : MonoBehaviour
         if (EventSystem.current != null) return;
         GameObject eventSystemObject = new("EventSystem");
         eventSystemObject.AddComponent<EventSystem>();
-        eventSystemObject.AddComponent<StandaloneInputModule>();
+        eventSystemObject.AddComponent<InputSystemUIInputModule>();
     }
 
     void BuildIfNeeded()
