@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading.Tasks;
 using UnityEngine;
 
 [ExecuteAlways]
@@ -54,6 +55,9 @@ public class ChessBoard : MonoBehaviour
     Transform brokenPiecesRuntimeRoot;
     int halfMoveClock;
     int fullMoveNumber = 1;
+    [SerializeField] bool debugMoveAnimationLogs;
+
+    readonly HashSet<int> activeMoveAnimationOwners = new();
 
 #if UNITY_EDITOR
     bool pendingAutoSetup;
@@ -969,7 +973,7 @@ public class ChessBoard : MonoBehaviour
                 return false;
             }
 
-            _ = PlayMoveMotionAsync(animatedPiece, startWorldPosition, endWorldPosition, isCapture, capturedPiece);
+            _ = StartMoveAnimationAsync(animatedPiece, from, to, startWorldPosition, endWorldPosition, isCapture, capturedPiece);
         }
         else if (isCapture && capturedPiece != null)
         {
@@ -987,7 +991,33 @@ public class ChessBoard : MonoBehaviour
         return true;
     }
 
-    async Task PlayMoveMotionAsync(ChessPiece piece, Vector3 startWorldPosition, Vector3 endWorldPosition, bool isCapture, ChessPiece capturedPiece)
+    async Task StartMoveAnimationAsync(ChessPiece piece, ChessTile fromTile, ChessTile toTile, Vector3 startWorldPosition, Vector3 endWorldPosition, bool isCapture, ChessPiece capturedPiece)
+    {
+        if (piece == null)
+        {
+            return;
+        }
+
+        int ownerId = piece.GetInstanceID();
+        if (!activeMoveAnimationOwners.Add(ownerId))
+        {
+            LogMoveAnimation($"Animation ignored because another animation is already active. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
+            return;
+        }
+
+        try
+        {
+            LogMoveAnimation($"{(isCapture ? "Capture" : "Move")} animation started. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
+            await PlayMoveMotionAsync(piece, startWorldPosition, endWorldPosition, isCapture, capturedPiece, fromTile, toTile);
+            LogMoveAnimation($"Animation completed. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
+        }
+        finally
+        {
+            activeMoveAnimationOwners.Remove(ownerId);
+        }
+    }
+
+    async Task PlayMoveMotionAsync(ChessPiece piece, Vector3 startWorldPosition, Vector3 endWorldPosition, bool isCapture, ChessPiece capturedPiece, ChessTile fromTile, ChessTile toTile)
     {
         if (piece == null)
         {
@@ -1000,7 +1030,7 @@ public class ChessBoard : MonoBehaviour
             return;
         }
 
-        await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture, capturedPiece);
+        await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture, capturedPiece, fromTile, toTile, debugMoveAnimationLogs);
 
         if (!isCapture || capturedPiece == null)
         {
@@ -1014,6 +1044,16 @@ public class ChessBoard : MonoBehaviour
 
         Vector3 attackerDirection = endWorldPosition - startWorldPosition;
         ResolveCaptureOnImpact(capturedPiece, attackerDirection);
+    }
+
+    void LogMoveAnimation(string message)
+    {
+        if (!debugMoveAnimationLogs)
+        {
+            return;
+        }
+
+        Debug.Log($"[ChessBoard] {message}", this);
     }
 
     #region Capture Impact

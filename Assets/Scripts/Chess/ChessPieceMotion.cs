@@ -56,7 +56,7 @@ public class ChessPieceMotion : MonoBehaviour
 
     #region API
 
-    public async Task PlayMoveAsync(Vector3 startPos, Vector3 endPos, bool isCapture, ChessPiece capturedPiece = null)
+    public async Task PlayMoveAsync(Vector3 startPos, Vector3 endPos, bool isCapture, ChessPiece capturedPiece = null, ChessTile fromTile = null, ChessTile toTile = null, bool debugLogs = false)
     {
         Vector3 fallbackPosition = transform.position;
         startPos = SanitizePosition(startPos, fallbackPosition);
@@ -85,7 +85,7 @@ public class ChessPieceMotion : MonoBehaviour
 
             if (isCapture)
             {
-                await PlayCaptureArcMotionAsync(startPos, endPos, Mathf.Max(0.01f, captureMoveDuration), capturedPiece);
+                await PlayCaptureArcMotionAsync(startPos, endPos, Mathf.Max(0.01f, captureMoveDuration), capturedPiece, fromTile, toTile, debugLogs);
             }
             else
             {
@@ -135,7 +135,7 @@ public class ChessPieceMotion : MonoBehaviour
         transform.position = endPos;
     }
 
-    async Task PlayCaptureArcMotionAsync(Vector3 startPos, Vector3 endPos, float duration, ChessPiece capturedPiece)
+    async Task PlayCaptureArcMotionAsync(Vector3 startPos, Vector3 endPos, float duration, ChessPiece capturedPiece, ChessTile fromTile, ChessTile toTile, bool debugLogs)
     {
         startPos = SanitizePosition(startPos, transform.position);
         endPos = SanitizePosition(endPos, startPos);
@@ -172,6 +172,11 @@ public class ChessPieceMotion : MonoBehaviour
         }
 
         await PlayCaptureLiftAsync(strikeStart, liftTarget, pullUpDuration);
+        if (debugLogs)
+        {
+            Debug.Log($"[ChessPieceMotion] Slam phase started. Piece={name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture=True", this);
+        }
+
         await PlayCaptureSlamAsync(liftTarget, targetBottom, slamDuration);
 
         transform.position = targetBottom;
