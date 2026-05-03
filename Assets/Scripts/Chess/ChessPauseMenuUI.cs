@@ -177,9 +177,31 @@ public class ChessPauseMenuUI : MonoBehaviour
         pauseMenuRoot.SetActive(false);
     }
 
+
+    bool EnsureRuntimeReferences()
+    {
+        if (pauseMenuRoot == null || dimBackground == null || panelRect == null)
+        {
+            EnsureUi();
+        }
+
+        if (pauseMenuRoot == null || dimBackground == null || panelRect == null)
+        {
+            return false;
+        }
+
+        rootCanvasGroup = pauseMenuRoot.GetComponent<CanvasGroup>() ?? pauseMenuRoot.AddComponent<CanvasGroup>();
+        dimCanvasGroup = dimBackground.GetComponent<CanvasGroup>() ?? dimBackground.AddComponent<CanvasGroup>();
+
+        GameObject panel = panelRect.gameObject;
+        panelCanvasGroup = panel.GetComponent<CanvasGroup>() ?? panel.AddComponent<CanvasGroup>();
+
+        return rootCanvasGroup != null && dimCanvasGroup != null && panelCanvasGroup != null;
+    }
+
     void Refresh()
     {
-        if (pauseMenuRoot == null || pauseManager == null)
+        if (pauseMenuRoot == null || pauseManager == null || !EnsureRuntimeReferences())
         {
             return;
         }
@@ -235,6 +257,11 @@ public class ChessPauseMenuUI : MonoBehaviour
     #region ShowHide
     void Show()
     {
+        if (!EnsureRuntimeReferences())
+        {
+            return;
+        }
+
         Debug.Log("[ChessPauseMenuUI] Show called", this);
         ForceVisibleSafeState();
         SetDebugMarkerVisible(pauseDebugMarkerEnabled);
@@ -347,6 +374,11 @@ public class ChessPauseMenuUI : MonoBehaviour
 
     void LogShowDiagnostics()
     {
+        if (!EnsureRuntimeReferences())
+        {
+            return;
+        }
+
         Canvas canvas = ChessMasterCanvas.GetOrCreateCanvas();
         RectTransform rootRect = pauseMenuRoot != null ? pauseMenuRoot.GetComponent<RectTransform>() : null;
         RectTransform panel = panelRect;
