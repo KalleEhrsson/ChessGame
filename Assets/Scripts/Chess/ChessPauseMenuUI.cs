@@ -176,26 +176,25 @@ public class ChessPauseMenuUI : MonoBehaviour
         SetDebugMarkerVisible(false);
         pauseMenuRoot.SetActive(false);
     }
-    
+
+
     bool EnsureRuntimeReferences()
     {
-        if (pauseMenuRoot == null)
+        if (pauseMenuRoot == null || dimBackground == null || panelRect == null)
+        {
+            EnsureUi();
+        }
+
+        if (pauseMenuRoot == null || dimBackground == null || panelRect == null)
         {
             return false;
         }
 
         rootCanvasGroup = pauseMenuRoot.GetComponent<CanvasGroup>() ?? pauseMenuRoot.AddComponent<CanvasGroup>();
+        dimCanvasGroup = dimBackground.GetComponent<CanvasGroup>() ?? dimBackground.AddComponent<CanvasGroup>();
 
-        if (dimBackground != null)
-        {
-            dimCanvasGroup = dimBackground.GetComponent<CanvasGroup>() ?? dimBackground.AddComponent<CanvasGroup>();
-        }
-
-        if (panelRect != null)
-        {
-            GameObject panel = panelRect.gameObject;
-            panelCanvasGroup = panel.GetComponent<CanvasGroup>() ?? panel.AddComponent<CanvasGroup>();
-        }
+        GameObject panel = panelRect.gameObject;
+        panelCanvasGroup = panel.GetComponent<CanvasGroup>() ?? panel.AddComponent<CanvasGroup>();
 
         return rootCanvasGroup != null && dimCanvasGroup != null && panelCanvasGroup != null;
     }
@@ -262,7 +261,7 @@ public class ChessPauseMenuUI : MonoBehaviour
         {
             return;
         }
-        
+
         Debug.Log("[ChessPauseMenuUI] Show called", this);
         ForceVisibleSafeState();
         SetDebugMarkerVisible(pauseDebugMarkerEnabled);
@@ -375,12 +374,11 @@ public class ChessPauseMenuUI : MonoBehaviour
 
     void LogShowDiagnostics()
     {
-        
         if (!EnsureRuntimeReferences())
         {
             return;
         }
-        
+
         Canvas canvas = ChessMasterCanvas.GetOrCreateCanvas();
         RectTransform rootRect = pauseMenuRoot != null ? pauseMenuRoot.GetComponent<RectTransform>() : null;
         RectTransform panel = panelRect;
