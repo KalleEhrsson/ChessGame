@@ -39,6 +39,7 @@ public class StockfishService : MonoBehaviour
 
     const string StockfishFolder = "stockfish";
     [SerializeField] int defaultDepth = 10;
+    [SerializeField] string executablePathOverride;
 
     readonly ConcurrentQueue<string> outputLines = new();
 
@@ -83,7 +84,19 @@ public class StockfishService : MonoBehaviour
 
     async void Start()
     {
-        await InitializeAsync();
+        try
+        {
+            bool initialized = await InitializeAsync();
+            if (!initialized)
+            {
+                Debug.LogError("[StockfishService] Initialization failed. Engine unavailable.");
+            }
+        }
+        catch (Exception exception)
+        {
+            engineReady = false;
+            Debug.LogError($"[StockfishService] Initialization failure: {exception}");
+        }
     }
 
     void Update()
@@ -147,7 +160,12 @@ public class StockfishService : MonoBehaviour
         }
     }
 
-    public async Task<string> RequestBestMoveAsync(string fen, int? depthOverride = null)
+    public Task<string> RequestBestMoveAsync(string fen, int? depthOverride = null)
+    {
+        return RequestBestMoveAsync(fen, CancellationToken.None, depthOverride);
+    }
+
+    public async Task<string> RequestBestMoveAsync(string fen, CancellationToken cancellationToken, int? depthOverride = null)
     {
         if (string.IsNullOrWhiteSpace(fen))
         {
@@ -170,8 +188,19 @@ public class StockfishService : MonoBehaviour
         SendCommand($"position fen {fen}");
         int depth = Mathf.Max(1, depthOverride ?? defaultDepth);
         SendCommand($"go depth {depth}");
+        string bestMove;
+        try
+        {
+            bestMove = await WaitForResultWithTimeout(pendingBestMoveTask.Task, "bestmove", 12000, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            SendCommand("stop");
+            pendingBestMoveTask?.TrySetCanceled(cancellationToken);
+            pendingBestMoveTask = null;
+            throw;
+        }
 
-        string bestMove = await WaitForResultWithTimeout(pendingBestMoveTask.Task, "bestmove", 12000);
         if (string.IsNullOrWhiteSpace(bestMove))
         {
             pendingBestMoveTask = null;
@@ -400,9 +429,10 @@ public class StockfishService : MonoBehaviour
         return signal;
     }
 
-    static async Task<string> WaitForResultWithTimeout(Task<string> task, string label, int timeoutMs)
+    static async Task<string> WaitForResultWithTimeout(Task<string> task, string label, int timeoutMs, CancellationToken cancellationToken)
     {
-        Task completed = await Task.WhenAny(task, Task.Delay(timeoutMs));
+        Task completed = await Task.WhenAny(task, Task.Delay(timeoutMs, cancellationToken));
+        cancellationToken.ThrowIfCancellationRequested();
         if (completed != task)
         {
             Debug.LogError($"[StockfishService] Timeout waiting for {label}.");
@@ -418,37 +448,70 @@ public class StockfishService : MonoBehaviour
     
     string ResolveExecutablePath()
     {
-        string folderPath = Path.Combine(Application.dataPath, StockfishFolder);
-    
-        if (!Directory.Exists(folderPath))
+        if (!string.IsNullOrWhiteSpace(executablePathOverride))
         {
-            Debug.LogError($"[Stockfish] Folder not found: {folderPath}");
-            return null;
-        }
-    
-        string[] executables = Directory.GetFiles(folderPath, "*.exe", SearchOption.TopDirectoryOnly);
-    
-        if (executables.Length == 0)
-        {
-            Debug.LogError($"[Stockfish] No .exe found in: {folderPath}");
-            return null;
-        }
-    
-        // Prefer AVX2 builds if available
-        foreach (string exe in executables)
-        {
-            if (exe.Contains("avx2", StringComparison.OrdinalIgnoreCase))
+            string overridePath = executablePathOverride;
+            if (!Path.IsPathRooted(overridePath))
             {
-                return exe;
+                overridePath = Path.Combine(Application.dataPath, overridePath);
+            }
+
+            if (File.Exists(overridePath))
+            {
+                Debug.Log($"[StockfishService] Resolved executable from override: {overridePath}");
+                return overridePath;
             }
         }
-    
-        if (executables.Length > 1)
+
+        string folderPath = Path.Combine(Application.dataPath, StockfishFolder);
+        string defaultWindowsPath = Path.Combine(folderPath, "stockfish-windows-x86-64-avx2.exe");
+        bool isWindows = Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.WindowsPlayer;
+        bool isMacOrLinux = Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.LinuxEditor || Application.platform == RuntimePlatform.LinuxPlayer;
+
+        if (!Directory.Exists(folderPath))
         {
-            Debug.LogWarning($"[Stockfish] Multiple executables found. Using first: {executables[0]}");
+            Debug.LogError($"[StockfishService] Folder not found: {folderPath}");
+            return null;
         }
-    
-        return executables[0];
+
+        string[] allFiles = Directory.GetFiles(folderPath, "*", SearchOption.TopDirectoryOnly);
+        string[] candidateNames = isWindows
+            ? new[] { "stockfish-windows-x86-64-avx2.exe", "stockfish.exe" }
+            : isMacOrLinux
+                ? new[] { "stockfish-macos", "stockfish-linux", "stockfish" }
+                : new[] { "stockfish" };
+
+        foreach (string candidateName in candidateNames)
+        {
+            string candidatePath = Path.Combine(folderPath, candidateName);
+            if (File.Exists(candidatePath))
+            {
+                Debug.Log($"[StockfishService] Resolved executable path: {candidatePath}");
+                return candidatePath;
+            }
+        }
+
+        foreach (string file in allFiles)
+        {
+            string filename = Path.GetFileName(file);
+            bool isWindowsExe = filename.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+            bool isNonWindowsStockfish = filename.Contains("stockfish", StringComparison.OrdinalIgnoreCase) && !filename.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+
+            if ((isWindows && isWindowsExe) || (isMacOrLinux && isNonWindowsStockfish))
+            {
+                Debug.Log($"[StockfishService] Resolved executable path: {file}");
+                return file;
+            }
+        }
+
+        Debug.LogError($"[StockfishService] No Stockfish executable found. Searched: {defaultWindowsPath}, {Path.Combine(folderPath, "stockfish.exe")}, {Path.Combine(folderPath, "stockfish-macos")}, {Path.Combine(folderPath, "stockfish-linux")}, {Path.Combine(folderPath, "stockfish")}, override='{executablePathOverride}'.");
+        if (isWindows && File.Exists(defaultWindowsPath))
+        {
+            Debug.Log($"[StockfishService] Resolved executable path: {defaultWindowsPath}");
+            return defaultWindowsPath;
+        }
+
+        return null;
     }
     
     #endregion

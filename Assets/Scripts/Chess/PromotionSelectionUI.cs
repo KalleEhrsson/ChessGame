@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
@@ -38,22 +40,22 @@ public class PromotionSelectionUI : MonoBehaviour
             return;
         }
 
-        if (TryHandleHotkey(PieceType.Queen, KeyCode.Alpha1, KeyCode.Q))
+        if (TryHandleHotkey(PieceType.Queen, Key.Digit1, Key.Q))
         {
             return;
         }
 
-        if (TryHandleHotkey(PieceType.Rook, KeyCode.Alpha2, KeyCode.R))
+        if (TryHandleHotkey(PieceType.Rook, Key.Digit2, Key.R))
         {
             return;
         }
 
-        if (TryHandleHotkey(PieceType.Bishop, KeyCode.Alpha3, KeyCode.B))
+        if (TryHandleHotkey(PieceType.Bishop, Key.Digit3, Key.B))
         {
             return;
         }
 
-        TryHandleHotkey(PieceType.Knight, KeyCode.Alpha4, KeyCode.N);
+        TryHandleHotkey(PieceType.Knight, Key.Digit4, Key.N);
     }
 
     #endregion
@@ -164,14 +166,16 @@ public class PromotionSelectionUI : MonoBehaviour
         fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        GameObject titleObject = new("Title", typeof(RectTransform), typeof(Text));
+        GameObject titleObject = new("Title", typeof(RectTransform), typeof(TextMeshProUGUI));
         RectTransform titleRect = titleObject.GetComponent<RectTransform>();
         titleRect.SetParent(panel, false);
+        titleRect.anchorMin = new Vector2(0f, 1f);
+        titleRect.anchorMax = new Vector2(1f, 1f);
+        titleRect.pivot = new Vector2(0.5f, 0.5f);
 
-        Text titleText = titleObject.GetComponent<Text>();
+        TextMeshProUGUI titleText = titleObject.GetComponent<TextMeshProUGUI>();
         titleText.text = "Promote Pawn";
-        titleText.alignment = TextAnchor.MiddleCenter;
-        titleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        titleText.alignment = TextAlignmentOptions.Center;
         titleText.fontSize = 24;
         titleText.color = new Color(0.95f, 0.9f, 0.6f, 1f);
 
@@ -216,7 +220,7 @@ public class PromotionSelectionUI : MonoBehaviour
         colors.selectedColor = fillColor * 0.92f;
         button.colors = colors;
 
-        GameObject textObject = new("Label", typeof(RectTransform), typeof(Text));
+        GameObject textObject = new("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
         RectTransform textRect = textObject.GetComponent<RectTransform>();
         textRect.SetParent(buttonRect, false);
         textRect.anchorMin = Vector2.zero;
@@ -224,12 +228,11 @@ public class PromotionSelectionUI : MonoBehaviour
         textRect.offsetMin = Vector2.zero;
         textRect.offsetMax = Vector2.zero;
 
-        Text text = textObject.GetComponent<Text>();
+        TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
         text.text = label;
-        text.alignment = TextAnchor.MiddleCenter;
-        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        text.alignment = TextAlignmentOptions.Center;
         text.fontSize = 20;
-        text.color = new Color(0.08f, 0.08f, 0.08f, 1f);
+        text.color = new Color(0.12f, 0.12f, 0.12f, 1f);
 
         buttonsByType[type] = button;
     }
@@ -260,13 +263,20 @@ public class PromotionSelectionUI : MonoBehaviour
         }
     }
 
-    bool TryHandleHotkey(PieceType type, KeyCode numberKey, KeyCode letterKey)
+    bool TryHandleHotkey(PieceType type, Key numberKey, Key letterKey)
     {
-        if (!Input.GetKeyDown(numberKey) && !Input.GetKeyDown(letterKey))
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null)
         {
             return false;
         }
 
+        if (!(keyboard[numberKey].wasPressedThisFrame || keyboard[letterKey].wasPressedThisFrame))
+        {
+            return false;
+        }
+
+        Debug.Log($"[PromotionSelectionUI] Hotkey selected: {type}");
         OnOptionSelected(type);
         return true;
     }
