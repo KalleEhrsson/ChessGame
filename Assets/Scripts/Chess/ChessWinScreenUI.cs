@@ -101,7 +101,7 @@ public class ChessWinScreenUI : MonoBehaviour
         }
 
         overlay = CreateUiObject("ChessWinScreenOverlay", rootCanvas.transform, true);
-        RectTransform overlayRect = overlay.AddComponent<RectTransform>();
+        RectTransform overlayRect = overlay.GetComponent<RectTransform>();
         overlayRect.anchorMin = Vector2.zero;
         overlayRect.anchorMax = Vector2.one;
         overlayRect.offsetMin = Vector2.zero;
@@ -109,7 +109,7 @@ public class ChessWinScreenUI : MonoBehaviour
         overlay.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.72f);
 
         GameObject panel = CreateUiObject("Panel", overlay.transform, true);
-        RectTransform panelRect = panel.AddComponent<RectTransform>();
+        RectTransform panelRect = panel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
