@@ -1,14 +1,12 @@
 using System;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public class ChessDevSandboxPanelView : MonoBehaviour
 {
-    Canvas rootCanvas;
+    GameObject rootObject;
     Button resetBoardButton;
     Button clearBoardButton;
     Button exportFenButton;
@@ -35,7 +33,6 @@ public class ChessDevSandboxPanelView : MonoBehaviour
     void Awake()
     {
         controller = ChessDevSandboxController.Instance;
-        EnsureEventSystem();
         BuildIfNeeded();
         BindEvents();
         Refresh();
@@ -43,27 +40,11 @@ public class ChessDevSandboxPanelView : MonoBehaviour
 
     void Update() => Refresh();
 
-    void EnsureEventSystem()
-    {
-        if (EventSystem.current != null) return;
-        GameObject eventSystemObject = new("EventSystem");
-        eventSystemObject.AddComponent<EventSystem>();
-        eventSystemObject.AddComponent<InputSystemUIInputModule>();
-    }
-
     void BuildIfNeeded()
     {
-        rootCanvas = GetComponent<Canvas>();
-        if (rootCanvas == null)
-        {
-            rootCanvas = gameObject.AddComponent<Canvas>();
-            rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            rootCanvas.sortingOrder = 1000;
-            gameObject.AddComponent<GraphicRaycaster>();
-            CanvasScaler scaler = gameObject.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-        }
+        Transform devRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("DevMenuRoot");
+        transform.SetParent(devRoot, false);
+        rootObject = gameObject;
         if (transform.childCount > 0) return;
 
         RectTransform panel = CreateRect("Panel", transform);
@@ -126,7 +107,10 @@ public class ChessDevSandboxPanelView : MonoBehaviour
     {
         if (controller == null) controller = ChessDevSandboxController.Instance;
         if (controller == null) return;
-        rootCanvas.enabled = controller.IsOpen;
+        if (rootObject != null)
+        {
+            rootObject.SetActive(controller.IsOpen);
+        }
         if (!controller.IsOpen) return;
         aiToggle.SetIsOnWithoutNotify(controller.AiEnabled);
         bool placeMode = controller.Mode == ChessDevSandboxController.SandboxMode.Place;
