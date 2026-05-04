@@ -4,6 +4,8 @@ using UnityEngine.InputSystem;
 [DisallowMultipleComponent]
 public class ChessPauseManager : MonoBehaviour
 {
+    public delegate void PauseStateChangedHandler(bool isPauseRequested, bool isPaused);
+    public event PauseStateChangedHandler PauseStateChanged;
     #region Singleton
 
     public static ChessPauseManager Instance { get; private set; }
@@ -62,6 +64,7 @@ public class ChessPauseManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
+            Debug.LogWarning($"[ChessPauseManager] Duplicate instance destroyed on {gameObject.scene.name}/{name}", this);
             Destroy(gameObject);
             return;
         }
@@ -82,6 +85,15 @@ public class ChessPauseManager : MonoBehaviour
     public void RequestPause()
     {
         Debug.Log("[ChessPauseManager] RequestPause called", this);
+        if (isPauseRequested)
+        {
+            if (verbosePauseLogs)
+            {
+                Debug.Log("[ChessPauseManager] RequestPause ignored (already requested/pending/paused)", this);
+            }
+            return;
+        }
+
         if (!isPauseRequested)
         {
             Debug.Log("[ChessPauseManager] Pause requested", this);
@@ -89,6 +101,7 @@ public class ChessPauseManager : MonoBehaviour
 
         isPauseRequested = true;
         TryEnterPausedState();
+        NotifyPauseStateChanged();
         LogState("Pause pending");
         if (isPaused)
         {
@@ -97,12 +110,22 @@ public class ChessPauseManager : MonoBehaviour
         }
     }
 
-    public void Resume()
+    public void RequestResume()
     {
-        Debug.Log("[ChessPauseManager] Resume called", this);
+        Debug.Log("[ChessPauseManager] RequestResume called", this);
+        if (!isPauseRequested && !isPaused)
+        {
+            if (verbosePauseLogs)
+            {
+                Debug.Log("[ChessPauseManager] RequestResume ignored (already resumed)", this);
+            }
+            return;
+        }
+
         isPauseRequested = false;
         isPaused = false;
         Debug.Log("[ChessPauseManager] Resumed", this);
+        NotifyPauseStateChanged();
         LogState("Resumed");
     }
 
@@ -133,7 +156,7 @@ public class ChessPauseManager : MonoBehaviour
             return;
         }
 
-        Resume();
+        RequestResume();
     }
 
     public void NotifyRoundActionStarted()
@@ -144,7 +167,12 @@ public class ChessPauseManager : MonoBehaviour
     public void NotifyRoundActionFinished()
     {
         activeRoundActions = Mathf.Max(0, activeRoundActions - 1);
+        bool wasPaused = isPaused;
         TryEnterPausedState();
+        if (isPaused != wasPaused)
+        {
+            NotifyPauseStateChanged();
+        }
     }
 
     public void ResetPauseState()
@@ -152,6 +180,7 @@ public class ChessPauseManager : MonoBehaviour
         activeRoundActions = 0;
         isPauseRequested = false;
         isPaused = false;
+        NotifyPauseStateChanged();
     }
 
     #endregion
@@ -224,6 +253,11 @@ public class ChessPauseManager : MonoBehaviour
     void LogState(string phase)
     {
         Debug.Log($"[ChessPauseManager] {phase} | IsPauseRequested={IsPauseRequested} IsPausePending={IsPausePending} IsPaused={IsPaused} CanPauseImmediately={CanPauseImmediately} ActiveRoundActions={activeRoundActions}", this);
+    }
+
+    void NotifyPauseStateChanged()
+    {
+        PauseStateChanged?.Invoke(isPauseRequested, isPaused);
     }
 
     public bool ConsumeLastPPressedThisFrame()
