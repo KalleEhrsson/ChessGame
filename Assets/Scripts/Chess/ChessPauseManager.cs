@@ -208,15 +208,7 @@ public class ChessPauseManager : MonoBehaviour
     {
         ResolveUiDependencies();
 
-        if (ShouldUnlockCursor)
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-            return;
-        }
-
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        ChessCursorStateCoordinator.SetPauseCursorOverride(ShouldUnlockCursor);
     }
 
     bool IsBlockingOverlayOpen()

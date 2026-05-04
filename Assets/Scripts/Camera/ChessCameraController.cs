@@ -88,7 +88,7 @@ public class ChessCameraController : MonoBehaviour
 
         Instance = this;
         ResolveCamera();
-        SetCursorForMode(currentMode);
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(currentMode == CameraMode.TacticalView);
     }
 
     void LateUpdate()
@@ -143,7 +143,7 @@ public class ChessCameraController : MonoBehaviour
         currentMode = CameraMode.TacticalView;
         isTransitioningToTactical = true;
         isTransitioningToFirstPerson = false;
-        SetCursorForMode(currentMode);
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(currentMode == CameraMode.TacticalView);
     }
 
     public void ExitTacticalView()
@@ -167,7 +167,7 @@ public class ChessCameraController : MonoBehaviour
         currentMode = CameraMode.FirstPerson;
         isTransitioningToFirstPerson = true;
         isTransitioningToTactical = false;
-        SetCursorForMode(currentMode);
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(currentMode == CameraMode.TacticalView);
     }
 
     public void SetTransitionSpeed(float speed)
@@ -227,13 +227,6 @@ public class ChessCameraController : MonoBehaviour
         }
     }
     
-    void SetCursorForMode(CameraMode mode)
-    {
-        bool shouldUnlockCursor = mode == CameraMode.TacticalView;
-        Cursor.lockState = shouldUnlockCursor ? CursorLockMode.None : CursorLockMode.Locked;
-        Cursor.visible = shouldUnlockCursor;
-    }
-
     #endregion
 
     
