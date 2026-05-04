@@ -2,6 +2,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using System;
 
+using Random = UnityEngine.Random;
+
 [DisallowMultipleComponent]
 public class ChessPieceMotion : MonoBehaviour
 {
@@ -371,7 +373,6 @@ public class ChessPieceMotion : MonoBehaviour
         if (TryCombineBounds(colliders, out combined))
         {
             hasBounds = true;
-            return combined;
         }
 
         return combined;

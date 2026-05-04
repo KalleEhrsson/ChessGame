@@ -388,24 +388,24 @@ public class StockfishService : MonoBehaviour
 
         try
         {
-            if (stockfishProcess != null)
+            if (!stockfishProcess.HasExited)
             {
-                stockfishProcess.OutputDataReceived -= OnProcessOutput;
-                stockfishProcess.Exited -= OnProcessExited;
-
-                if (!stockfishProcess.HasExited)
+                try
                 {
-                    try
+                    processInput?.WriteLine("quit");
+                    processInput?.Flush();
+                }
+                catch (Exception exception)
+                {
+                    if (!isQuitting)
                     {
-                        processInput?.WriteLine("quit");
-                        processInput?.Flush();
+                        Debug.LogWarning($"[StockfishService] Failed to send quit command during cleanup: {exception.Message}");
                     }
-                    catch { }
+                }
 
-                    if (!stockfishProcess.WaitForExit(700))
-                    {
-                        stockfishProcess.Kill(true);
-                    }
+                if (!stockfishProcess.WaitForExit(700))
+                {
+                    stockfishProcess.Kill();
                 }
             }
         }
