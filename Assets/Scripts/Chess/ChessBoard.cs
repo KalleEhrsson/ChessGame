@@ -1141,6 +1141,7 @@ public class ChessBoard : MonoBehaviour
         }
 
         Rigidbody[] rigidbodies = PrepareBrokenPiecePhysics(debrisRoot);
+        IgnoreDebrisCollisionWithPlayers(debrisRoot);
         if (rigidbodies.Length == 0)
         {
             return true;
@@ -1174,6 +1175,51 @@ public class ChessBoard : MonoBehaviour
 
         AttachBrokenCleanupEffect(debrisRoot, position);
         return true;
+    }
+
+    void IgnoreDebrisCollisionWithPlayers(GameObject debrisRoot)
+    {
+        if (debrisRoot == null)
+        {
+            return;
+        }
+
+        Collider[] debrisColliders = debrisRoot.GetComponentsInChildren<Collider>(true);
+        if (debrisColliders.Length == 0)
+        {
+            return;
+        }
+
+        PlayerController[] players = Object.FindObjectsByType<PlayerController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int playerIndex = 0; playerIndex < players.Length; playerIndex++)
+        {
+            PlayerController player = players[playerIndex];
+            if (player == null)
+            {
+                continue;
+            }
+
+            Collider[] playerColliders = player.GetComponentsInChildren<Collider>(true);
+            for (int playerColliderIndex = 0; playerColliderIndex < playerColliders.Length; playerColliderIndex++)
+            {
+                Collider playerCollider = playerColliders[playerColliderIndex];
+                if (playerCollider == null)
+                {
+                    continue;
+                }
+
+                for (int debrisColliderIndex = 0; debrisColliderIndex < debrisColliders.Length; debrisColliderIndex++)
+                {
+                    Collider debrisCollider = debrisColliders[debrisColliderIndex];
+                    if (debrisCollider == null)
+                    {
+                        continue;
+                    }
+
+                    Physics.IgnoreCollision(debrisCollider, playerCollider, true);
+                }
+            }
+        }
     }
 
     void AttachBrokenCleanupEffect(GameObject debrisRoot, Vector3 impactPosition)
