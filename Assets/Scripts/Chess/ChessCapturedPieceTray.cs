@@ -23,12 +23,16 @@ public class ChessCapturedPieceTray : MonoBehaviour
     [SerializeField] Transform whiteCapturedArea;
     [SerializeField] Transform blackCapturedArea;
     [SerializeField, Min(0.05f)] float capturedTrayDistanceFromBoard = 0.35f;
-    [SerializeField, Min(0.05f)] float capturedTrayRowSpacing = 0.22f;
-    [SerializeField, Min(0.05f)] float capturedTrayColumnSpacing = 0.22f;
-    [SerializeField, Min(0.05f)] float capturedTrayPiecePadding = 0.02f;
+    [SerializeField, Min(0.05f), Tooltip("Distance between different piece-type rows.")] float capturedTrayRowSpacing = 0.32f;
+    [SerializeField, Min(0.01f), Tooltip("Distance between pieces of the same type.")] float capturedTrayColumnSpacing = 0.08f;
+    [SerializeField, Min(0.01f), Tooltip("Extra spacing added from piece bounds.")] float capturedTrayPiecePadding = 0.02f;
+    [SerializeField, Min(0.01f)] float minCapturedTrayColumnSpacing = 0.08f;
+    [SerializeField, Min(0.01f)] float maxCapturedTrayColumnSpacing = 0.16f;
+    [SerializeField, Min(0.05f)] float minCapturedTrayRowSpacing = 0.28f;
+    [SerializeField, Min(0.05f)] float maxCapturedTrayRowSpacing = 0.5f;
     [SerializeField] float capturedTrayYOffset = -0.02f;
     [SerializeField, Min(0f)] float capturedTraySidePadding = 0.1f;
-    [SerializeField] CapturedTraySideAxis capturedTraySideAxis = CapturedTraySideAxis.RankForwardBack;
+    [SerializeField] CapturedTraySideAxis capturedTraySideAxis = CapturedTraySideAxis.FileLeftRight;
     [SerializeField] bool placeBothCapturedTraysOnSameSide;
     [SerializeField, Min(0f)] float sameSideTraySeparation = 0.6f;
     [SerializeField] Vector3 displayEulerOffset = Vector3.zero;
@@ -105,9 +109,10 @@ public class ChessCapturedPieceTray : MonoBehaviour
         rowCounts.TryGetValue(key, out int pieceCountInRow);
         rowCounts[key] = pieceCountInRow + 1;
 
+        float rowStep = ResolveRowStepForArea(trayArea);
         float columnStep = ResolvePieceColumnStep(piece);
         Quaternion targetLocalRotation = Quaternion.Euler(displayEulerOffset);
-        Vector3 targetLocalPosition = BuildLocalPosition(row, pieceCountInRow, columnStep);
+        Vector3 targetLocalPosition = BuildLocalPosition(row, pieceCountInRow, columnStep, rowStep);
 
         piece.transform.SetParent(trayArea, false);
         piece.transform.SetLocalPositionAndRotation(targetLocalPosition, targetLocalRotation);
@@ -119,6 +124,21 @@ public class ChessCapturedPieceTray : MonoBehaviour
     #endregion
 
     #region Helpers
+
+    void OnValidate()
+    {
+        minCapturedTrayColumnSpacing = Mathf.Max(0.01f, minCapturedTrayColumnSpacing);
+        maxCapturedTrayColumnSpacing = Mathf.Max(minCapturedTrayColumnSpacing, maxCapturedTrayColumnSpacing);
+        minCapturedTrayRowSpacing = Mathf.Max(0.05f, minCapturedTrayRowSpacing);
+        maxCapturedTrayRowSpacing = Mathf.Max(minCapturedTrayRowSpacing, maxCapturedTrayRowSpacing);
+        capturedTrayColumnSpacing = Mathf.Clamp(capturedTrayColumnSpacing, minCapturedTrayColumnSpacing, maxCapturedTrayColumnSpacing);
+        capturedTrayRowSpacing = Mathf.Clamp(capturedTrayRowSpacing, minCapturedTrayRowSpacing, maxCapturedTrayRowSpacing);
+
+        if (!Application.isPlaying)
+        {
+            ResolveTrayTransforms();
+        }
+    }
 
     void ResolveTrayTransforms()
     {
@@ -237,10 +257,10 @@ public class ChessCapturedPieceTray : MonoBehaviour
         ReflowPlacedPieces();
     }
 
-    Vector3 BuildLocalPosition(int row, int column, float columnStep)
+    Vector3 BuildLocalPosition(int row, int column, float columnStep, float rowStep)
     {
-        return (Vector3.forward * (row * capturedTrayRowSpacing))
-            + (Vector3.right * (column * Mathf.Max(capturedTrayColumnSpacing, columnStep)));
+        return (Vector3.forward * (row * rowStep))
+            + (Vector3.right * (column * columnStep));
     }
 
     void ReflowPlacedPieces()
@@ -257,6 +277,7 @@ public class ChessCapturedPieceTray : MonoBehaviour
         }
 
         Dictionary<int, int> columnsByRow = new();
+        float rowStep = ResolveRowStepForArea(trayArea);
         for (int i = 0; i < trayArea.childCount; i++)
         {
             Transform child = trayArea.GetChild(i);
@@ -274,7 +295,7 @@ public class ChessCapturedPieceTray : MonoBehaviour
             int row = Mathf.Clamp(GetRowIndex(piece.Type), 0, 5);
             columnsByRow.TryGetValue(row, out int column);
             float columnStep = ResolvePieceColumnStep(piece);
-            child.localPosition = BuildLocalPosition(row, column, columnStep);
+            child.localPosition = BuildLocalPosition(row, column, columnStep, rowStep);
             child.localRotation = Quaternion.Euler(displayEulerOffset);
             columnsByRow[row] = column + 1;
         }
@@ -287,11 +308,41 @@ public class ChessCapturedPieceTray : MonoBehaviour
             float width = Mathf.Max(bounds.size.x, bounds.size.z);
             if (width > 0.001f && float.IsFinite(width))
             {
-                return width + capturedTrayPiecePadding;
+                return Mathf.Clamp(width + capturedTrayPiecePadding, minCapturedTrayColumnSpacing, maxCapturedTrayColumnSpacing);
             }
         }
 
-        return capturedTrayColumnSpacing;
+        return Mathf.Clamp(capturedTrayColumnSpacing, minCapturedTrayColumnSpacing, maxCapturedTrayColumnSpacing);
+    }
+
+    float ResolveRowStepForArea(Transform trayArea)
+    {
+        float largestFootprint = 0f;
+        for (int i = 0; i < trayArea.childCount; i++)
+        {
+            Transform child = trayArea.GetChild(i);
+            if (child == null)
+            {
+                continue;
+            }
+
+            ChessPiece piece = child.GetComponent<ChessPiece>();
+            if (piece == null)
+            {
+                continue;
+            }
+
+            if (TryGetPieceBounds(piece, out Bounds bounds))
+            {
+                largestFootprint = Mathf.Max(largestFootprint, Mathf.Max(bounds.size.x, bounds.size.z));
+            }
+        }
+
+        float rowFromBounds = largestFootprint > 0.001f
+            ? largestFootprint + capturedTrayPiecePadding
+            : minCapturedTrayRowSpacing;
+        float preferredRowSpacing = Mathf.Max(capturedTrayRowSpacing, rowFromBounds);
+        return Mathf.Clamp(preferredRowSpacing, minCapturedTrayRowSpacing, maxCapturedTrayRowSpacing);
     }
 
     bool TryGetBoardMetrics(out BoardMetrics metrics)

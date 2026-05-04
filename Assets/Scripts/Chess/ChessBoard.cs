@@ -986,8 +986,10 @@ public class ChessBoard : MonoBehaviour
             }
 
             _ = StartMoveAnimationAsync(animatedPiece, from, to, startWorldPosition, endWorldPosition, isCapture, capturedPiece);
+            return true;
         }
-        else if (isCapture && capturedPiece != null)
+
+        if (isCapture && capturedPiece != null)
         {
             ResolveCaptureOnImpact(capturedPiece);
         }
@@ -1023,6 +1025,16 @@ public class ChessBoard : MonoBehaviour
             LogMoveAnimation($"{(isCapture ? "Capture" : "Move")} animation started. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
             await PlayMoveMotionAsync(piece, startWorldPosition, endWorldPosition, isCapture, capturedPiece, fromTile, toTile);
             LogMoveAnimation($"Animation completed. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
+
+            turnManager ??= ChessTurnManager.GetOrCreate();
+            gameStateController ??= ChessGameStateController.GetOrCreate();
+            turnManager?.SwitchTurn();
+            if (turnManager != null)
+            {
+                gameStateController?.EvaluateEndOfTurn(turnManager.GetCurrentTurn());
+            }
+
+            PieceMoved?.Invoke(piece, fromTile, toTile);
         }
         finally
         {
@@ -1141,6 +1153,7 @@ public class ChessBoard : MonoBehaviour
         }
 
         Rigidbody[] rigidbodies = PrepareBrokenPiecePhysics(debrisRoot);
+        IgnoreDebrisCollisionWithPlayers(debrisRoot);
         if (rigidbodies.Length == 0)
         {
             return true;
@@ -1174,6 +1187,51 @@ public class ChessBoard : MonoBehaviour
 
         AttachBrokenCleanupEffect(debrisRoot, position);
         return true;
+    }
+
+    void IgnoreDebrisCollisionWithPlayers(GameObject debrisRoot)
+    {
+        if (debrisRoot == null)
+        {
+            return;
+        }
+
+        Collider[] debrisColliders = debrisRoot.GetComponentsInChildren<Collider>(true);
+        if (debrisColliders.Length == 0)
+        {
+            return;
+        }
+
+        PlayerController[] players = Object.FindObjectsByType<PlayerController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int playerIndex = 0; playerIndex < players.Length; playerIndex++)
+        {
+            PlayerController player = players[playerIndex];
+            if (player == null)
+            {
+                continue;
+            }
+
+            Collider[] playerColliders = player.GetComponentsInChildren<Collider>(true);
+            for (int playerColliderIndex = 0; playerColliderIndex < playerColliders.Length; playerColliderIndex++)
+            {
+                Collider playerCollider = playerColliders[playerColliderIndex];
+                if (playerCollider == null)
+                {
+                    continue;
+                }
+
+                for (int debrisColliderIndex = 0; debrisColliderIndex < debrisColliders.Length; debrisColliderIndex++)
+                {
+                    Collider debrisCollider = debrisColliders[debrisColliderIndex];
+                    if (debrisCollider == null)
+                    {
+                        continue;
+                    }
+
+                    Physics.IgnoreCollision(debrisCollider, playerCollider, true);
+                }
+            }
+        }
     }
 
     void AttachBrokenCleanupEffect(GameObject debrisRoot, Vector3 impactPosition)
