@@ -314,8 +314,14 @@ public class ChessTurnManager : MonoBehaviour
             }
 
             aiRoundConsole?.SetFen(fen);
-            aiRoundConsole?.SetThinking(true);
+            bool engineReady = await stockfishService.WaitUntilReadyAsync(cancellationToken);
+            if (!engineReady)
+            {
+                UnityEngine.Debug.LogError($"[ChessTurnManager] AI turn blocked: Stockfish unavailable. LastError={stockfishService.LastError}");
+                return;
+            }
 
+            aiRoundConsole?.SetThinking(true);
             string bestMoveRaw = await stockfishService.RequestBestMoveAsync(fen, cancellationToken, aiSearchDepth);
 
             while ((ChessPauseManager.GetOrCreate().IsPaused || ChessPauseManager.GetOrCreate().IsPausePending) && !cancellationToken.IsCancellationRequested)
