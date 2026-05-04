@@ -1105,15 +1105,12 @@ public class ChessBoard : MonoBehaviour
         Vector3 impactPosition = capturedPiece.transform.position;
         bool spawnedDebris = TrySpawnCaptureDebris(capturedPiece, impactPosition, capturedPiece.transform.rotation, attackerDirection);
 
-        if (spawnedDebris)
+        if (!spawnedDebris)
         {
-            capturedPiece.SetTile(null);
-            capturedPiece.gameObject.SetActive(false);
-            return;
+            string expectedPath = BrokenPiecePrefabRegistry.GetExpectedBrokenPrefabAssetPath(capturedPiece.Team, capturedPiece.Type);
+            Debug.LogWarning($"[ChessBoard] Missing broken prefab. Captured={capturedPiece.Team}{capturedPiece.Type}, ExpectedPath={expectedPath}");
         }
 
-        string expectedPath = BrokenPiecePrefabRegistry.GetExpectedBrokenPrefabAssetPath(capturedPiece.Team, capturedPiece.Type);
-        Debug.LogWarning($"[ChessBoard] Missing broken prefab. Captured={capturedPiece.Team}{capturedPiece.Type}, ExpectedPath={expectedPath}");
         bool placedInTray = capturedPieceTray != null && capturedPieceTray.PlaceCapturedPiece(capturedPiece);
         if (!placedInTray)
         {
