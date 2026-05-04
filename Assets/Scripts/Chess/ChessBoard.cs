@@ -986,8 +986,10 @@ public class ChessBoard : MonoBehaviour
             }
 
             _ = StartMoveAnimationAsync(animatedPiece, from, to, startWorldPosition, endWorldPosition, isCapture, capturedPiece);
+            return true;
         }
-        else if (isCapture && capturedPiece != null)
+
+        if (isCapture && capturedPiece != null)
         {
             ResolveCaptureOnImpact(capturedPiece);
         }
@@ -1023,6 +1025,16 @@ public class ChessBoard : MonoBehaviour
             LogMoveAnimation($"{(isCapture ? "Capture" : "Move")} animation started. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
             await PlayMoveMotionAsync(piece, startWorldPosition, endWorldPosition, isCapture, capturedPiece, fromTile, toTile);
             LogMoveAnimation($"Animation completed. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
+
+            turnManager ??= ChessTurnManager.GetOrCreate();
+            gameStateController ??= ChessGameStateController.GetOrCreate();
+            turnManager?.SwitchTurn();
+            if (turnManager != null)
+            {
+                gameStateController?.EvaluateEndOfTurn(turnManager.GetCurrentTurn());
+            }
+
+            PieceMoved?.Invoke(piece, fromTile, toTile);
         }
         finally
         {
