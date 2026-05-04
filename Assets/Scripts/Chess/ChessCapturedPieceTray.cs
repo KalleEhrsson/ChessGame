@@ -284,11 +284,13 @@ public class ChessCapturedPieceTray : MonoBehaviour
 
         if (enableCapturedTrayDebugLogs)
         {
+            /*
             Debug.Log(
                 $"[ChessCapturedPieceTray] axis={capturedTraySideAxis}, center={metrics.Center}, tileBoardSize={metrics.Bounds.size}, " +
                 $"fileAxis={metrics.FileAxis}, rankAxis={metrics.RankAxis}, sideAxis={sideAxis}, parallelAxis={parallelAxis}, " +
                 $"whiteWorld={whiteCapturedArea.position}, blackWorld={blackCapturedArea.position}, " +
                 $"whiteLocal={whiteCapturedArea.localPosition}, blackLocal={blackCapturedArea.localPosition}");
+            */
         }
 
         if (metrics.IsInsideBoardExtents(whiteCapturedArea.position) || metrics.IsInsideBoardExtents(blackCapturedArea.position))
