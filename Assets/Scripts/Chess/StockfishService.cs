@@ -56,6 +56,8 @@ public class StockfishService : MonoBehaviour
     [SerializeField, Min(0.1f)] float retryDelaySeconds = 1.5f;
     [SerializeField, Min(1f)] float uciTimeoutSeconds = 6f;
     [SerializeField, Min(1f)] float readyTimeoutSeconds = 8f;
+    [SerializeField] bool enableStockfishDebugLogs = false;
+    [SerializeField] bool enableStockfishWarningLogs = true;
 
     readonly ConcurrentQueue<string> outputLines = new();
     readonly Queue<string> recentOutput = new();
@@ -88,7 +90,7 @@ public class StockfishService : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Debug.LogWarning("[ChessRuntimeBootstrap] Persistent instance kept: StockfishService");
+            LogWarning("[ChessRuntimeBootstrap] Persistent instance kept: StockfishService");
             Destroy(gameObject);
             return;
         }
@@ -111,6 +113,24 @@ public class StockfishService : MonoBehaviour
         }
 
         UpdateLoadingOverlay();
+    }
+
+
+    void LogDebug(string message)
+    {
+        if (!enableStockfishDebugLogs) return;
+        Debug.Log(message, this);
+    }
+
+    void LogWarning(string message)
+    {
+        if (!enableStockfishWarningLogs) return;
+        Debug.LogWarning(message, this);
+    }
+
+    void LogError(string message)
+    {
+        Debug.LogError(message, this);
     }
 
     void OnDestroy()
@@ -150,7 +170,7 @@ public class StockfishService : MonoBehaviour
                 if (attempt > 1)
                 {
                     SetState(EngineState.Retrying);
-                    Debug.LogWarning($"[StockfishService] Retrying startup attempt {attempt}/{attempts} after failure: {LastError}");
+                    LogWarning($"[StockfishService] Retrying startup attempt {attempt}/{attempts} after failure: {LastError}");
                     await Task.Delay(TimeSpan.FromSeconds(retryDelaySeconds));
                 }
 
@@ -212,7 +232,7 @@ public class StockfishService : MonoBehaviour
             return false;
         }
 
-        Debug.Log("[StockfishService] uciok received.");
+        LogDebug("[StockfishService] uciok received.");
 
         SetState(EngineState.WaitingForReady);
         SendCommand("isready");
@@ -223,10 +243,10 @@ public class StockfishService : MonoBehaviour
             return false;
         }
 
-        Debug.Log("[StockfishService] readyok received.");
+        LogDebug("[StockfishService] readyok received.");
         LastError = null;
         SetState(EngineState.Ready);
-        Debug.Log("[StockfishService] Engine ready.");
+        LogDebug("[StockfishService] Engine ready.");
         return true;
     }
 
@@ -234,20 +254,20 @@ public class StockfishService : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(fen))
         {
-            Debug.LogError("[StockfishService] Cannot request best move with empty FEN.");
+            LogError("[StockfishService] Cannot request best move with empty FEN.");
             return null;
         }
 
         bool ready = await WaitUntilReadyAsync(cancellationToken);
         if (!ready)
         {
-            Debug.LogError($"[StockfishService] Cannot request best move because engine is unavailable. Error: {LastError}");
+            LogError($"[StockfishService] Cannot request best move because engine is unavailable. Error: {LastError}");
             return null;
         }
 
         if (pendingBestMoveTask != null && !pendingBestMoveTask.Task.IsCompleted)
         {
-            Debug.LogWarning("[StockfishService] Best move request already in progress.");
+            LogWarning("[StockfishService] Best move request already in progress.");
             return null;
         }
 
@@ -335,7 +355,7 @@ public class StockfishService : MonoBehaviour
         if (stockfishProcess is { HasExited: false }) return true;
 
         resolvedExecutablePath = ResolveExecutablePath();
-        Debug.Log($"[StockfishService] Resolved Stockfish path: {resolvedExecutablePath}");
+        LogDebug($"[StockfishService] Resolved Stockfish path: {resolvedExecutablePath}");
         if (string.IsNullOrWhiteSpace(resolvedExecutablePath))
         {
             LastError = "Failed to resolve Stockfish executable path.";
@@ -344,7 +364,7 @@ public class StockfishService : MonoBehaviour
 
         try
         {
-            Debug.Log($"[StockfishService] Process start attempt {attempt}/{maxAttempts}.");
+            LogDebug($"[StockfishService] Process start attempt {attempt}/{maxAttempts}.");
             stockfishProcess = new Process
             {
                 StartInfo = new ProcessStartInfo
@@ -368,7 +388,7 @@ public class StockfishService : MonoBehaviour
         catch (Exception exception)
         {
             LastError = $"Failed to start process: {exception.Message}";
-            Debug.LogError($"[StockfishService] {LastError}");
+            LogError($"[StockfishService] {LastError}");
             CleanupProcess();
             return false;
         }
@@ -399,7 +419,7 @@ public class StockfishService : MonoBehaviour
                 {
                     if (!isQuitting)
                     {
-                        Debug.LogWarning($"[StockfishService] Failed to send quit command during cleanup: {exception.Message}");
+                        LogWarning($"[StockfishService] Failed to send quit command during cleanup: {exception.Message}");
                     }
                 }
 
@@ -413,7 +433,7 @@ public class StockfishService : MonoBehaviour
         {
             if (!isQuitting)
             {
-                Debug.LogWarning($"[StockfishService] Cleanup warning: {exception.Message}");
+                LogWarning($"[StockfishService] Cleanup warning: {exception.Message}");
             }
         }
         finally
@@ -434,14 +454,14 @@ public class StockfishService : MonoBehaviour
         if (string.IsNullOrWhiteSpace(command) || processInput == null) return;
         try
         {
-            Debug.Log($"[StockfishService] UCI command sent: {command}");
+            LogDebug($"[StockfishService] UCI command sent: {command}");
             processInput.WriteLine(command);
             processInput.Flush();
         }
         catch (Exception exception)
         {
             LastError = $"Failed to send command '{command}': {exception.Message}";
-            Debug.LogError($"[StockfishService] {LastError}");
+            LogError($"[StockfishService] {LastError}");
             SetState(EngineState.Failed);
         }
     }
@@ -491,12 +511,12 @@ public class StockfishService : MonoBehaviour
 
     async Task<bool> WaitForSignalWithTimeout(Task<bool> task, string label, TimeSpan timeout)
     {
-        Debug.Log($"[StockfishService] Waiting for {label} with timeout {timeout.TotalSeconds:0.0}s.");
+        LogDebug($"[StockfishService] Waiting for {label} with timeout {timeout.TotalSeconds:0.0}s.");
         Task completed = await Task.WhenAny(task, Task.Delay(timeout));
         if (completed != task)
         {
             LastError = $"Timeout waiting for {label}. Recent output: {string.Join(" | ", recentOutput)}";
-            Debug.LogError($"[StockfishService] {LastError}");
+            LogError($"[StockfishService] {LastError}");
             return false;
         }
 
@@ -504,19 +524,19 @@ public class StockfishService : MonoBehaviour
         if (!signal)
         {
             LastError = $"Engine returned failure while waiting for {label}.";
-            Debug.LogError($"[StockfishService] {LastError}");
+            LogError($"[StockfishService] {LastError}");
         }
 
         return signal;
     }
 
-    static async Task<string> WaitForResultWithTimeout(Task<string> task, string label, TimeSpan timeout, CancellationToken cancellationToken)
+    async Task<string> WaitForResultWithTimeout(Task<string> task, string label, TimeSpan timeout, CancellationToken cancellationToken)
     {
         Task completed = await Task.WhenAny(task, Task.Delay(timeout, cancellationToken));
         cancellationToken.ThrowIfCancellationRequested();
         if (completed != task)
         {
-            Debug.LogError($"[StockfishService] Timeout waiting for {label}.");
+            LogError($"[StockfishService] Timeout waiting for {label}.");
             return null;
         }
 
@@ -529,7 +549,7 @@ public class StockfishService : MonoBehaviour
     {
         LastError = reason;
         SetState(EngineState.Unavailable);
-        Debug.LogError($"[StockfishService] Initialization failed. Engine unavailable. Reason: {reason}");
+        LogError($"[StockfishService] Initialization failed. Engine unavailable. Reason: {reason}");
     }
 
     void EnsureLoadingOverlay()
