@@ -18,8 +18,9 @@ public class ChessCapturedPieceTray : MonoBehaviour
     [SerializeField] Transform whiteCapturedArea;
     [SerializeField] Transform blackCapturedArea;
     [SerializeField, Min(0.05f)] float capturedTrayDistanceFromBoard = 0.35f;
-    [SerializeField, Min(0.05f)] float capturedPieceSpacing = 0.22f;
-    [SerializeField, Min(1)] int capturedTrayRows = 6;
+    [SerializeField, Min(0.05f)] float capturedTrayRowSpacing = 0.22f;
+    [SerializeField, Min(0.05f)] float capturedTrayColumnSpacing = 0.22f;
+    [SerializeField, Min(0.05f)] float capturedTrayPiecePadding = 0.02f;
     [SerializeField] float capturedTrayYOffset = -0.02f;
     [SerializeField, Min(0f)] float capturedTraySidePadding = 0.1f;
     [SerializeField] Vector3 displayEulerOffset = Vector3.zero;
@@ -88,16 +89,15 @@ public class ChessCapturedPieceTray : MonoBehaviour
 
         piece.SetSelected(false);
         piece.SetTile(null);
-        DisableGameplayInteraction(piece);
+        DisableBoardGameplayInteraction(piece);
 
-        int row = Mathf.Clamp(GetRowIndex(piece.Type), 0, Mathf.Max(0, capturedTrayRows - 1));
+        int row = Mathf.Clamp(GetRowIndex(piece.Type), 0, 5);
         RowKey key = new(piece.Team, row);
         rowCounts.TryGetValue(key, out int pieceCountInRow);
         rowCounts[key] = pieceCountInRow + 1;
 
-        int column = pieceCountInRow / Mathf.Max(1, capturedTrayRows);
-        int rowSlot = pieceCountInRow % Mathf.Max(1, capturedTrayRows);
-        Vector3 targetPosition = BuildPosition(trayArea, rowSlot, column);
+        float columnStep = ResolvePieceColumnStep(piece);
+        Vector3 targetPosition = BuildPosition(trayArea, row, pieceCountInRow, columnStep);
         Quaternion targetRotation = trayArea.rotation * Quaternion.Euler(displayEulerOffset);
 
         piece.transform.SetParent(trayArea, true);
@@ -190,7 +190,7 @@ public class ChessCapturedPieceTray : MonoBehaviour
         }
 
         Vector3 trayForwardOffset = metrics.Forward * capturedTraySidePadding;
-        float sideDistance = (metrics.HalfBoardWidth + capturedTrayDistanceFromBoard + (capturedPieceSpacing * 0.5f));
+        float sideDistance = (metrics.HalfBoardWidth + capturedTrayDistanceFromBoard + (capturedTrayColumnSpacing * 0.5f));
 
         Vector3 leftPosition = metrics.Center - (metrics.Right * sideDistance) + trayForwardOffset;
         leftPosition.y = metrics.SurfaceY + capturedTrayYOffset;
@@ -203,12 +203,26 @@ public class ChessCapturedPieceTray : MonoBehaviour
         blackCapturedArea.SetPositionAndRotation(rightPosition, trayRotation);
     }
 
-    Vector3 BuildPosition(Transform trayArea, int row, int column)
+    Vector3 BuildPosition(Transform trayArea, int row, int column, float columnStep)
     {
         Vector3 basePosition = trayArea.position;
         return basePosition
-            + (trayArea.forward * (row * capturedPieceSpacing))
-            + (trayArea.right * (column * capturedPieceSpacing));
+            + (trayArea.forward * (row * capturedTrayRowSpacing))
+            + (trayArea.right * (column * Mathf.Max(capturedTrayColumnSpacing, columnStep)));
+    }
+
+    float ResolvePieceColumnStep(ChessPiece piece)
+    {
+        if (piece != null && TryGetPieceBounds(piece, out Bounds bounds))
+        {
+            float width = Mathf.Max(bounds.size.x, bounds.size.z);
+            if (width > 0.001f && float.IsFinite(width))
+            {
+                return width + capturedTrayPiecePadding;
+            }
+        }
+
+        return capturedTrayColumnSpacing;
     }
 
     bool TryGetBoardMetrics(out BoardMetrics metrics)
@@ -280,17 +294,17 @@ public class ChessCapturedPieceTray : MonoBehaviour
     {
         return pieceType switch
         {
-            PieceType.Pawn => 0,
+            PieceType.Queen => 0,
             PieceType.Rook => 1,
-            PieceType.Knight => 2,
-            PieceType.Bishop => 3,
-            PieceType.Queen => 4,
+            PieceType.Bishop => 2,
+            PieceType.Knight => 3,
+            PieceType.Pawn => 4,
             PieceType.King => 5,
             _ => 5
         };
     }
 
-    static void DisableGameplayInteraction(ChessPiece piece)
+    void DisableBoardGameplayInteraction(ChessPiece piece)
     {
         InteractableChessPiece interactable = piece.GetComponent<InteractableChessPiece>();
         if (interactable != null)
@@ -307,8 +321,15 @@ public class ChessCapturedPieceTray : MonoBehaviour
         Collider[] colliders = piece.GetComponentsInChildren<Collider>(true);
         for (int i = 0; i < colliders.Length; i++)
         {
-            colliders[i].enabled = false;
+            Collider collider = colliders[i];
+            if (collider == null)
+            {
+                continue;
+            }
+
+            collider.enabled = false;
         }
+
 
         Rigidbody[] rigidbodies = piece.GetComponentsInChildren<Rigidbody>(true);
         for (int i = 0; i < rigidbodies.Length; i++)
@@ -316,6 +337,59 @@ public class ChessCapturedPieceTray : MonoBehaviour
             rigidbodies[i].isKinematic = true;
             rigidbodies[i].detectCollisions = false;
         }
+    }
+
+    static bool TryGetPieceBounds(ChessPiece piece, out Bounds bounds)
+    {
+        bounds = default;
+        bool hasBounds = false;
+
+        Renderer[] renderers = piece.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = renderer.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        if (hasBounds)
+        {
+            return true;
+        }
+
+        Collider[] colliders = piece.GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider collider = colliders[i];
+            if (collider == null)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = collider.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(collider.bounds);
+            }
+        }
+
+        return hasBounds;
     }
 
     readonly struct BoardMetrics
