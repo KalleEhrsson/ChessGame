@@ -1,12 +1,10 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
 public class ChessPauseManager : MonoBehaviour
 {
     public delegate void PauseStateChangedHandler(bool isPauseRequested, bool isPaused);
     public event PauseStateChangedHandler PauseStateChanged;
-    #region Singleton
 
     public static ChessPauseManager Instance { get; private set; }
 
@@ -17,38 +15,27 @@ public class ChessPauseManager : MonoBehaviour
             return Instance;
         }
 
-        ChessPauseManager existing = FindExisting();
+        ChessPauseManager existing = FindFirstObjectByType<ChessPauseManager>(FindObjectsInactive.Include);
         if (existing != null)
         {
             Instance = existing;
-            Debug.Log("[ChessRuntimeBootstrap] Reused existing instance: ChessPauseManager");
-            return Instance;
+            return existing;
         }
 
         GameObject host = new("ChessPauseManager");
-        Instance = host.AddComponent<ChessPauseManager>();
-        // Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessPauseManager");
-        return Instance;
+        return host.AddComponent<ChessPauseManager>();
     }
 
-    #endregion
-
-    #region Variables
+    [SerializeField] bool enablePauseDebugLogs;
 
     int activeRoundActions;
-    [SerializeField] Key pauseKey = Key.P;
-    [SerializeField] bool verbosePauseLogs = true;
     bool isPauseRequested;
     bool isPaused;
-    bool lastPPressedThisFrame;
+
     ChessPauseMenuUI pauseMenuUi;
     ChessDevSandboxController sandbox;
     ChessResignUiController resignUi;
     ChessWinScreenUI winScreen;
-
-    #endregion
-
-    #region Properties
 
     public bool IsPauseRequested => isPauseRequested;
     public bool IsPaused => isPaused;
@@ -56,83 +43,32 @@ public class ChessPauseManager : MonoBehaviour
     public bool CanPauseImmediately => activeRoundActions <= 0;
     public bool ShouldUnlockCursor => IsPauseRequested || IsBlockingOverlayOpen();
 
-    #endregion
-
-    #region Unity
-
     void Awake()
     {
         if (Instance != null && Instance != this)
         {
-            Debug.LogWarning($"[ChessPauseManager] Duplicate instance destroyed on {gameObject.scene.name}/{name}", this);
-            Destroy(gameObject);
+            Debug.LogWarning($"[ChessPauseManager] Duplicate manager disabled: {name} ({GetInstanceID()})", this);
+            enabled = false;
             return;
         }
 
         Instance = this;
     }
 
-    #endregion
-
-    void Update()
+    void OnEnable()
     {
-        HandlePauseInput();
         RefreshCursorState();
     }
 
-    #region API
-
-    public void RequestPause()
+    void Update()
     {
-        Debug.Log("[ChessPauseManager] RequestPause called", this);
-        if (isPauseRequested)
-        {
-            if (verbosePauseLogs)
-            {
-                Debug.Log("[ChessPauseManager] RequestPause ignored (already requested/pending/paused)", this);
-            }
-            return;
-        }
-
-        if (!isPauseRequested)
-        {
-            Debug.Log("[ChessPauseManager] Pause requested", this);
-        }
-
-        isPauseRequested = true;
-        TryEnterPausedState();
-        NotifyPauseStateChanged();
-        LogState("Pause pending");
-        if (isPaused)
-        {
-            Debug.Log("[ChessPauseManager] Fully paused", this);
-            LogState("Fully paused");
-        }
-    }
-
-    public void RequestResume()
-    {
-        Debug.Log("[ChessPauseManager] RequestResume called", this);
-        if (!isPauseRequested && !isPaused)
-        {
-            if (verbosePauseLogs)
-            {
-                Debug.Log("[ChessPauseManager] RequestResume ignored (already resumed)", this);
-            }
-            return;
-        }
-
-        isPauseRequested = false;
-        isPaused = false;
-        Debug.Log("[ChessPauseManager] Resumed", this);
-        NotifyPauseStateChanged();
-        LogState("Resumed");
+        RefreshCursorState();
     }
 
     public void TogglePauseRequest()
     {
-        Debug.Log("[ChessPauseManager] Toggle called while requested/paused/pending", this);
-        LogState("Before toggle");
+        ResolveUiDependencies();
+
         if (winScreen != null && winScreen.IsVisible)
         {
             return;
@@ -159,6 +95,38 @@ public class ChessPauseManager : MonoBehaviour
         RequestResume();
     }
 
+    public void RequestPause()
+    {
+        if (isPauseRequested || isPaused)
+        {
+            return;
+        }
+
+        bool previousRequested = isPauseRequested;
+        bool previousPaused = isPaused;
+
+        isPauseRequested = true;
+        TryEnterPausedState();
+
+        NotifyIfChanged(previousRequested, previousPaused);
+    }
+
+    public void RequestResume()
+    {
+        if (!isPauseRequested && !isPaused)
+        {
+            return;
+        }
+
+        bool previousRequested = isPauseRequested;
+        bool previousPaused = isPaused;
+
+        isPauseRequested = false;
+        isPaused = false;
+
+        NotifyIfChanged(previousRequested, previousPaused);
+    }
+
     public void NotifyRoundActionStarted()
     {
         activeRoundActions++;
@@ -167,25 +135,25 @@ public class ChessPauseManager : MonoBehaviour
     public void NotifyRoundActionFinished()
     {
         activeRoundActions = Mathf.Max(0, activeRoundActions - 1);
-        bool wasPaused = isPaused;
+
+        bool previousRequested = isPauseRequested;
+        bool previousPaused = isPaused;
+
         TryEnterPausedState();
-        if (isPaused != wasPaused)
-        {
-            NotifyPauseStateChanged();
-        }
+        NotifyIfChanged(previousRequested, previousPaused);
     }
 
     public void ResetPauseState()
     {
+        bool previousRequested = isPauseRequested;
+        bool previousPaused = isPaused;
+
         activeRoundActions = 0;
         isPauseRequested = false;
         isPaused = false;
-        NotifyPauseStateChanged();
+
+        NotifyIfChanged(previousRequested, previousPaused);
     }
-
-    #endregion
-
-    #region Helpers
 
     void TryEnterPausedState()
     {
@@ -199,44 +167,26 @@ public class ChessPauseManager : MonoBehaviour
         {
             isPaused = true;
         }
-
-        if (isPaused)
-        {
-            Debug.Log("[ChessPauseManager] Fully paused", this);
-        }
     }
 
-    #endregion
-
-    void HandlePauseInput()
+    void NotifyIfChanged(bool previousRequested, bool previousPaused)
     {
-        lastPPressedThisFrame = false;
-        if (Keyboard.current == null)
+        if (previousRequested == isPauseRequested && previousPaused == isPaused)
         {
             return;
         }
 
-        if (Keyboard.current[pauseKey].wasPressedThisFrame)
+        if (enablePauseDebugLogs)
         {
-            lastPPressedThisFrame = true;
-            if (verbosePauseLogs)
-            {
-                Debug.Log($"[ChessPauseInput] {pauseKey} pressed", this);
-                Debug.Log("[ChessPauseInput] Calling pause toggle", this);
-            }
-            TogglePauseRequest();
+            Debug.Log($"[ChessPauseManager] {name} ({GetInstanceID()}) -> requested={isPauseRequested} paused={isPaused} pending={IsPausePending}", this);
         }
 
-        if (verbosePauseLogs && Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            Debug.Log("[ChessPauseInput] Escape pressed, ignored for pause debug", this);
-        }
+        PauseStateChanged?.Invoke(isPauseRequested, isPaused);
     }
 
     void RefreshCursorState()
     {
         ResolveUiDependencies();
-
         ChessCursorStateCoordinator.SetPauseCursorOverride(ShouldUnlockCursor);
     }
 
@@ -249,35 +199,11 @@ public class ChessPauseManager : MonoBehaviour
             || (winScreen != null && winScreen.IsVisible);
     }
 
-
-    void LogState(string phase)
-    {
-        Debug.Log($"[ChessPauseManager] {phase} | IsPauseRequested={IsPauseRequested} IsPausePending={IsPausePending} IsPaused={IsPaused} CanPauseImmediately={CanPauseImmediately} ActiveRoundActions={activeRoundActions}", this);
-    }
-
-    void NotifyPauseStateChanged()
-    {
-        PauseStateChanged?.Invoke(isPauseRequested, isPaused);
-    }
-
-    public bool ConsumeLastPPressedThisFrame()
-    {
-        bool wasPressed = lastPPressedThisFrame;
-        lastPPressedThisFrame = false;
-        return wasPressed;
-    }
-
     void ResolveUiDependencies()
     {
         pauseMenuUi ??= ChessPauseMenuUI.GetOrCreate();
         sandbox ??= ChessDevSandboxController.Instance;
         resignUi ??= ChessResignUiController.GetOrCreate();
         winScreen ??= ChessWinScreenUI.GetOrCreate();
-    }
-
-    static ChessPauseManager FindExisting()
-    {
-        ChessPauseManager[] items = FindObjectsByType<ChessPauseManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        return items.Length > 0 ? items[0] : null;
     }
 }
