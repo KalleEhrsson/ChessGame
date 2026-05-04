@@ -124,6 +124,45 @@ public class ChessCapturedPieceTray : MonoBehaviour
         return true;
     }
 
+
+    public bool HasCapturedPieceOfType(PieceTeam team, PieceType type)
+    {
+        Transform trayArea = team == PieceTeam.White ? whiteCapturedArea : blackCapturedArea;
+        if (trayArea == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < trayArea.childCount; i++)
+        {
+            ChessPiece piece = trayArea.GetChild(i).GetComponent<ChessPiece>();
+            if (piece != null && piece.Team == team && piece.Type == type)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool TryGetPromotionRowPose(PieceTeam team, float heightOffset, float forwardOffset, out Vector3 rowOrigin, out Vector3 rowRight, out Quaternion rowRotation)
+    {
+        ResolveTrayTransforms();
+        Transform trayArea = team == PieceTeam.White ? whiteCapturedArea : blackCapturedArea;
+        if (trayArea == null)
+        {
+            rowOrigin = default;
+            rowRight = Vector3.right;
+            rowRotation = Quaternion.identity;
+            return false;
+        }
+
+        rowOrigin = trayArea.position + (trayArea.up * heightOffset) + (trayArea.forward * forwardOffset);
+        rowRight = trayArea.right;
+        rowRotation = trayArea.rotation * Quaternion.Euler(displayEulerOffset);
+        return true;
+    }
+
     #endregion
 
     #region Helpers
