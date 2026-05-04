@@ -112,7 +112,7 @@ public class ChessCapturedPieceTray : MonoBehaviour
         float rowStep = ResolveRowStepForArea(trayArea);
         float columnStep = ResolvePieceColumnStep(piece);
         Quaternion targetLocalRotation = Quaternion.Euler(displayEulerOffset);
-        Vector3 targetLocalPosition = BuildLocalPosition(row, pieceCountInRow, columnStep, rowStep);
+        Vector3 targetLocalPosition = BuildLocalPosition(piece, row, pieceCountInRow, columnStep, rowStep);
 
         piece.transform.SetParent(trayArea, false);
         piece.transform.SetLocalPositionAndRotation(targetLocalPosition, targetLocalRotation);
@@ -257,10 +257,12 @@ public class ChessCapturedPieceTray : MonoBehaviour
         ReflowPlacedPieces();
     }
 
-    Vector3 BuildLocalPosition(int row, int column, float columnStep, float rowStep)
+    Vector3 BuildLocalPosition(ChessPiece piece, int row, int column, float columnStep, float rowStep)
     {
-        return (Vector3.forward * (row * rowStep))
+        Vector3 localPosition = (Vector3.forward * (row * rowStep))
             + (Vector3.right * (column * columnStep));
+        localPosition.y = ResolveGroundedLocalY(piece);
+        return localPosition;
     }
 
     void ReflowPlacedPieces()
@@ -295,10 +297,28 @@ public class ChessCapturedPieceTray : MonoBehaviour
             int row = Mathf.Clamp(GetRowIndex(piece.Type), 0, 5);
             columnsByRow.TryGetValue(row, out int column);
             float columnStep = ResolvePieceColumnStep(piece);
-            child.localPosition = BuildLocalPosition(row, column, columnStep, rowStep);
+            child.localPosition = BuildLocalPosition(piece, row, column, columnStep, rowStep);
             child.localRotation = Quaternion.Euler(displayEulerOffset);
             columnsByRow[row] = column + 1;
         }
+    }
+
+    float ResolveGroundedLocalY(ChessPiece piece)
+    {
+        const float trayPlaneLocalY = 0f;
+        if (piece == null)
+        {
+            return trayPlaneLocalY;
+        }
+
+        float bottomOffset = GetBottomOffsetLocal(piece, out string boundsSource);
+        float groundedLocalY = trayPlaneLocalY - bottomOffset;
+        if (enableCapturedTrayDebugLogs)
+        {
+            Debug.Log($"[ChessCapturedPieceTray] Grounding {piece.name}: bottomOffset={bottomOffset:F4}, localY={groundedLocalY:F4}, boundsSource={boundsSource}");
+        }
+
+        return groundedLocalY;
     }
 
     float ResolvePieceColumnStep(ChessPiece piece)
@@ -592,9 +612,61 @@ public class ChessCapturedPieceTray : MonoBehaviour
     static bool TryGetPieceBounds(ChessPiece piece, out Bounds bounds)
     {
         bounds = default;
+        if (TryGetCombinedRendererBounds(piece.transform, out bounds))
+        {
+            return true;
+        }
+
+        if (TryGetCombinedColliderBounds(piece.transform, out bounds))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    static float GetBottomOffsetLocal(ChessPiece piece, out string boundsSource)
+    {
+        boundsSource = "none";
+        if (piece == null)
+        {
+            return 0f;
+        }
+
+        Vector3 upAxis = piece.transform.parent != null ? piece.transform.parent.up : Vector3.up;
+        float rootAlongUp = Vector3.Dot(upAxis, piece.transform.position);
+
+        if (TryGetCombinedRendererBounds(piece.transform, out Bounds rendererBounds))
+        {
+            boundsSource = "renderer";
+            return GetBottomAlongAxis(rendererBounds, upAxis) - rootAlongUp;
+        }
+
+        if (TryGetCombinedColliderBounds(piece.transform, out Bounds colliderBounds))
+        {
+            boundsSource = "collider";
+            return GetBottomAlongAxis(colliderBounds, upAxis) - rootAlongUp;
+        }
+
+        return 0f;
+    }
+
+    static float GetBottomAlongAxis(Bounds bounds, Vector3 upAxis)
+    {
+        Vector3 safeUp = SafeNormalized(upAxis, Vector3.up);
+        Vector3 extents = bounds.extents;
+        float projectedExtent = Mathf.Abs(Vector3.Dot(safeUp, Vector3.right)) * extents.x
+            + Mathf.Abs(Vector3.Dot(safeUp, Vector3.up)) * extents.y
+            + Mathf.Abs(Vector3.Dot(safeUp, Vector3.forward)) * extents.z;
+        return Vector3.Dot(safeUp, bounds.center) - projectedExtent;
+    }
+
+    static bool TryGetCombinedRendererBounds(Transform root, out Bounds bounds)
+    {
+        bounds = default;
         bool hasBounds = false;
 
-        Renderer[] renderers = piece.GetComponentsInChildren<Renderer>(true);
+        Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
         for (int i = 0; i < renderers.Length; i++)
         {
             Renderer renderer = renderers[i];
@@ -619,7 +691,15 @@ public class ChessCapturedPieceTray : MonoBehaviour
             return true;
         }
 
-        Collider[] colliders = piece.GetComponentsInChildren<Collider>(true);
+        return false;
+    }
+
+    static bool TryGetCombinedColliderBounds(Transform root, out Bounds bounds)
+    {
+        bounds = default;
+        bool hasBounds = false;
+
+        Collider[] colliders = root.GetComponentsInChildren<Collider>(true);
         for (int i = 0; i < colliders.Length; i++)
         {
             Collider collider = colliders[i];
