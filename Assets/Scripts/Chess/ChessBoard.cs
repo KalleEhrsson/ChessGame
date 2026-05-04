@@ -28,8 +28,6 @@ public class ChessBoard : MonoBehaviour
     [Header("Broken Piece Capture FX")]
     [Tooltip("Registry that maps intact pieces to their broken-piece prefabs.")]
     [SerializeField] BrokenPiecePrefabRegistry brokenPiecePrefabRegistry;
-    [Tooltip("Delay (seconds) before capture impact force is applied.")]
-    [SerializeField, Min(0.01f)] float captureImpactDelay = 0.05f;
     [Tooltip("Runtime container name created under the board for broken piece instances.")]
     [SerializeField] string brokenPiecesRootName = "BrokenPiecesRuntime";
     [Tooltip("Direct impact force applied to broken pieces on capture.")]
@@ -1046,16 +1044,34 @@ public class ChessBoard : MonoBehaviour
             return;
         }
 
-        await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture, capturedPiece, fromTile, toTile, debugMoveAnimationLogs);
+        bool captureResolved = false;
+        void ResolveCaptureAtImpact(float impactT)
+        {
+            if (captureResolved || !isCapture || capturedPiece == null)
+            {
+                return;
+            }
 
-        if (!isCapture || capturedPiece == null)
+            captureResolved = true;
+            Vector3 attackerDirection = endWorldPosition - startWorldPosition;
+            if (debugMoveAnimationLogs)
+            {
+                LogMoveAnimation($"Capture impact callback triggered at t={impactT:0.###}. Captured={capturedPiece.name}");
+            }
+
+            ResolveCaptureOnImpact(capturedPiece, attackerDirection);
+        }
+
+        await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture, capturedPiece, fromTile, toTile, debugMoveAnimationLogs, ResolveCaptureAtImpact);
+
+        if (!isCapture || capturedPiece == null || captureResolved)
         {
             return;
         }
 
-        if (captureImpactDelay > 0f)
+        if (debugMoveAnimationLogs)
         {
-            await AwaitSeconds(captureImpactDelay);
+            LogMoveAnimation("Capture impact callback was not triggered during motion. Resolving on animation completion.");
         }
 
         Vector3 attackerDirection = endWorldPosition - startWorldPosition;
@@ -1489,21 +1505,6 @@ public class ChessBoard : MonoBehaviour
         }
 
         return fallback;
-    }
-
-    static async Task AwaitSeconds(float seconds)
-    {
-        if (seconds <= 0f)
-        {
-            return;
-        }
-
-        float elapsed = 0f;
-        while (elapsed < seconds)
-        {
-            elapsed += Time.deltaTime;
-            await Task.Yield();
-        }
     }
 
     static bool IsFinite(Vector3 value)
