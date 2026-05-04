@@ -37,6 +37,8 @@ public class ChessPieceMotion : MonoBehaviour
 
     static int activeAnimations;
 
+    public static event Action<bool> AnyMotionStateChanged;
+
     #endregion
 
     #region Properties
@@ -76,6 +78,7 @@ public class ChessPieceMotion : MonoBehaviour
 
         isAnimating = true;
         activeAnimations++;
+        AnyMotionStateChanged?.Invoke(true);
         baseRotation = transform.rotation;
 
         try
@@ -107,6 +110,10 @@ public class ChessPieceMotion : MonoBehaviour
             transform.rotation = baseRotation;
             isAnimating = false;
             activeAnimations = Mathf.Max(0, activeAnimations - 1);
+            if (activeAnimations == 0)
+            {
+                AnyMotionStateChanged?.Invoke(false);
+            }
         }
     }
 
