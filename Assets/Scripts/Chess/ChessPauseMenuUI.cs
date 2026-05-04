@@ -165,7 +165,7 @@ public class ChessPauseMenuUI : MonoBehaviour
         GameObject fallback = new("PauseMenuRoot", typeof(RectTransform), typeof(CanvasGroup));
         fallback.transform.SetParent(canvasTransform, false);
         pauseMenuRoot = fallback;
-        Debug.LogWarning($"[ChessPauseMenuUI] PauseMenuRoot missing under ChessMasterCanvas. Created fallback root once: {pauseMenuRoot.name} ({pauseMenuRoot.GetInstanceID()})", this);
+        // Debug.LogWarning($"[ChessPauseMenuUI] PauseMenuRoot missing under ChessMasterCanvas. Created fallback root once: {pauseMenuRoot.name} ({pauseMenuRoot.GetInstanceID()})", this);
         return RootResolution.FallbackCreated;
     }
 
