@@ -1202,7 +1202,7 @@ public class ChessBoard : MonoBehaviour
             return;
         }
 
-        PlayerController[] players = Object.FindObjectsByType<PlayerController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        PlayerController[] players = FindObjectsByType<PlayerController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         for (int playerIndex = 0; playerIndex < players.Length; playerIndex++)
         {
             PlayerController player = players[playerIndex];

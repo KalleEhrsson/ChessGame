@@ -30,7 +30,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.25, y: 0.3, z: 0.25}
+  m_LocalScale: {x: 0.35, y: 0.3, z: 0.35}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -128,7 +128,18 @@ MonoBehaviour:
   pickupDelay: 2
   normalMoveArcHeight: 4
   captureMoveArcHeight: 6.5
-  captureDropHeight: 1.1
+  minCaptureArcHeight: 2.25
+  captureArcHeightMultiplier: 1.8
+  captureImpactNormalizedTime: 0.9
+  grabDuration: 0.35
+  grabHoldDuration: 0.12
+  pullUpDuration: 0.55
+  slamDuration: 0.18
+  liftHeightMultiplier: 1.25
+  minLiftHeight: 0.75
+  maxLiftHeight: 2.25
+  abovePiecePadding: 0.15
+  fallbackCapturedPieceHeight: 1
   moveDuration: 1
   captureMoveDuration: 1.05
   dropDuration: 0.5
