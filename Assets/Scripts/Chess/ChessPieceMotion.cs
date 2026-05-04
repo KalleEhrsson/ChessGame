@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using UnityEngine;
+using System;
 
 [DisallowMultipleComponent]
 public class ChessPieceMotion : MonoBehaviour
@@ -9,6 +10,9 @@ public class ChessPieceMotion : MonoBehaviour
     [SerializeField] float pickupDelay = 1f;
     [SerializeField] float normalMoveArcHeight = 4f;
     [SerializeField] float captureMoveArcHeight = 6.5f;
+    [SerializeField, Min(0f)] float minCaptureArcHeight = 2.25f;
+    [SerializeField, Min(0.1f)] float captureArcHeightMultiplier = 1.8f;
+    [SerializeField, Range(0.5f, 0.99f)] float captureImpactNormalizedTime = 0.9f;
     [SerializeField, Min(0.01f)] float grabDuration = 0.35f;
     [SerializeField, Min(0f)] float grabHoldDuration = 0.12f;
     [SerializeField, Min(0.01f)] float pullUpDuration = 0.55f;
@@ -56,7 +60,7 @@ public class ChessPieceMotion : MonoBehaviour
 
     #region API
 
-    public async Task PlayMoveAsync(Vector3 startPos, Vector3 endPos, bool isCapture, ChessPiece capturedPiece = null, ChessTile fromTile = null, ChessTile toTile = null, bool debugLogs = false)
+    public async Task PlayMoveAsync(Vector3 startPos, Vector3 endPos, bool isCapture, ChessPiece capturedPiece = null, ChessTile fromTile = null, ChessTile toTile = null, bool debugLogs = false, Action<float> onCaptureImpact = null)
     {
         Vector3 fallbackPosition = transform.position;
         startPos = SanitizePosition(startPos, fallbackPosition);
@@ -85,7 +89,7 @@ public class ChessPieceMotion : MonoBehaviour
 
             if (isCapture)
             {
-                await PlayCaptureArcMotionAsync(startPos, endPos, Mathf.Max(0.01f, captureMoveDuration), capturedPiece, fromTile, toTile, debugLogs);
+                await PlayCaptureArcMotionAsync(startPos, endPos, Mathf.Max(0.01f, captureMoveDuration), capturedPiece, fromTile, toTile, debugLogs, onCaptureImpact);
             }
             else
             {
@@ -135,7 +139,7 @@ public class ChessPieceMotion : MonoBehaviour
         transform.position = endPos;
     }
 
-    async Task PlayCaptureArcMotionAsync(Vector3 startPos, Vector3 endPos, float duration, ChessPiece capturedPiece, ChessTile fromTile, ChessTile toTile, bool debugLogs)
+    async Task PlayCaptureArcMotionAsync(Vector3 startPos, Vector3 endPos, float duration, ChessPiece capturedPiece, ChessTile fromTile, ChessTile toTile, bool debugLogs, Action<float> onCaptureImpact)
     {
         startPos = SanitizePosition(startPos, transform.position);
         endPos = SanitizePosition(endPos, startPos);
@@ -150,6 +154,10 @@ public class ChessPieceMotion : MonoBehaviour
             Debug.LogWarning($"[ChessPieceMotion] Could not resolve bounds for captured piece. Using fallback height={fallbackCapturedPieceHeight:0.###}.", this);
         }
 
+        Bounds attackerBounds = ResolveWorldBounds(gameObject, out bool hasAttackerBounds);
+        float attackerHeight = hasAttackerBounds ? Mathf.Max(0.01f, attackerBounds.size.y) : fallbackCapturedPieceHeight;
+        float referenceVisualHeight = Mathf.Max(attackerHeight, capturedPieceHeight);
+        float computedCaptureArcHeight = Mathf.Max(minCaptureArcHeight, referenceVisualHeight * captureArcHeightMultiplier, captureMoveArcHeight);
         float computedLiftHeight = Mathf.Clamp(capturedPieceHeight * liftHeightMultiplier, minLiftHeight, maxLiftHeight);
         Vector3 targetBottom = hasBounds
             ? new Vector3(endPos.x, capturedBounds.min.y, endPos.z)
@@ -163,6 +171,10 @@ public class ChessPieceMotion : MonoBehaviour
             await PlayArcMotionAsync(startPos, endPos, duration);
             return;
         }
+        if (debugLogs)
+        {
+            Debug.Log($"[ChessPieceMotion] Capture motion start. Piece={name}, VisualHeight={referenceVisualHeight:0.###}, ArcHeight={computedCaptureArcHeight:0.###}, ImpactThreshold={captureImpactNormalizedTime:0.###}", this);
+        }
 
         await PlaySegmentAsync(startPos, strikeStart, grabDuration);
         transform.rotation = baseRotation;
@@ -171,19 +183,19 @@ public class ChessPieceMotion : MonoBehaviour
             await AwaitSeconds(grabHoldDuration);
         }
 
-        await PlayCaptureLiftAsync(strikeStart, liftTarget, pullUpDuration);
+        await PlayCaptureLiftAsync(strikeStart, liftTarget, pullUpDuration, computedCaptureArcHeight);
         if (debugLogs)
         {
             Debug.Log($"[ChessPieceMotion] Slam phase started. Piece={name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture=True", this);
         }
 
-        await PlayCaptureSlamAsync(liftTarget, targetBottom, slamDuration);
+        await PlayCaptureSlamAsync(liftTarget, targetBottom, slamDuration, onCaptureImpact, debugLogs);
 
         transform.position = targetBottom;
     }
 
 
-    async Task PlayCaptureLiftAsync(Vector3 from, Vector3 to, float duration)
+    async Task PlayCaptureLiftAsync(Vector3 from, Vector3 to, float duration, float arcHeight)
     {
         float elapsed = 0f;
         while (elapsed < duration)
@@ -194,7 +206,7 @@ public class ChessPieceMotion : MonoBehaviour
 
             Vector3 pos = Vector3.Lerp(from, to, eased);
             float arc = Mathf.Sin(eased * Mathf.PI);
-            pos.y += Mathf.Pow(Mathf.Max(0f, arc), 0.85f) * captureMoveArcHeight;
+            pos.y += Mathf.Pow(Mathf.Max(0f, arc), 0.85f) * arcHeight;
 
             transform.position = SanitizePosition(pos, to);
             transform.rotation = baseRotation * BuildTilt(eased * 0.85f);
@@ -204,19 +216,34 @@ public class ChessPieceMotion : MonoBehaviour
         transform.position = to;
     }
 
-    async Task PlayCaptureSlamAsync(Vector3 from, Vector3 to, float duration)
+    async Task PlayCaptureSlamAsync(Vector3 from, Vector3 to, float duration, Action<float> onCaptureImpact, bool debugLogs)
     {
         float elapsed = 0f;
+        bool impactTriggered = false;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, duration));
             float eased = 1f - Mathf.Pow(1f - t, 4f);
             Vector3 pos = Vector3.Lerp(from, to, eased);
+            if (!impactTriggered && t >= captureImpactNormalizedTime)
+            {
+                impactTriggered = true;
+                onCaptureImpact?.Invoke(t);
+                if (debugLogs)
+                {
+                    Debug.Log($"[ChessPieceMotion] Capture impact triggered at t={t:0.###}. Piece={name}", this);
+                }
+            }
 
             transform.position = SanitizePosition(pos, to);
             transform.rotation = baseRotation;
             await AwaitNextFrame();
+        }
+
+        if (!impactTriggered)
+        {
+            onCaptureImpact?.Invoke(1f);
         }
 
         transform.position = to;
