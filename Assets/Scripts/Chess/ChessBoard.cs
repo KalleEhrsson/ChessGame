@@ -323,6 +323,13 @@ public class ChessBoard : MonoBehaviour
         return piece;
     }
 
+
+    public bool TryGetPiecePrefab(PieceTeam team, PieceType type, out GameObject prefab)
+    {
+        prefab = LoadPiecePrefab(team, type);
+        return prefab != null;
+    }
+
     GameObject LoadPiecePrefab(PieceTeam team, PieceType type)
     {
         string prefabName = BuildPiecePrefabName(team, type);

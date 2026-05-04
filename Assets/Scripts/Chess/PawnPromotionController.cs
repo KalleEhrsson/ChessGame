@@ -49,6 +49,7 @@ public class PawnPromotionController : MonoBehaviour
     #region Variables
 
     PromotionSelectionUI selectionUi;
+    PromotionSelection3DController selection3d;
     bool isPromotionPending;
     PendingPromotionMove pendingMove;
 
@@ -99,16 +100,27 @@ public class PawnPromotionController : MonoBehaviour
         isPromotionPending = true;
         ChessPauseManager.GetOrCreate().NotifyRoundActionStarted();
 
-        EnsureUi();
-        if (selectionUi == null)
+        EnsureSelectionControllers();
+        if (selection3d == null)
         {
             isPromotionPending = false;
             ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
             return false;
         }
 
-        selectionUi.Show(OnPromotionSelected);
-        return true;
+        selectionUi?.Hide();
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(true);
+        selection3d.Show(piece.Team, OnPromotionSelected);
+        if (selection3d.IsSelecting)
+        {
+            return true;
+        }
+
+        isPromotionPending = false;
+        pendingMove = default;
+        ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(false);
+        return false;
     }
 
     public void ClearPendingState()
@@ -116,31 +128,34 @@ public class PawnPromotionController : MonoBehaviour
         isPromotionPending = false;
         pendingMove = default;
         ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(false);
         if (selectionUi != null)
         {
             selectionUi.Hide();
         }
+
+        selection3d?.Hide();
     }
 
     #endregion
 
     #region Helpers
 
-    void EnsureUi()
+    void EnsureSelectionControllers()
     {
-        if (selectionUi != null)
+        if (selection3d != null)
         {
             return;
+        }
+
+        selection3d = FindFirstObjectByType<PromotionSelection3DController>();
+        if (selection3d == null)
+        {
+            GameObject selectorObject = new("PromotionSelection3DController");
+            selection3d = selectorObject.AddComponent<PromotionSelection3DController>();
         }
 
         selectionUi = FindFirstObjectByType<PromotionSelectionUI>();
-        if (selectionUi != null)
-        {
-            return;
-        }
-
-        GameObject uiObject = new("PromotionSelectionUI");
-        selectionUi = uiObject.AddComponent<PromotionSelectionUI>();
     }
 
     void OnPromotionSelected(PieceType promotionType)
@@ -160,6 +175,8 @@ public class PawnPromotionController : MonoBehaviour
         isPromotionPending = false;
         pendingMove = default;
         ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(false);
+        selection3d?.Hide();
     }
 
     #endregion
