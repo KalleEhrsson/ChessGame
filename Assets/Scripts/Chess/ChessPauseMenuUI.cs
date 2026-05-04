@@ -67,13 +67,38 @@ public class ChessPauseMenuUI : MonoBehaviour
         EnsureUi();
     }
 
+    void OnEnable()
+    {
+        pauseManager ??= ChessPauseManager.GetOrCreate();
+        pauseManager.PauseStateChanged -= OnPauseStateChanged;
+        pauseManager.PauseStateChanged += OnPauseStateChanged;
+        SetPauseVisualState(pauseManager.IsPaused);
+    }
+
+    void OnDisable()
+    {
+        if (pauseManager != null)
+        {
+            pauseManager.PauseStateChanged -= OnPauseStateChanged;
+        }
+    }
+
     void Update() => Refresh();
 
     #region UI
     void EnsureUi()
     {
         Canvas canvas = ChessMasterCanvas.GetOrCreateCanvas();
-        Transform overlayRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("PauseMenuRoot");
+        Transform overlayRoot = FindPauseMenuRootFromCanvas(canvas.transform);
+        if (overlayRoot == null)
+        {
+            overlayRoot = ChessMasterCanvas.GetOrCreateOverlayRoot("PauseMenuRoot");
+            Debug.Log("[ChessPauseMenuUI] PauseMenuRoot auto-created under ChessMasterCanvas", this);
+        }
+        else
+        {
+            Debug.Log("[ChessPauseMenuUI] PauseMenuRoot auto-found under ChessMasterCanvas", this);
+        }
         pauseMenuRoot = overlayRoot.gameObject;
         rootCanvasGroup = pauseMenuRoot.GetComponent<CanvasGroup>() ?? pauseMenuRoot.AddComponent<CanvasGroup>();
 
@@ -159,7 +184,7 @@ public class ChessPauseMenuUI : MonoBehaviour
         stackLe.preferredWidth = 432f;
         stackLe.flexibleHeight = 0f;
 
-        resumeButton = CreateThemedButton("ResumeButton", buttonStack.transform, "Resume", () => pauseManager.Resume());
+        resumeButton = CreateThemedButton("ResumeButton", buttonStack.transform, "Resume", () => pauseManager.RequestResume());
         devButton = CreateThemedButton("DevMenuButton", buttonStack.transform, "Dev Menu", () => sandbox?.SetOpenFromPauseMenu(true));
         debugButton = CreateThemedButton("DebugMenuButton", buttonStack.transform, "Debug Menu", () => sandbox?.SetOpenFromPauseMenu(true));
         boardButton = CreateThemedButton("BoardPresetsButton", buttonStack.transform, "Board Presets", () => sandbox?.SetOpenFromPauseMenu(true));
@@ -206,7 +231,7 @@ public class ChessPauseMenuUI : MonoBehaviour
             return;
         }
 
-        bool show = pauseManager.IsPauseRequested;
+        bool show = pauseManager.IsPaused;
         if (show && !pauseMenuRoot.activeSelf)
         {
             Show();
@@ -254,7 +279,33 @@ public class ChessPauseMenuUI : MonoBehaviour
     }
     #endregion
 
+    void OnPauseStateChanged(bool isPauseRequested, bool isPaused)
+    {
+        Debug.Log($"[ChessPauseMenuUI] Pause state changed requested={isPauseRequested} paused={isPaused}", this);
+        SetPauseVisualState(isPaused);
+    }
+
     #region ShowHide
+    void SetPauseVisualState(bool visible)
+    {
+        if (!EnsureRuntimeReferences())
+        {
+            return;
+        }
+
+        if (visible)
+        {
+            if (!pauseMenuRoot.activeSelf)
+            {
+                Show();
+            }
+        }
+        else if (pauseMenuRoot.activeSelf)
+        {
+            Hide();
+        }
+    }
+
     void Show()
     {
         if (!EnsureRuntimeReferences())
@@ -440,6 +491,23 @@ public class ChessPauseMenuUI : MonoBehaviour
         {
             Destroy(parent.GetChild(i).gameObject);
         }
+    }
+
+    static Transform FindPauseMenuRootFromCanvas(Transform canvasTransform)
+    {
+        if (canvasTransform == null)
+        {
+            return null;
+        }
+
+        Transform direct = canvasTransform.Find("PauseMenuRoot");
+        if (direct != null)
+        {
+            return direct;
+        }
+
+        Transform overlayRoot = canvasTransform.Find("OverlayRoot");
+        return overlayRoot != null ? overlayRoot.Find("PauseMenuRoot") : null;
     }
 
     static Button CreateThemedButton(string name, Transform parent, string label, UnityEngine.Events.UnityAction onClick)
