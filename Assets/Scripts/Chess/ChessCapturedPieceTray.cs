@@ -24,6 +24,7 @@ public class ChessCapturedPieceTray : MonoBehaviour
     [SerializeField] float capturedTrayYOffset = -0.02f;
     [SerializeField, Min(0f)] float capturedTraySidePadding = 0.1f;
     [SerializeField] Vector3 displayEulerOffset = Vector3.zero;
+    [SerializeField] bool enableCapturedTrayDebugLogs;
 
     readonly Dictionary<RowKey, int> rowCounts = new();
     readonly HashSet<int> placedPieces = new();
@@ -97,11 +98,11 @@ public class ChessCapturedPieceTray : MonoBehaviour
         rowCounts[key] = pieceCountInRow + 1;
 
         float columnStep = ResolvePieceColumnStep(piece);
-        Vector3 targetPosition = BuildPosition(trayArea, row, pieceCountInRow, columnStep);
-        Quaternion targetRotation = trayArea.rotation * Quaternion.Euler(displayEulerOffset);
+        Quaternion targetLocalRotation = Quaternion.Euler(displayEulerOffset);
+        Vector3 targetLocalPosition = BuildLocalPosition(row, pieceCountInRow, columnStep);
 
-        piece.transform.SetParent(trayArea, true);
-        piece.transform.SetPositionAndRotation(targetPosition, targetRotation);
+        piece.transform.SetParent(trayArea, false);
+        piece.transform.SetLocalPositionAndRotation(targetLocalPosition, targetLocalRotation);
 
         placedPieces.Add(pieceId);
         return true;
@@ -190,7 +191,7 @@ public class ChessCapturedPieceTray : MonoBehaviour
         }
 
         Vector3 trayForwardOffset = metrics.Forward * capturedTraySidePadding;
-        float sideDistance = (metrics.HalfBoardWidth + capturedTrayDistanceFromBoard + (capturedTrayColumnSpacing * 0.5f));
+        float sideDistance = metrics.HalfBoardWidth + capturedTrayDistanceFromBoard + capturedTraySidePadding;
 
         Vector3 leftPosition = metrics.Center - (metrics.Right * sideDistance) + trayForwardOffset;
         leftPosition.y = metrics.SurfaceY + capturedTrayYOffset;
@@ -198,17 +199,64 @@ public class ChessCapturedPieceTray : MonoBehaviour
         Vector3 rightPosition = metrics.Center + (metrics.Right * sideDistance) + trayForwardOffset;
         rightPosition.y = metrics.SurfaceY + capturedTrayYOffset;
 
-        Quaternion trayRotation = Quaternion.LookRotation(metrics.Forward, Vector3.up);
+        Quaternion trayRotation = Quaternion.LookRotation(metrics.Forward, metrics.Up);
         whiteCapturedArea.SetPositionAndRotation(leftPosition, trayRotation);
         blackCapturedArea.SetPositionAndRotation(rightPosition, trayRotation);
+
+        if (enableCapturedTrayDebugLogs)
+        {
+            Debug.Log($"[ChessCapturedPieceTray] Board bounds center={metrics.Bounds.center}, size={metrics.Bounds.size}, whiteWorld={whiteCapturedArea.position}, blackWorld={blackCapturedArea.position}, whiteLocal={whiteCapturedArea.localPosition}, blackLocal={blackCapturedArea.localPosition}");
+        }
+
+        if (metrics.Bounds.Contains(whiteCapturedArea.position) || metrics.Bounds.Contains(blackCapturedArea.position))
+        {
+            Debug.LogWarning("[ChessCapturedPieceTray] One or more captured piece anchors is inside the board bounds.");
+        }
+
+        ReflowPlacedPieces();
     }
 
-    Vector3 BuildPosition(Transform trayArea, int row, int column, float columnStep)
+    Vector3 BuildLocalPosition(int row, int column, float columnStep)
     {
-        Vector3 basePosition = trayArea.position;
-        return basePosition
-            + (trayArea.forward * (row * capturedTrayRowSpacing))
-            + (trayArea.right * (column * Mathf.Max(capturedTrayColumnSpacing, columnStep)));
+        return (Vector3.forward * (row * capturedTrayRowSpacing))
+            + (Vector3.right * (column * Mathf.Max(capturedTrayColumnSpacing, columnStep)));
+    }
+
+    void ReflowPlacedPieces()
+    {
+        ReflowArea(whiteCapturedArea, PieceTeam.White);
+        ReflowArea(blackCapturedArea, PieceTeam.Black);
+    }
+
+    void ReflowArea(Transform trayArea, PieceTeam team)
+    {
+        if (trayArea == null)
+        {
+            return;
+        }
+
+        Dictionary<int, int> columnsByRow = new();
+        for (int i = 0; i < trayArea.childCount; i++)
+        {
+            Transform child = trayArea.GetChild(i);
+            if (child == null)
+            {
+                continue;
+            }
+
+            ChessPiece piece = child.GetComponent<ChessPiece>();
+            if (piece == null || piece.Team != team)
+            {
+                continue;
+            }
+
+            int row = Mathf.Clamp(GetRowIndex(piece.Type), 0, 5);
+            columnsByRow.TryGetValue(row, out int column);
+            float columnStep = ResolvePieceColumnStep(piece);
+            child.localPosition = BuildLocalPosition(row, column, columnStep);
+            child.localRotation = Quaternion.Euler(displayEulerOffset);
+            columnsByRow[row] = column + 1;
+        }
     }
 
     float ResolvePieceColumnStep(ChessPiece piece)
@@ -234,25 +282,109 @@ public class ChessCapturedPieceTray : MonoBehaviour
             return false;
         }
 
-        Bounds bounds = new Bounds(tiles[0].transform.position, Vector3.zero);
-        for (int i = 1; i < tiles.Length; i++)
+        if (!TryBuildBoardBounds(tiles, out Bounds bounds))
         {
-            bounds.Encapsulate(tiles[i].transform.position);
+            return false;
         }
 
         float tileStep = EstimateTileStep(tiles);
         if (tileStep <= 0f)
         {
-            return false;
+            tileStep = Mathf.Max(bounds.size.x, bounds.size.z) / Mathf.Max(1, BoardSquaresPerSide - 1);
         }
 
         metrics = new BoardMetrics(
             bounds.center,
             transform.right,
             transform.forward,
+            transform.up,
             bounds.center.y,
+            bounds,
             tileStep * (BoardSquaresPerSide - 1) * 0.5f);
         return true;
+    }
+
+    static bool TryBuildBoardBounds(ChessTile[] tiles, out Bounds bounds)
+    {
+        bounds = default;
+        bool hasBounds = false;
+
+        for (int i = 0; i < tiles.Length; i++)
+        {
+            ChessTile tile = tiles[i];
+            if (tile == null)
+            {
+                continue;
+            }
+
+            if (TryGetTileBounds(tile, out Bounds tileBounds))
+            {
+                if (!hasBounds)
+                {
+                    bounds = tileBounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(tileBounds);
+                }
+
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = new Bounds(tile.transform.position, Vector3.zero);
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(tile.transform.position);
+            }
+        }
+
+        return hasBounds;
+    }
+
+    static bool TryGetTileBounds(ChessTile tile, out Bounds bounds)
+    {
+        bounds = default;
+        bool hasBounds = false;
+
+        Renderer[] renderers = tile.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (!hasBounds)
+            {
+                bounds = renderers[i].bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+        }
+
+        if (hasBounds)
+        {
+            return true;
+        }
+
+        Collider[] colliders = tile.GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (!hasBounds)
+            {
+                bounds = colliders[i].bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(colliders[i].bounds);
+            }
+        }
+
+        return hasBounds;
     }
 
     static float EstimateTileStep(ChessTile[] tiles)
@@ -397,15 +529,19 @@ public class ChessCapturedPieceTray : MonoBehaviour
         public readonly Vector3 Center;
         public readonly Vector3 Right;
         public readonly Vector3 Forward;
+        public readonly Vector3 Up;
         public readonly float SurfaceY;
+        public readonly Bounds Bounds;
         public readonly float HalfBoardWidth;
 
-        public BoardMetrics(Vector3 center, Vector3 right, Vector3 forward, float surfaceY, float halfBoardWidth)
+        public BoardMetrics(Vector3 center, Vector3 right, Vector3 forward, Vector3 up, float surfaceY, Bounds bounds, float halfBoardWidth)
         {
             Center = center;
             Right = right;
             Forward = forward;
+            Up = up;
             SurfaceY = surfaceY;
+            Bounds = bounds;
             HalfBoardWidth = halfBoardWidth;
         }
     }
