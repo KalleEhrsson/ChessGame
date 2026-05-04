@@ -4,7 +4,12 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class ChessCapturedPieceTray : MonoBehaviour
 {
-    const int BoardSquaresPerSide = 8;
+    public enum CapturedTraySideAxis
+    {
+        FileLeftRight,
+        RankForwardBack
+    }
+
     const string TrayRootName = "CapturedPiecesAnchors";
     const string WhiteCapturedAreaName = "WhiteCapturedPiecesAnchor";
     const string BlackCapturedAreaName = "BlackCapturedPiecesAnchor";
@@ -23,6 +28,9 @@ public class ChessCapturedPieceTray : MonoBehaviour
     [SerializeField, Min(0.05f)] float capturedTrayPiecePadding = 0.02f;
     [SerializeField] float capturedTrayYOffset = -0.02f;
     [SerializeField, Min(0f)] float capturedTraySidePadding = 0.1f;
+    [SerializeField] CapturedTraySideAxis capturedTraySideAxis = CapturedTraySideAxis.RankForwardBack;
+    [SerializeField] bool placeBothCapturedTraysOnSameSide;
+    [SerializeField, Min(0f)] float sameSideTraySeparation = 0.6f;
     [SerializeField] Vector3 displayEulerOffset = Vector3.zero;
     [SerializeField] bool enableCapturedTrayDebugLogs;
 
@@ -190,25 +198,38 @@ public class ChessCapturedPieceTray : MonoBehaviour
             return;
         }
 
-        Vector3 trayForwardOffset = metrics.Forward * capturedTraySidePadding;
-        float sideDistance = metrics.HalfBoardWidth + capturedTrayDistanceFromBoard + capturedTraySidePadding;
+        Vector3 sideAxis = capturedTraySideAxis == CapturedTraySideAxis.RankForwardBack ? metrics.RankAxis : metrics.FileAxis;
+        Vector3 parallelAxis = capturedTraySideAxis == CapturedTraySideAxis.RankForwardBack ? metrics.FileAxis : metrics.RankAxis;
 
-        Vector3 leftPosition = metrics.Center - (metrics.Right * sideDistance) + trayForwardOffset;
-        leftPosition.y = metrics.SurfaceY + capturedTrayYOffset;
+        float sideDistance = metrics.GetHalfExtentAlong(sideAxis) + capturedTrayDistanceFromBoard + capturedTraySidePadding;
+        Vector3 upOffset = metrics.Up * capturedTrayYOffset;
 
-        Vector3 rightPosition = metrics.Center + (metrics.Right * sideDistance) + trayForwardOffset;
-        rightPosition.y = metrics.SurfaceY + capturedTrayYOffset;
+        Vector3 whitePosition = metrics.Center + (sideAxis * sideDistance) + upOffset;
+        Vector3 blackPosition = metrics.Center - (sideAxis * sideDistance) + upOffset;
+        if (placeBothCapturedTraysOnSameSide)
+        {
+            float sameSideOffset = Mathf.Max(sameSideTraySeparation, capturedTrayColumnSpacing * 2f);
+            whitePosition = metrics.Center + (sideAxis * sideDistance) + (parallelAxis * (sameSideOffset * -0.5f)) + upOffset;
+            blackPosition = metrics.Center + (sideAxis * sideDistance) + (parallelAxis * (sameSideOffset * 0.5f)) + upOffset;
+        }
 
-        Quaternion trayRotation = Quaternion.LookRotation(metrics.Forward, metrics.Up);
-        whiteCapturedArea.SetPositionAndRotation(leftPosition, trayRotation);
-        blackCapturedArea.SetPositionAndRotation(rightPosition, trayRotation);
+        Quaternion whiteTrayRotation = Quaternion.LookRotation(sideAxis, metrics.Up);
+        Quaternion blackTrayRotation = placeBothCapturedTraysOnSameSide
+            ? Quaternion.LookRotation(sideAxis, metrics.Up)
+            : Quaternion.LookRotation(-sideAxis, metrics.Up);
+        whiteCapturedArea.SetPositionAndRotation(whitePosition, whiteTrayRotation);
+        blackCapturedArea.SetPositionAndRotation(blackPosition, blackTrayRotation);
 
         if (enableCapturedTrayDebugLogs)
         {
-            Debug.Log($"[ChessCapturedPieceTray] Board bounds center={metrics.Bounds.center}, size={metrics.Bounds.size}, whiteWorld={whiteCapturedArea.position}, blackWorld={blackCapturedArea.position}, whiteLocal={whiteCapturedArea.localPosition}, blackLocal={blackCapturedArea.localPosition}");
+            Debug.Log(
+                $"[ChessCapturedPieceTray] axis={capturedTraySideAxis}, center={metrics.Center}, tileBoardSize={metrics.Bounds.size}, " +
+                $"fileAxis={metrics.FileAxis}, rankAxis={metrics.RankAxis}, sideAxis={sideAxis}, parallelAxis={parallelAxis}, " +
+                $"whiteWorld={whiteCapturedArea.position}, blackWorld={blackCapturedArea.position}, " +
+                $"whiteLocal={whiteCapturedArea.localPosition}, blackLocal={blackCapturedArea.localPosition}");
         }
 
-        if (metrics.Bounds.Contains(whiteCapturedArea.position) || metrics.Bounds.Contains(blackCapturedArea.position))
+        if (metrics.IsInsideBoardExtents(whiteCapturedArea.position) || metrics.IsInsideBoardExtents(blackCapturedArea.position))
         {
             Debug.LogWarning("[ChessCapturedPieceTray] One or more captured piece anchors is inside the board bounds.");
         }
@@ -287,21 +308,102 @@ public class ChessCapturedPieceTray : MonoBehaviour
             return false;
         }
 
-        float tileStep = EstimateTileStep(tiles);
-        if (tileStep <= 0f)
+        if (!TryResolveBoardAxes(tiles, out Vector3 fileAxis, out Vector3 rankAxis))
         {
-            tileStep = Mathf.Max(bounds.size.x, bounds.size.z) / Mathf.Max(1, BoardSquaresPerSide - 1);
+            fileAxis = SafeNormalized(transform.right, Vector3.right);
+            rankAxis = SafeNormalized(transform.forward, Vector3.forward);
+        }
+
+        Vector3 upAxis = SafeNormalized(board != null ? board.transform.up : transform.up, Vector3.up);
+        fileAxis = Vector3.ProjectOnPlane(fileAxis, upAxis).normalized;
+        rankAxis = Vector3.ProjectOnPlane(rankAxis, upAxis).normalized;
+        if (fileAxis.sqrMagnitude < 0.9f || rankAxis.sqrMagnitude < 0.9f)
+        {
+            fileAxis = SafeNormalized(transform.right, Vector3.right);
+            rankAxis = SafeNormalized(transform.forward, Vector3.forward);
         }
 
         metrics = new BoardMetrics(
             bounds.center,
-            transform.right,
-            transform.forward,
-            transform.up,
+            fileAxis,
+            rankAxis,
+            upAxis,
             bounds.center.y,
-            bounds,
-            tileStep * (BoardSquaresPerSide - 1) * 0.5f);
+            bounds);
         return true;
+    }
+
+    bool TryResolveBoardAxes(ChessTile[] tiles, out Vector3 fileAxis, out Vector3 rankAxis)
+    {
+        fileAxis = Vector3.zero;
+        rankAxis = Vector3.zero;
+
+        if (TryGetNamedTilePosition(tiles, "A1", out Vector3 a1) &&
+            TryGetNamedTilePosition(tiles, "H1", out Vector3 h1) &&
+            TryGetNamedTilePosition(tiles, "A8", out Vector3 a8))
+        {
+            fileAxis = SafeNormalized(h1 - a1, Vector3.right);
+            rankAxis = SafeNormalized(a8 - a1, Vector3.forward);
+            return true;
+        }
+
+        float maxDistance = -1f;
+        Vector3 origin = Vector3.zero;
+        Vector3 furthest = Vector3.zero;
+        for (int i = 0; i < tiles.Length; i++)
+        {
+            if (tiles[i] == null) continue;
+            for (int j = i + 1; j < tiles.Length; j++)
+            {
+                if (tiles[j] == null) continue;
+                float dist = (tiles[j].transform.position - tiles[i].transform.position).sqrMagnitude;
+                if (dist > maxDistance)
+                {
+                    maxDistance = dist;
+                    origin = tiles[i].transform.position;
+                    furthest = tiles[j].transform.position;
+                }
+            }
+        }
+
+        if (maxDistance <= 0f)
+        {
+            return false;
+        }
+
+        Vector3 diagonal = (furthest - origin).normalized;
+        Vector3 fallbackRight = SafeNormalized(transform.right, Vector3.right);
+        Vector3 fallbackForward = SafeNormalized(transform.forward, Vector3.forward);
+        fileAxis = Mathf.Abs(Vector3.Dot(diagonal, fallbackRight)) >= Mathf.Abs(Vector3.Dot(diagonal, fallbackForward))
+            ? fallbackRight
+            : fallbackForward;
+        rankAxis = Vector3.Cross(SafeNormalized(transform.up, Vector3.up), fileAxis).normalized;
+        if (rankAxis == Vector3.zero)
+        {
+            rankAxis = fallbackForward;
+        }
+        return true;
+    }
+
+    static bool TryGetNamedTilePosition(ChessTile[] tiles, string tileName, out Vector3 position)
+    {
+        for (int i = 0; i < tiles.Length; i++)
+        {
+            ChessTile tile = tiles[i];
+            if (tile != null && tile.name == tileName)
+            {
+                position = tile.transform.position;
+                return true;
+            }
+        }
+
+        position = default;
+        return false;
+    }
+
+    static Vector3 SafeNormalized(Vector3 value, Vector3 fallback)
+    {
+        return value.sqrMagnitude > 0.0001f ? value.normalized : fallback;
     }
 
     static bool TryBuildBoardBounds(ChessTile[] tiles, out Bounds bounds)
@@ -385,41 +487,6 @@ public class ChessCapturedPieceTray : MonoBehaviour
         }
 
         return hasBounds;
-    }
-
-    static float EstimateTileStep(ChessTile[] tiles)
-    {
-        float minSqrDistance = float.MaxValue;
-
-        for (int i = 0; i < tiles.Length; i++)
-        {
-            if (tiles[i] == null)
-            {
-                continue;
-            }
-
-            Vector3 tilePosition = tiles[i].transform.position;
-            for (int j = i + 1; j < tiles.Length; j++)
-            {
-                if (tiles[j] == null)
-                {
-                    continue;
-                }
-
-                float sqrDistance = (tiles[j].transform.position - tilePosition).sqrMagnitude;
-                if (sqrDistance > 0.0001f && sqrDistance < minSqrDistance)
-                {
-                    minSqrDistance = sqrDistance;
-                }
-            }
-        }
-
-        if (minSqrDistance == float.MaxValue)
-        {
-            return 0f;
-        }
-
-        return Mathf.Sqrt(minSqrDistance);
     }
 
     static int GetRowIndex(PieceType pieceType)
@@ -527,22 +594,37 @@ public class ChessCapturedPieceTray : MonoBehaviour
     readonly struct BoardMetrics
     {
         public readonly Vector3 Center;
-        public readonly Vector3 Right;
-        public readonly Vector3 Forward;
+        public readonly Vector3 FileAxis;
+        public readonly Vector3 RankAxis;
         public readonly Vector3 Up;
         public readonly float SurfaceY;
         public readonly Bounds Bounds;
-        public readonly float HalfBoardWidth;
-
-        public BoardMetrics(Vector3 center, Vector3 right, Vector3 forward, Vector3 up, float surfaceY, Bounds bounds, float halfBoardWidth)
+        public BoardMetrics(Vector3 center, Vector3 fileAxis, Vector3 rankAxis, Vector3 up, float surfaceY, Bounds bounds)
         {
             Center = center;
-            Right = right;
-            Forward = forward;
+            FileAxis = fileAxis;
+            RankAxis = rankAxis;
             Up = up;
             SurfaceY = surfaceY;
             Bounds = bounds;
-            HalfBoardWidth = halfBoardWidth;
+        }
+
+        public float GetHalfExtentAlong(Vector3 axis)
+        {
+            Vector3 extents = Bounds.extents;
+            return Mathf.Abs(Vector3.Dot(axis, Vector3.right)) * extents.x
+                + Mathf.Abs(Vector3.Dot(axis, Vector3.up)) * extents.y
+                + Mathf.Abs(Vector3.Dot(axis, Vector3.forward)) * extents.z;
+        }
+
+        public bool IsInsideBoardExtents(Vector3 worldPosition)
+        {
+            Vector3 relative = worldPosition - Center;
+            float fileHalf = GetHalfExtentAlong(FileAxis);
+            float rankHalf = GetHalfExtentAlong(RankAxis);
+            float fileDistance = Mathf.Abs(Vector3.Dot(relative, FileAxis));
+            float rankDistance = Mathf.Abs(Vector3.Dot(relative, RankAxis));
+            return fileDistance <= fileHalf && rankDistance <= rankHalf;
         }
     }
 
