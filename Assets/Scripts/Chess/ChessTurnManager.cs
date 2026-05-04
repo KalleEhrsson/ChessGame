@@ -76,6 +76,7 @@ public class ChessTurnManager : MonoBehaviour
     void Start()
     {
         ResolveSystems();
+        ChessTurnOverlayUI.GetOrCreate();
         HandleTurnStarted();
     }
 
