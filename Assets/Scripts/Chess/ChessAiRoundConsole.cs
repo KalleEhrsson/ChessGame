@@ -30,7 +30,7 @@ public class ChessAiRoundConsole : MonoBehaviour
 
         GameObject host = new("ChessAiRoundConsole");
         Instance = host.AddComponent<ChessAiRoundConsole>();
-        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessAiRoundConsole");
+        // Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessAiRoundConsole");
         return Instance;
     }
 

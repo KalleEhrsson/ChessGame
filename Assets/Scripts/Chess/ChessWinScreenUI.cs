@@ -28,7 +28,7 @@ public class ChessWinScreenUI : MonoBehaviour
 
         GameObject host = new("ChessWinScreenUI");
         Instance = host.AddComponent<ChessWinScreenUI>();
-        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessWinScreenUI");
+        // Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessWinScreenUI");
         return Instance;
     }
 

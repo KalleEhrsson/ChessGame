@@ -26,13 +26,13 @@ public class StockfishService : MonoBehaviour
         if (existing != null)
         {
             Instance = existing;
-            Debug.Log("[ChessRuntimeBootstrap] Reused existing instance: StockfishService");
+            // Debug.Log("[ChessRuntimeBootstrap] Reused existing instance: StockfishService");
             return Instance;
         }
 
         GameObject host = new("StockfishService");
         Instance = host.AddComponent<StockfishService>();
-        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: StockfishService");
+        // Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: StockfishService");
         return Instance;
     }
 
@@ -325,7 +325,7 @@ public class StockfishService : MonoBehaviour
             processInput = stockfishProcess.StandardInput;
             engineReady = false;
 
-            Debug.Log($"[StockfishService] Started using: {executablePath}");
+            // Debug.Log($"[StockfishService] Started using: {executablePath}");
 
             return true;
         }
@@ -516,7 +516,7 @@ public class StockfishService : MonoBehaviour
             string candidatePath = Path.Combine(folderPath, candidateName);
             if (File.Exists(candidatePath))
             {
-                Debug.Log($"[StockfishService] Resolved executable path: {candidatePath}");
+                // Debug.Log($"[StockfishService] Resolved executable path: {candidatePath}");
                 return candidatePath;
             }
         }

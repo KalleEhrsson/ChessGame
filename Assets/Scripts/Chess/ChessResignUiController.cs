@@ -27,7 +27,7 @@ public class ChessResignUiController : MonoBehaviour
 
         GameObject host = new("ChessResignUiController");
         Instance = host.AddComponent<ChessResignUiController>();
-        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessResignUiController");
+        // Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessResignUiController");
         return Instance;
     }
 

@@ -111,7 +111,7 @@ public static class ChessMasterCanvas
             GameObject eventSystemObject = new("EventSystem");
             eventSystemObject.AddComponent<EventSystem>();
             eventSystemObject.AddComponent<InputSystemUIInputModule>();
-            Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: EventSystem");
+            // Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: EventSystem");
             return;
         }
         if (systems.Length > 1)

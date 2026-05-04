@@ -25,7 +25,7 @@ public class ChessPauseManager : MonoBehaviour
 
         GameObject host = new("ChessPauseManager");
         Instance = host.AddComponent<ChessPauseManager>();
-        Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessPauseManager");
+        // Debug.Log("[ChessRuntimeBootstrap] Created fallback instance: ChessPauseManager");
         return Instance;
     }
 
