@@ -170,7 +170,7 @@ public class ChessPauseMenuUI : MonoBehaviour
         fallback.transform.SetParent(canvasTransform, false);
         ConfigureFullScreenRect(fallback.GetComponent<RectTransform>());
         pauseMenuRoot = fallback;
-        Debug.LogWarning($"[ChessPauseMenuUI] PauseMenuRoot missing under ChessMasterCanvas. Created fallback root once: {pauseMenuRoot.name} ({pauseMenuRoot.GetInstanceID()})", this);
+        // Debug.LogWarning($"[ChessPauseMenuUI] PauseMenuRoot missing under ChessMasterCanvas. Created fallback root once: {pauseMenuRoot.name} ({pauseMenuRoot.GetInstanceID()})", this);
         return RootResolution.FallbackCreated;
     }
 

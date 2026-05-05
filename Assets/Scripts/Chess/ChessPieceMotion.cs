@@ -12,7 +12,7 @@ public class ChessPieceMotion : MonoBehaviour
     [SerializeField] float pickupDelay = 1f;
     [SerializeField] float normalMoveArcHeight = 4f;
    
-    [Header("Caputure")]
+    [Header("Capture")]
     [SerializeField, Range(0.5f, 0.99f)] float captureImpactNormalizedTime = 0.9f;
     [SerializeField, Min(0.01f)] float grabDuration = 0.35f;
     [SerializeField, Min(0f)] float grabHoldDuration = 0.12f;
