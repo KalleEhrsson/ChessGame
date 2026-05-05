@@ -228,6 +228,7 @@ public class ChessPauseMenuUI : MonoBehaviour
 
     void RefreshOptionalControls()
     {
+        sandbox ??= ChessDevSandboxController.Instance;
         bool fullyPaused = pauseManager != null && pauseManager.IsPaused;
         if (statusText != null)
         {
@@ -366,13 +367,33 @@ public class ChessPauseMenuUI : MonoBehaviour
 
     void EnsureDevMenuButtonVisibility(Transform buttonContainer)
     {
+        Transform resumeTransform = FindChildByName(buttonContainer, "ResumeButton");
         Transform devMenuTransform = FindChildByName(buttonContainer, "DevMenuButton");
+        string devMenuState = "found";
+        if (devMenuTransform == null)
+        {
+            CreateButton(buttonContainer, "DevMenuButton", "Dev Menu");
+            devMenuTransform = FindChildByName(buttonContainer, "DevMenuButton");
+            devMenuState = "created";
+        }
+
         if (devMenuTransform == null)
         {
             return;
         }
 
-        devMenuTransform.gameObject.SetActive(true);
+        if (devMenuTransform.parent != buttonContainer)
+        {
+            devMenuTransform.SetParent(buttonContainer, false);
+            devMenuState = "moved";
+        }
+
+        if (!devMenuTransform.gameObject.activeSelf)
+        {
+            devMenuTransform.gameObject.SetActive(true);
+            devMenuState = devMenuState == "found" ? "enabled" : devMenuState;
+        }
+
         RectTransform rect = devMenuTransform.GetComponent<RectTransform>();
         if (rect != null && rect.sizeDelta.sqrMagnitude <= 0f)
         {
@@ -380,12 +401,17 @@ public class ChessPauseMenuUI : MonoBehaviour
         }
 
         Button button = devMenuTransform.GetComponent<Button>();
+        if (button != null)
+        {
+            button.interactable = true;
+        }
+
         TMP_Text label = devMenuTransform.GetComponentInChildren<TMP_Text>(true);
-        bool hasListener = button != null && button.onClick != null;
+        bool listenerWillBeAssigned = button != null;
 
         if (!hasLoggedDevButtonBuild)
         {
-            Debug.Log($"[ChessPauseMenuUI] DevMenuButton ready (parent={devMenuTransform.parent.name}, activeSelf={devMenuTransform.gameObject.activeSelf}, interactable={button != null && button.interactable}, listenerBound={hasListener}, text='{label?.text}')", this);
+            Debug.Log($"[ChessPauseMenuUI] Pause menu build check | PauseMenuRoot found={pauseMenuRoot != null} | container={buttonContainer.name} | Resume button found={resumeTransform != null} | DevMenuButton {devMenuState} | parent={devMenuTransform.parent.name} | activeInHierarchy={devMenuTransform.gameObject.activeInHierarchy} | hasButtonComponent={button != null} | listenerAssigned={listenerWillBeAssigned} (wired in WireButtons)", this);
             hasLoggedDevButtonBuild = true;
         }
     }
@@ -535,7 +561,9 @@ public class ChessPauseMenuUI : MonoBehaviour
 
     void OnResumeClicked() => pauseManager?.RequestResume();
 
-    void OnDevMenuClicked()
+    void OnDevMenuClicked() => OpenDevMenuFromPause();
+
+    void OpenDevMenuFromPause()
     {
         if (enablePauseDebugLogs)
         {
@@ -559,6 +587,7 @@ public class ChessPauseMenuUI : MonoBehaviour
 
         Hide();
         sandbox.OpenDevMenuFromPauseMenu();
+        ChessCursorStateCoordinator.SetPauseCursorOverride(true);
     }
 
     public void RequestResignFromPauseMenu()
