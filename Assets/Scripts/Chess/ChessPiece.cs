@@ -215,7 +215,7 @@ public class ChessPiece : MonoBehaviour
         for (int i = 0; i < colliders.Length; i++)
         {
             Collider collider = colliders[i];
-            if (collider == null || !collider.enabled)
+            if (collider == null || !collider.enabled || collider.isTrigger)
             {
                 continue;
             }
