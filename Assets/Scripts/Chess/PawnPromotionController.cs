@@ -30,12 +30,14 @@ public class PawnPromotionController : MonoBehaviour
     {
         public ChessTile FromTile { get; }
         public ChessTile ToTile { get; }
+        public ChessPiece Pawn { get; }
         public PieceTeam Team { get; }
 
-        public PendingPromotionMove(ChessTile fromTile, ChessTile toTile, PieceTeam team)
+        public PendingPromotionMove(ChessTile fromTile, ChessTile toTile, ChessPiece pawn, PieceTeam team)
         {
             FromTile = fromTile;
             ToTile = toTile;
+            Pawn = pawn;
             Team = team;
         }
     }
@@ -79,20 +81,38 @@ public class PawnPromotionController : MonoBehaviour
             return false;
         }
 
-        pendingMove = new PendingPromotionMove(piece.CurrentTile, destination, piece.Team);
+        ChessTile fromTile = piece.CurrentTile;
+        pendingMove = new PendingPromotionMove(fromTile, destination, piece, piece.Team);
         isPromotionPending = true;
+
+        ChessBoard board = ChessBoard.Instance != null ? ChessBoard.Instance : FindFirstObjectByType<ChessBoard>();
+        if (board == null || !board.MovePiece(fromTile, destination, null, true))
+        {
+            CancelPendingPromotion("failed to begin pending promotion move");
+            return false;
+        }
+
         ChessPauseManager.GetOrCreate().NotifyRoundActionStarted();
+        return true;
+    }
+
+    public void NotifyPromotionReadyAfterMove(ChessPiece pawn, ChessTile fromTile, ChessTile toTile)
+    {
+        if (!isPromotionPending || pendingMove.Pawn != pawn || pawn == null || pawn.CurrentTile != toTile)
+        {
+            CancelPendingPromotion("promotion landing state is invalid");
+            return;
+        }
 
         selectionUi = PromotionSelectionUI.GetOrCreate();
         if (selectionUi == null)
         {
             CancelPendingPromotion("promotion popup UI could not be created");
-            return false;
+            return;
         }
 
         ApplyPromotionCursorState();
         selectionUi.Show(OnPromotionSelected);
-        return selectionUi.IsVisible;
     }
 
     public void ClearPendingState()
@@ -194,7 +214,7 @@ public class PawnPromotionController : MonoBehaviour
     bool TryFinalizePendingPromotion(PieceType promotionType)
     {
         ChessBoard board = ChessBoard.Instance != null ? ChessBoard.Instance : FindFirstObjectByType<ChessBoard>();
-        return board != null && board.MovePiece(pendingMove.FromTile, pendingMove.ToTile, promotionType);
+        return board != null && board.FinalizePendingHumanPromotion(pendingMove.Pawn, pendingMove.FromTile, pendingMove.ToTile, promotionType);
     }
 
     bool CanRetryPendingPromotion()
@@ -204,8 +224,8 @@ public class PawnPromotionController : MonoBehaviour
             return false;
         }
 
-        ChessPiece pawn = pendingMove.FromTile.CurrentPiece;
-        return pawn != null && pawn.Type == PieceType.Pawn && pawn.Team == pendingMove.Team;
+        ChessPiece pawn = pendingMove.Pawn;
+        return pawn != null && pawn.Type == PieceType.Pawn && pawn.Team == pendingMove.Team && pawn.CurrentTile == pendingMove.ToTile;
     }
 
     void CancelPendingPromotion(string reason)

@@ -1017,7 +1017,7 @@ public class ChessBoard : MonoBehaviour
         return rook;
     }
 
-    public bool MovePiece(ChessTile from, ChessTile to, PieceType? promotionPiece = null)
+    public bool MovePiece(ChessTile from, ChessTile to, PieceType? promotionPiece = null, bool deferHumanPromotionChoice = false)
     {
         if (from == null || to == null)
         {
@@ -1071,7 +1071,7 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
-        if (moveData.IsPromotion && !promotionPiece.HasValue && turnManager != null && turnManager.IsHumanTurn(movingPiece.Team))
+        if (moveData.IsPromotion && !promotionPiece.HasValue && turnManager != null && turnManager.IsHumanTurn(movingPiece.Team) && !deferHumanPromotionChoice)
         {
             return false;
         }
@@ -1097,8 +1097,9 @@ public class ChessBoard : MonoBehaviour
         movingPiece.MarkMoved();
         UpdateSpecialStateAfterMove(movingPiece, moveData, capturedPiece != null);
 
+        bool pendingHumanPromotion = moveData.IsPromotion && !promotionPiece.HasValue && deferHumanPromotionChoice && turnManager != null && turnManager.IsHumanTurn(movingPiece.Team);
         ChessPiece animatedPiece = movingPiece;
-        if (moveData.IsPromotion)
+        if (moveData.IsPromotion && !pendingHumanPromotion)
         {
             PieceType targetPromotion = promotionPiece ?? moveData.PromotionPieceType;
             if (!IsValidPromotionType(targetPromotion))
@@ -1124,7 +1125,7 @@ public class ChessBoard : MonoBehaviour
                 return false;
             }
 
-            _ = StartMoveAnimationAsync(animatedPiece, from, to, startWorldPosition, endWorldPosition, isCapture, capturedPiece);
+            _ = StartMoveAnimationAsync(animatedPiece, from, to, startWorldPosition, endWorldPosition, isCapture, capturedPiece, pendingHumanPromotion);
             return true;
         }
 
@@ -1144,7 +1145,7 @@ public class ChessBoard : MonoBehaviour
         return true;
     }
 
-    async Task StartMoveAnimationAsync(ChessPiece piece, ChessTile fromTile, ChessTile toTile, Vector3 startWorldPosition, Vector3 endWorldPosition, bool isCapture, ChessPiece capturedPiece)
+    async Task StartMoveAnimationAsync(ChessPiece piece, ChessTile fromTile, ChessTile toTile, Vector3 startWorldPosition, Vector3 endWorldPosition, bool isCapture, ChessPiece capturedPiece, bool pendingHumanPromotion = false)
     {
         if (piece == null)
         {
@@ -1164,6 +1165,12 @@ public class ChessBoard : MonoBehaviour
             LogMoveAnimation($"{(isCapture ? "Capture" : "Move")} animation started. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
             await PlayMoveMotionAsync(piece, startWorldPosition, endWorldPosition, isCapture, capturedPiece, fromTile, toTile);
             LogMoveAnimation($"Animation completed. Piece={piece.name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture={isCapture}");
+
+            if (pendingHumanPromotion)
+            {
+                PawnPromotionController.GetOrCreate().NotifyPromotionReadyAfterMove(piece, fromTile, toTile);
+                return;
+            }
 
             turnManager ??= ChessTurnManager.GetOrCreate();
             gameStateController ??= ChessGameStateController.GetOrCreate();
@@ -1617,6 +1624,32 @@ public class ChessBoard : MonoBehaviour
         int intermediateY = (moveData.FromTile.Y + moveData.ToTile.Y) / 2;
         enPassantTargetTile = GetTile(moveData.FromTile.X, intermediateY);
         enPassantVulnerablePawn = movingPiece;
+    }
+
+    public bool FinalizePendingHumanPromotion(ChessPiece pawn, ChessTile fromTile, ChessTile toTile, PieceType promotionType)
+    {
+        if (pawn == null || pawn.CurrentTile != toTile || !IsValidPromotionType(promotionType))
+        {
+            return false;
+        }
+
+        ChessPiece promotedPiece = PromotePawn(pawn, promotionType);
+        if (promotedPiece == null)
+        {
+            return false;
+        }
+
+        promotedPiece.SnapToTile();
+        turnManager ??= ChessTurnManager.GetOrCreate();
+        gameStateController ??= ChessGameStateController.GetOrCreate();
+        turnManager?.SwitchTurn();
+        if (turnManager != null)
+        {
+            gameStateController?.EvaluateEndOfTurn(turnManager.GetCurrentTurn());
+        }
+
+        PieceMoved?.Invoke(promotedPiece, fromTile, toTile);
+        return true;
     }
 
     ChessPiece PromotePawn(ChessPiece pawn, PieceType promotionType)
