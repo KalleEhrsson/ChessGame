@@ -266,7 +266,50 @@ public class ChessPauseMenuUI : MonoBehaviour
             CreateMenuVisualTree();
         }
 
+        EnsureMenuButtons(existingPanel != null ? existingPanel : FindChildByName(pauseMenuRoot.transform, "PauseMenuPanel"));
         WireButtons();
+    }
+
+
+    void EnsureMenuButtons(Transform panel)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        EnsureButtonExists(panel, "ResumeButton", "Resume");
+        EnsureButtonExists(panel, "DevMenuButton", "Dev Menu");
+        EnsureButtonExists(panel, "ResignButton", "Resign");
+        EnsureButtonExists(panel, "RestartButton", "Restart");
+        EnsureButtonExists(panel, "MainMenuButton", "Main Menu");
+        EnsureButtonExists(panel, "QuitButton", "Quit");
+
+        SetSiblingIfFound(panel, "ResumeButton", 1);
+        SetSiblingIfFound(panel, "DevMenuButton", 2);
+        SetSiblingIfFound(panel, "ResignButton", 3);
+        SetSiblingIfFound(panel, "RestartButton", 4);
+        SetSiblingIfFound(panel, "MainMenuButton", 5);
+        SetSiblingIfFound(panel, "QuitButton", 6);
+    }
+
+    void EnsureButtonExists(Transform panel, string objectName, string text)
+    {
+        if (FindChildByName(panel, objectName) != null)
+        {
+            return;
+        }
+
+        CreateButton(panel, objectName, text);
+    }
+
+    static void SetSiblingIfFound(Transform parent, string name, int index)
+    {
+        Transform child = FindChildByName(parent, name);
+        if (child != null)
+        {
+            child.SetSiblingIndex(Mathf.Min(index, parent.childCount - 1));
+        }
     }
 
     void CreateMenuVisualTree()
@@ -296,6 +339,8 @@ public class ChessPauseMenuUI : MonoBehaviour
 
         CreateLabel(panelObject.transform, "PauseMenuTitle", "Paused", 60f, 48, FontStyles.Bold);
         CreateButton(panelObject.transform, "ResumeButton", "Resume");
+        CreateButton(panelObject.transform, "DevMenuButton", "Dev Menu");
+        CreateButton(panelObject.transform, "ResignButton", "Resign");
         CreateButton(panelObject.transform, "RestartButton", "Restart");
         CreateButton(panelObject.transform, "MainMenuButton", "Main Menu");
         CreateButton(panelObject.transform, "QuitButton", "Quit");
@@ -349,6 +394,18 @@ public class ChessPauseMenuUI : MonoBehaviour
             resumeButton.onClick.AddListener(OnResumeClicked);
         }
 
+        if (devButton != null)
+        {
+            devButton.onClick.RemoveListener(OnDevMenuClicked);
+            devButton.onClick.AddListener(OnDevMenuClicked);
+        }
+
+        if (resignButton != null)
+        {
+            resignButton.onClick.RemoveListener(OnResignClicked);
+            resignButton.onClick.AddListener(OnResignClicked);
+        }
+
         if (restartButton != null)
         {
             restartButton.onClick.RemoveListener(OnRestartClicked);
@@ -368,7 +425,28 @@ public class ChessPauseMenuUI : MonoBehaviour
         }
     }
 
+    public void ShowPauseMenuFromDevMenu()
+    {
+        Show();
+    }
+
     void OnResumeClicked() => pauseManager?.RequestResume();
+
+    void OnDevMenuClicked()
+    {
+        if (sandbox == null || pauseManager == null || !pauseManager.IsPaused)
+        {
+            return;
+        }
+
+        Hide();
+        sandbox.OpenDevMenuFromPauseMenu();
+    }
+
+    void OnResignClicked()
+    {
+        resignUi?.OpenConfirmFromPauseMenu();
+    }
 
     void OnRestartClicked()
     {
