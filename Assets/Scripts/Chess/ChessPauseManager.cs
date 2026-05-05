@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
 public class ChessPauseManager : MonoBehaviour
@@ -62,7 +63,24 @@ public class ChessPauseManager : MonoBehaviour
 
     void Update()
     {
+        HandlePauseInput();
         RefreshCursorState();
+    }
+
+    void HandlePauseInput()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null)
+        {
+            return;
+        }
+
+        if (!keyboard.pKey.wasPressedThisFrame && !keyboard.escapeKey.wasPressedThisFrame)
+        {
+            return;
+        }
+
+        TogglePauseRequest();
     }
 
     public void TogglePauseRequest()
@@ -175,6 +193,8 @@ public class ChessPauseManager : MonoBehaviour
         {
             return;
         }
+
+        Time.timeScale = isPaused ? 0f : 1f;
 
         if (enablePauseDebugLogs)
         {

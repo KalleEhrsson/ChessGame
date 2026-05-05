@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -22,6 +23,8 @@ public class ChessPauseMenuUI : MonoBehaviour
     Button boardButton;
     Button aiConsoleButton;
     Button restartButton;
+    Button mainMenuButton;
+    Button quitButton;
     Button resignButton;
     TMP_Text statusText;
     TMP_Text footerHintText;
@@ -127,6 +130,7 @@ public class ChessPauseMenuUI : MonoBehaviour
         }
 
         rootCanvasGroup = pauseMenuRoot.GetComponent<CanvasGroup>() ?? pauseMenuRoot.AddComponent<CanvasGroup>();
+        PopulatePauseMenuIfMissing();
 
         if (enablePauseDebugLogs)
         {
@@ -164,6 +168,7 @@ public class ChessPauseMenuUI : MonoBehaviour
 
         GameObject fallback = new("PauseMenuRoot", typeof(RectTransform), typeof(CanvasGroup));
         fallback.transform.SetParent(canvasTransform, false);
+        ConfigureFullScreenRect(fallback.GetComponent<RectTransform>());
         pauseMenuRoot = fallback;
         Debug.LogWarning($"[ChessPauseMenuUI] PauseMenuRoot missing under ChessMasterCanvas. Created fallback root once: {pauseMenuRoot.name} ({pauseMenuRoot.GetInstanceID()})", this);
         return RootResolution.FallbackCreated;
@@ -212,6 +217,8 @@ public class ChessPauseMenuUI : MonoBehaviour
         boardButton ??= FindButton("BoardPresetsButton");
         aiConsoleButton ??= FindButton("StockfishConsoleButton");
         restartButton ??= FindButton("RestartButton");
+        mainMenuButton ??= FindButton("MainMenuButton");
+        quitButton ??= FindButton("QuitButton");
         resignButton ??= FindButton("ResignButton");
         statusText ??= FindText("StatusText");
         footerHintText ??= FindText("FooterHintText");
@@ -235,7 +242,183 @@ public class ChessPauseMenuUI : MonoBehaviour
         SetButtonVisibility(boardButton, sandbox != null);
         SetButtonVisibility(aiConsoleButton, aiConsole != null);
         SetButtonVisibility(restartButton, ChessBoard.Instance != null);
+        SetButtonVisibility(mainMenuButton, HasMainMenuScene());
+        SetButtonVisibility(quitButton, true);
         SetButtonVisibility(resignButton, resignUi != null);
+    }
+
+    void PopulatePauseMenuIfMissing()
+    {
+        if (pauseMenuRoot == null)
+        {
+            return;
+        }
+
+        RectTransform rootRect = pauseMenuRoot.GetComponent<RectTransform>();
+        if (rootRect != null)
+        {
+            ConfigureFullScreenRect(rootRect);
+        }
+
+        Transform existingPanel = FindChildByName(pauseMenuRoot.transform, "PauseMenuPanel");
+        if (existingPanel == null)
+        {
+            CreateMenuVisualTree();
+        }
+
+        WireButtons();
+    }
+
+    void CreateMenuVisualTree()
+    {
+        GameObject panelObject = new("PauseMenuPanel", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        panelObject.transform.SetParent(pauseMenuRoot.transform, false);
+
+        RectTransform panelRect = panelObject.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRect.pivot = new Vector2(0.5f, 0.5f);
+        panelRect.sizeDelta = new Vector2(560f, 640f);
+
+        Image panelImage = panelObject.GetComponent<Image>();
+        panelImage.color = new Color(0f, 0f, 0f, 0.88f);
+
+        VerticalLayoutGroup layout = panelObject.GetComponent<VerticalLayoutGroup>();
+        layout.childAlignment = TextAnchor.UpperCenter;
+        layout.spacing = 16f;
+        layout.padding = new RectOffset(36, 36, 36, 36);
+        layout.childControlHeight = false;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
+
+        ContentSizeFitter fitter = panelObject.GetComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        CreateLabel(panelObject.transform, "PauseMenuTitle", "Paused", 60f, 48, FontStyles.Bold);
+        CreateButton(panelObject.transform, "ResumeButton", "Resume");
+        CreateButton(panelObject.transform, "RestartButton", "Restart");
+        CreateButton(panelObject.transform, "MainMenuButton", "Main Menu");
+        CreateButton(panelObject.transform, "QuitButton", "Quit");
+    }
+
+    TMP_Text CreateLabel(Transform parent, string objectName, string text, float height, float fontSize, FontStyles style)
+    {
+        GameObject textObject = new(objectName, typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
+        textObject.transform.SetParent(parent, false);
+        LayoutElement layout = textObject.GetComponent<LayoutElement>();
+        layout.preferredHeight = height;
+
+        TMP_Text label = textObject.GetComponent<TextMeshProUGUI>();
+        label.text = text;
+        label.fontSize = fontSize;
+        label.fontStyle = style;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = Color.white;
+        return label;
+    }
+
+    Button CreateButton(Transform parent, string objectName, string text)
+    {
+        GameObject buttonObject = new(objectName, typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
+        buttonObject.transform.SetParent(parent, false);
+        LayoutElement layout = buttonObject.GetComponent<LayoutElement>();
+        layout.preferredHeight = 64f;
+
+        Image buttonImage = buttonObject.GetComponent<Image>();
+        buttonImage.color = new Color(0.2f, 0.2f, 0.2f, 0.95f);
+
+        GameObject labelObject = new("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+        labelObject.transform.SetParent(buttonObject.transform, false);
+        ConfigureFullScreenRect(labelObject.GetComponent<RectTransform>());
+        TMP_Text label = labelObject.GetComponent<TextMeshProUGUI>();
+        label.text = text;
+        label.fontSize = 34f;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = Color.white;
+
+        return buttonObject.GetComponent<Button>();
+    }
+
+    void WireButtons()
+    {
+        CacheOptionalControls();
+
+        if (resumeButton != null)
+        {
+            resumeButton.onClick.RemoveListener(OnResumeClicked);
+            resumeButton.onClick.AddListener(OnResumeClicked);
+        }
+
+        if (restartButton != null)
+        {
+            restartButton.onClick.RemoveListener(OnRestartClicked);
+            restartButton.onClick.AddListener(OnRestartClicked);
+        }
+
+        if (mainMenuButton != null)
+        {
+            mainMenuButton.onClick.RemoveListener(OnMainMenuClicked);
+            mainMenuButton.onClick.AddListener(OnMainMenuClicked);
+        }
+
+        if (quitButton != null)
+        {
+            quitButton.onClick.RemoveListener(OnQuitClicked);
+            quitButton.onClick.AddListener(OnQuitClicked);
+        }
+    }
+
+    void OnResumeClicked() => pauseManager?.RequestResume();
+
+    void OnRestartClicked()
+    {
+        ChessBoard board = ChessBoard.Instance;
+        if (board != null)
+        {
+            board.RestartMatch();
+            pauseManager?.RequestResume();
+            return;
+        }
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    void OnMainMenuClicked()
+    {
+        if (HasMainMenuScene())
+        {
+            SceneManager.LoadScene("MainMenu");
+        }
+    }
+
+    void OnQuitClicked() => Application.Quit();
+
+    static bool HasMainMenuScene()
+    {
+        for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
+        {
+            string path = SceneUtility.GetScenePathByBuildIndex(i);
+            string sceneName = System.IO.Path.GetFileNameWithoutExtension(path);
+            if (sceneName == "MainMenu")
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static void ConfigureFullScreenRect(RectTransform rect)
+    {
+        if (rect == null)
+        {
+            return;
+        }
+
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
     }
 
     Button FindButton(string objectName)
