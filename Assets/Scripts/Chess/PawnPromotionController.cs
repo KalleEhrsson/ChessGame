@@ -4,7 +4,6 @@ using UnityEngine;
 public class PawnPromotionController : MonoBehaviour
 {
     static readonly PieceType[] AllowedPromotionTypes = { PieceType.Queen, PieceType.Rook, PieceType.Bishop, PieceType.Knight };
-    #region Singleton
 
     public static PawnPromotionController Instance { get; private set; }
 
@@ -27,10 +26,6 @@ public class PawnPromotionController : MonoBehaviour
         return Instance;
     }
 
-    #endregion
-
-    #region Types
-
     public readonly struct PendingPromotionMove
     {
         public ChessTile FromTile { get; }
@@ -45,24 +40,11 @@ public class PawnPromotionController : MonoBehaviour
         }
     }
 
-    #endregion
-
-    #region Variables
-
     PromotionSelectionUI selectionUi;
-    PromotionSelection3DController selection3d;
     bool isPromotionPending;
     PendingPromotionMove pendingMove;
 
-    #endregion
-
-    #region Properties
-
     public bool IsPromotionPending => isPromotionPending;
-
-    #endregion
-
-    #region Unity
 
     void Awake()
     {
@@ -74,10 +56,6 @@ public class PawnPromotionController : MonoBehaviour
 
         Instance = this;
     }
-
-    #endregion
-
-    #region API
 
     public bool TryBeginPlayerPromotion(ChessPiece piece, ChessTile destination)
     {
@@ -101,27 +79,16 @@ public class PawnPromotionController : MonoBehaviour
         isPromotionPending = true;
         ChessPauseManager.GetOrCreate().NotifyRoundActionStarted();
 
-        EnsureSelectionControllers();
-        if (selection3d == null)
+        selectionUi = PromotionSelectionUI.GetOrCreate();
+        if (selectionUi == null)
         {
-            isPromotionPending = false;
-            ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
+            CancelPendingPromotion("promotion popup UI could not be created");
             return false;
         }
 
-        selectionUi?.Hide();
         ChessCursorStateCoordinator.SetTacticalCursorOverride(true);
-        selection3d.Show(piece.Team, OnPromotionSelected);
-        if (selection3d.IsSelecting)
-        {
-            return true;
-        }
-
-        isPromotionPending = false;
-        pendingMove = default;
-        ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
-        ChessCursorStateCoordinator.SetTacticalCursorOverride(false);
-        return false;
+        selectionUi.Show(OnPromotionSelected);
+        return selectionUi.IsVisible;
     }
 
     public void ClearPendingState()
@@ -130,33 +97,7 @@ public class PawnPromotionController : MonoBehaviour
         pendingMove = default;
         ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
         ChessCursorStateCoordinator.SetTacticalCursorOverride(false);
-        if (selectionUi != null)
-        {
-            selectionUi.Hide();
-        }
-
-        selection3d?.Hide();
-    }
-
-    #endregion
-
-    #region Helpers
-
-    void EnsureSelectionControllers()
-    {
-        if (selection3d != null)
-        {
-            return;
-        }
-
-        selection3d = FindFirstObjectByType<PromotionSelection3DController>();
-        if (selection3d == null)
-        {
-            GameObject selectorObject = new("PromotionSelection3DController");
-            selection3d = selectorObject.AddComponent<PromotionSelection3DController>();
-        }
-
-        selectionUi = FindFirstObjectByType<PromotionSelectionUI>();
+        selectionUi?.Hide();
     }
 
     void OnPromotionSelected(PieceType promotionType)
@@ -171,7 +112,7 @@ public class PawnPromotionController : MonoBehaviour
             Debug.LogWarning($"[PawnPromotionController] Rejected invalid promotion type '{promotionType}' while promotion is pending.");
             if (CanRetryPendingPromotion())
             {
-                TryShowPromotionSelector();
+                selectionUi?.Show(OnPromotionSelected);
                 return;
             }
 
@@ -194,14 +135,14 @@ public class PawnPromotionController : MonoBehaviour
 
         if (CanRetryPendingPromotion())
         {
-            TryShowPromotionSelector();
+            selectionUi?.Show(OnPromotionSelected);
             return;
         }
 
         CancelPendingPromotion("finalization failed and pending references are no longer valid");
     }
 
-    bool IsValidPromotionType(PieceType promotionType)
+    static bool IsValidPromotionType(PieceType promotionType)
     {
         for (int i = 0; i < AllowedPromotionTypes.Length; i++)
         {
@@ -228,27 +169,7 @@ public class PawnPromotionController : MonoBehaviour
         }
 
         ChessPiece pawn = pendingMove.FromTile.CurrentPiece;
-        return pawn != null && pawn.Type == PieceType.Pawn && pawn.Team == pendingMove.Team && selection3d != null;
-    }
-
-    void TryShowPromotionSelector()
-    {
-        EnsureSelectionControllers();
-        if (selection3d == null)
-        {
-            CancelPendingPromotion("promotion selector is unavailable for retry");
-            return;
-        }
-
-        selectionUi?.Hide();
-        ChessCursorStateCoordinator.SetTacticalCursorOverride(true);
-        selection3d.Show(pendingMove.Team, OnPromotionSelected);
-        if (selection3d.IsSelecting)
-        {
-            return;
-        }
-
-        CancelPendingPromotion("promotion selector could not be displayed for retry");
+        return pawn != null && pawn.Type == PieceType.Pawn && pawn.Team == pendingMove.Team;
     }
 
     void CancelPendingPromotion(string reason)
@@ -256,7 +177,4 @@ public class PawnPromotionController : MonoBehaviour
         Debug.LogWarning($"[PawnPromotionController] Promotion cancelled: {reason}.");
         ClearPendingState();
     }
-
-
-    #endregion
 }
