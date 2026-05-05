@@ -17,7 +17,7 @@ public class ChessPieceMotion : MonoBehaviour
     [SerializeField, Min(0.01f)] float grabDuration = 0.35f;
     [SerializeField, Min(0f)] float grabHoldDuration = 0.12f;
     [SerializeField, Min(0.01f)] float pullUpDuration = 0.55f;
-    [SerializeField, Min(0.01f)] float slamDuration = 0.4f;
+    [SerializeField, Min(0.01f)] float slamDuration = 0.3f;
     [SerializeField, Min(0f)] float minLiftHeight = 0.75f;
     [SerializeField, Min(0f)] float abovePiecePadding = 0.15f;
     [SerializeField, Min(0f)] float fallbackCapturedPieceHeight = 1f;

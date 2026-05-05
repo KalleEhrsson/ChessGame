@@ -127,8 +127,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ChessPieceMotion
   pickupDelay: 2
   normalMoveArcHeight: 4
-  captureMoveArcHeight: 6.5
-  captureDropHeight: 1.1
+  captureImpactNormalizedTime: 0.9
+  grabDuration: 0.35
+  grabHoldDuration: 0.12
+  pullUpDuration: 0.55
+  slamDuration: 0.3
+  minLiftHeight: 0.75
+  abovePiecePadding: 0.15
+  fallbackCapturedPieceHeight: 1
   moveDuration: 1
   captureMoveDuration: 1.05
   dropDuration: 0.5
