@@ -191,7 +191,7 @@ public class ChessPauseMenuUI : MonoBehaviour
         RefreshOptionalControls();
     }
 
-    void Hide()
+    public void Hide()
     {
         if (pauseMenuRoot == null)
         {
