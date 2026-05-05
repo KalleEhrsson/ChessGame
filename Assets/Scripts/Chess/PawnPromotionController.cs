@@ -43,8 +43,12 @@ public class PawnPromotionController : MonoBehaviour
     PromotionSelectionUI selectionUi;
     bool isPromotionPending;
     PendingPromotionMove pendingMove;
+    bool previousCursorVisible;
+    CursorLockMode previousCursorLockState;
+    bool hasStoredCursorState;
 
     public bool IsPromotionPending => isPromotionPending;
+    public static bool IsPromotionSelectionActive => Instance != null && Instance.isPromotionPending;
 
     void Awake()
     {
@@ -86,7 +90,7 @@ public class PawnPromotionController : MonoBehaviour
             return false;
         }
 
-        ChessCursorStateCoordinator.SetTacticalCursorOverride(true);
+        ApplyPromotionCursorState();
         selectionUi.Show(OnPromotionSelected);
         return selectionUi.IsVisible;
     }
@@ -96,8 +100,40 @@ public class PawnPromotionController : MonoBehaviour
         isPromotionPending = false;
         pendingMove = default;
         ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
-        ChessCursorStateCoordinator.SetTacticalCursorOverride(false);
+        RestoreCursorStateAfterPromotion();
         selectionUi?.Hide();
+    }
+
+    void ApplyPromotionCursorState()
+    {
+        previousCursorVisible = Cursor.visible;
+        previousCursorLockState = Cursor.lockState;
+        hasStoredCursorState = true;
+
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(true);
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+    }
+
+    void RestoreCursorStateAfterPromotion()
+    {
+        if (!hasStoredCursorState)
+        {
+            ChessCursorStateCoordinator.SetTacticalCursorOverride(false);
+            return;
+        }
+
+        bool shouldKeepUnlocked = ChessPauseManager.GetOrCreate().ShouldUnlockCursor;
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(shouldKeepUnlocked);
+
+        if (!shouldKeepUnlocked)
+        {
+            Cursor.visible = previousCursorVisible;
+            Cursor.lockState = previousCursorLockState;
+            ChessCursorStateCoordinator.SetTacticalCursorOverride(false);
+        }
+
+        hasStoredCursorState = false;
     }
 
     void OnPromotionSelected(PieceType promotionType)
