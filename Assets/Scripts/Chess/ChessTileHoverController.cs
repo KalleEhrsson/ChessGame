@@ -208,7 +208,17 @@ public class ChessTileHoverController : MonoBehaviour
             return null;
         }
 
-        Vector2 cursorPosition = Mouse.current != null ? Mouse.current.position.ReadValue() : Input.mousePosition;
+        if (Mouse.current == null)
+        {
+            if (logResult)
+            {
+                DebugLog("No active mouse device found for tactical raycast.");
+            }
+
+            return null;
+        }
+
+        Vector2 cursorPosition = Mouse.current.position.ReadValue();
         Ray ray = activeCamera.ScreenPointToRay(cursorPosition);
         int layerMask = raycastMask.value == 0 ? Physics.DefaultRaycastLayers : raycastMask.value;
         Debug.DrawRay(ray.origin, ray.direction * Mathf.Min(maxRayDistance, 50f), Color.cyan, 0f, false);
