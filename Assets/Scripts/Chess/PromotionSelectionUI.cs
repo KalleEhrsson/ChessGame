@@ -3,28 +3,38 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public class PromotionSelectionUI : MonoBehaviour
 {
-    #region Variables
+    const string PopupRootName = "PromotionPopupRoot";
+    const string PopupPanelName = "PromotionPopupPanel";
+    const string RookButtonName = "PromotionRookButton";
+    const string BishopButtonName = "PromotionBishopButton";
+    const string KnightButtonName = "PromotionKnightButton";
+    const string QueenButtonName = "PromotionQueenButton";
 
-    Canvas rootCanvas;
-    RectTransform panel;
+    static readonly PieceType[] ButtonOrder = { PieceType.Rook, PieceType.Bishop, PieceType.Knight, PieceType.Queen };
+
+    public static PromotionSelectionUI GetOrCreate()
+    {
+        PromotionSelectionUI existing = FindFirstObjectByType<PromotionSelectionUI>(FindObjectsInactive.Include);
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        GameObject host = new("PromotionSelectionUI");
+        return host.AddComponent<PromotionSelectionUI>();
+    }
+
     readonly Dictionary<PieceType, Button> buttonsByType = new();
+    RectTransform popupRoot;
+    RectTransform popupPanel;
     Action<PieceType> selectionCallback;
 
-    #endregion
-
-    #region Properties
-
-    public bool IsVisible => panel != null && panel.gameObject.activeSelf;
-
-    #endregion
-
-    #region Unity
+    public bool IsVisible => popupRoot != null && popupRoot.gameObject.activeSelf;
 
     void Awake()
     {
@@ -32,143 +42,84 @@ public class PromotionSelectionUI : MonoBehaviour
         SetVisible(false);
     }
 
-    void Update()
-    {
-        if (!IsVisible)
-        {
-            return;
-        }
-
-        if (TryHandleHotkey(PieceType.Queen, Key.Digit1, Key.Q))
-        {
-            return;
-        }
-
-        if (TryHandleHotkey(PieceType.Rook, Key.Digit2, Key.R))
-        {
-            return;
-        }
-
-        if (TryHandleHotkey(PieceType.Bishop, Key.Digit3, Key.B))
-        {
-            return;
-        }
-
-        TryHandleHotkey(PieceType.Knight, Key.Digit4, Key.N);
-    }
-
-    #endregion
-
-    #region API
-
     public void Show(Action<PieceType> onSelection)
     {
         EnsureBuilt();
         selectionCallback = onSelection;
         SetVisible(true);
-        FocusFirstButton();
+        FocusButton(PieceType.Queen);
     }
 
     public void Hide()
     {
         selectionCallback = null;
         SetVisible(false);
-        EventSystem currentEventSystem = EventSystem.current;
-        if (currentEventSystem != null)
+        if (EventSystem.current != null)
         {
-            currentEventSystem.SetSelectedGameObject(null);
+            EventSystem.current.SetSelectedGameObject(null);
         }
     }
-
-    #endregion
-
-    #region Setup
 
     void EnsureBuilt()
     {
-        EnsureCanvas();
-        EnsurePanel();
+        Canvas canvas = ChessMasterCanvas.GetOrCreateCanvas();
+        Transform existingRoot = canvas.transform.Find(PopupRootName);
+        if (existingRoot != null)
+        {
+            popupRoot = existingRoot as RectTransform;
+            popupPanel = popupRoot.Find(PopupPanelName) as RectTransform;
+        }
+        else
+        {
+            GameObject rootObject = new(PopupRootName, typeof(RectTransform), typeof(Image));
+            popupRoot = rootObject.GetComponent<RectTransform>();
+            popupRoot.SetParent(canvas.transform, false);
+            popupRoot.anchorMin = Vector2.zero;
+            popupRoot.anchorMax = Vector2.one;
+            popupRoot.offsetMin = Vector2.zero;
+            popupRoot.offsetMax = Vector2.zero;
 
-        EnsureOptionButton(PieceType.Queen, "Queen", new Color(0.95f, 0.95f, 0.95f, 1f));
-        EnsureOptionButton(PieceType.Rook, "Rook", new Color(0.9f, 0.9f, 0.92f, 1f));
-        EnsureOptionButton(PieceType.Bishop, "Bishop", new Color(0.9f, 0.92f, 0.9f, 1f));
-        EnsureOptionButton(PieceType.Knight, "Knight", new Color(0.92f, 0.9f, 0.9f, 1f));
+            Image blocker = rootObject.GetComponent<Image>();
+            blocker.color = new Color(0f, 0f, 0f, 0.45f);
+            blocker.raycastTarget = true;
+        }
+
+        if (popupPanel == null)
+        {
+            GameObject panelObject = new(PopupPanelName, typeof(RectTransform), typeof(Image), typeof(HorizontalLayoutGroup));
+            popupPanel = panelObject.GetComponent<RectTransform>();
+            popupPanel.SetParent(popupRoot, false);
+            popupPanel.anchorMin = new Vector2(0.5f, 0.5f);
+            popupPanel.anchorMax = new Vector2(0.5f, 0.5f);
+            popupPanel.pivot = new Vector2(0.5f, 0.5f);
+            popupPanel.anchoredPosition = Vector2.zero;
+            popupPanel.sizeDelta = new Vector2(520f, 220f);
+
+            Image panelImage = panelObject.GetComponent<Image>();
+            panelImage.color = new Color(0.14f, 0.14f, 0.18f, 0.97f);
+
+            HorizontalLayoutGroup layout = panelObject.GetComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(18, 18, 18, 18);
+            layout.spacing = 14f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = true;
+        }
+
+        EnsureButton(PieceType.Rook, "Rook", RookButtonName);
+        EnsureButton(PieceType.Bishop, "Bishop", BishopButtonName);
+        EnsureButton(PieceType.Knight, "Knight", KnightButtonName);
+        EnsureButton(PieceType.Queen, "Queen", QueenButtonName);
     }
 
-    void EnsureCanvas()
+    void EnsureButton(PieceType type, string label, string objectName)
     {
-        if (rootCanvas != null)
+        if (buttonsByType.ContainsKey(type) && buttonsByType[type] != null)
         {
             return;
         }
 
-        rootCanvas = ChessMasterCanvas.GetOrCreateCanvas();
-    }
-
-    void EnsurePanel()
-    {
-        if (panel != null)
-        {
-            return;
-        }
-
-        Transform root = ChessMasterCanvas.GetOrCreateOverlayRoot("PromotionRoot");
-        Transform existing = root.Find("PromotionSelectionPanel");
-        if (existing != null)
-        {
-            panel = existing as RectTransform;
-            return;
-        }
-
-        GameObject panelObject = new("PromotionSelectionPanel", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
-        panel = panelObject.GetComponent<RectTransform>();
-        panel.SetParent(root, false);
-        panel.anchorMin = new Vector2(0.5f, 0.5f);
-        panel.anchorMax = new Vector2(0.5f, 0.5f);
-        panel.pivot = new Vector2(0.5f, 0.5f);
-        panel.anchoredPosition = Vector2.zero;
-
-        Image panelImage = panel.GetComponent<Image>();
-        panelImage.color = new Color(0.08f, 0.08f, 0.1f, 0.95f);
-
-        VerticalLayoutGroup layout = panel.GetComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(18, 18, 18, 18);
-        layout.spacing = 8f;
-        layout.childAlignment = TextAnchor.MiddleCenter;
-        layout.childForceExpandHeight = false;
-        layout.childForceExpandWidth = true;
-
-        ContentSizeFitter fitter = panel.GetComponent<ContentSizeFitter>();
-        fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        GameObject titleObject = new("Title", typeof(RectTransform), typeof(TextMeshProUGUI));
-        RectTransform titleRect = titleObject.GetComponent<RectTransform>();
-        titleRect.SetParent(panel, false);
-        titleRect.anchorMin = new Vector2(0f, 1f);
-        titleRect.anchorMax = new Vector2(1f, 1f);
-        titleRect.pivot = new Vector2(0.5f, 0.5f);
-
-        TextMeshProUGUI titleText = titleObject.GetComponent<TextMeshProUGUI>();
-        titleText.text = "Promote Pawn";
-        titleText.alignment = TextAlignmentOptions.Center;
-        titleText.fontSize = 24;
-        titleText.color = new Color(0.95f, 0.9f, 0.6f, 1f);
-
-        LayoutElement titleLayout = titleObject.AddComponent<LayoutElement>();
-        titleLayout.preferredWidth = 260f;
-        titleLayout.preferredHeight = 34f;
-    }
-
-    void EnsureOptionButton(PieceType type, string label, Color fillColor)
-    {
-        if (buttonsByType.ContainsKey(type))
-        {
-            return;
-        }
-
-        string objectName = $"{label}Button";
-        Transform existing = panel.Find(objectName);
+        Transform existing = popupPanel.Find(objectName);
         if (existing != null && existing.TryGetComponent(out Button existingButton))
         {
             buttonsByType[type] = existingButton;
@@ -176,98 +127,87 @@ public class PromotionSelectionUI : MonoBehaviour
         }
 
         GameObject buttonObject = new(objectName, typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
-        RectTransform buttonRect = buttonObject.GetComponent<RectTransform>();
-        buttonRect.SetParent(panel, false);
+        buttonObject.transform.SetParent(popupPanel, false);
 
-        Image buttonImage = buttonObject.GetComponent<Image>();
-        buttonImage.color = fillColor;
+        Image image = buttonObject.GetComponent<Image>();
+        image.color = new Color(0.9f, 0.9f, 0.95f, 1f);
 
         Button button = buttonObject.GetComponent<Button>();
         PieceType capturedType = type;
         button.onClick.AddListener(() => OnOptionSelected(capturedType));
 
         LayoutElement layout = buttonObject.GetComponent<LayoutElement>();
-        layout.preferredWidth = 260f;
-        layout.preferredHeight = 46f;
+        layout.preferredWidth = 110f;
+        layout.preferredHeight = 150f;
 
-        ColorBlock colors = button.colors;
-        colors.highlightedColor = fillColor * 0.9f;
-        colors.pressedColor = fillColor * 0.8f;
-        colors.selectedColor = fillColor * 0.92f;
-        button.colors = colors;
-
-        GameObject textObject = new("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
-        RectTransform textRect = textObject.GetComponent<RectTransform>();
-        textRect.SetParent(buttonRect, false);
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
-
-        TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
-        text.text = label;
-        text.alignment = TextAlignmentOptions.Center;
-        text.fontSize = 20;
-        text.color = ChessUITheme.MainText;
-
+        CreateButtonLabel(buttonObject.transform, label);
         buttonsByType[type] = button;
     }
 
-    #endregion
-
-    #region Helpers
-
-    void SetVisible(bool isVisible)
+    void CreateButtonLabel(Transform parent, string label)
     {
-        if (panel != null)
-        {
-            panel.gameObject.SetActive(isVisible);
-        }
-    }
-
-    void FocusFirstButton()
-    {
-        EventSystem currentEventSystem = EventSystem.current;
-        if (currentEventSystem == null)
+        if (parent.Find("Label") != null)
         {
             return;
         }
 
-        if (buttonsByType.TryGetValue(PieceType.Queen, out Button queenButton) && queenButton != null)
+        bool hasTmp = Type.GetType("TMPro.TextMeshProUGUI, Unity.TextMeshPro") != null;
+        GameObject labelObject = new("Label", typeof(RectTransform));
+        RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.SetParent(parent, false);
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
+        if (hasTmp)
         {
-            currentEventSystem.SetSelectedGameObject(queenButton.gameObject);
+            TextMeshProUGUI tmp = labelObject.AddComponent<TextMeshProUGUI>();
+            tmp.text = label;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.fontSize = 30f;
+            tmp.color = Color.black;
+        }
+        else
+        {
+            Text text = labelObject.AddComponent<Text>();
+            text.text = label;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.fontSize = 30;
+            text.color = Color.black;
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
     }
 
-    bool TryHandleHotkey(PieceType type, Key numberKey, Key letterKey)
+    void SetVisible(bool visible)
     {
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard == null)
+        if (popupRoot != null)
         {
-            return false;
+            popupRoot.gameObject.SetActive(visible);
+        }
+    }
+
+    void FocusButton(PieceType pieceType)
+    {
+        if (EventSystem.current == null)
+        {
+            return;
         }
 
-        if (!(keyboard[numberKey].wasPressedThisFrame || keyboard[letterKey].wasPressedThisFrame))
+        for (int i = 0; i < ButtonOrder.Length; i++)
         {
-            return false;
+            PieceType candidate = i == 0 ? pieceType : ButtonOrder[i];
+            if (buttonsByType.TryGetValue(candidate, out Button button) && button != null)
+            {
+                EventSystem.current.SetSelectedGameObject(button.gameObject);
+                return;
+            }
         }
-
-        Debug.Log($"[PromotionSelectionUI] Hotkey selected: {type}");
-        OnOptionSelected(type);
-        return true;
     }
 
     void OnOptionSelected(PieceType type)
     {
-        if (!IsVisible)
-        {
-            return;
-        }
-
         Action<PieceType> callback = selectionCallback;
-        Hide();
         callback?.Invoke(type);
     }
-
-    #endregion
 }
