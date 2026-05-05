@@ -11,17 +11,12 @@ public class ChessPieceMotion : MonoBehaviour
 
     [SerializeField] float pickupDelay = 1f;
     [SerializeField] float normalMoveArcHeight = 4f;
-    [SerializeField] float captureMoveArcHeight = 6.5f;
-    [SerializeField, Min(0f)] float minCaptureArcHeight = 2.25f;
-    [SerializeField, Min(0.1f)] float captureArcHeightMultiplier = 1.8f;
     [SerializeField, Range(0.5f, 0.99f)] float captureImpactNormalizedTime = 0.9f;
     [SerializeField, Min(0.01f)] float grabDuration = 0.35f;
     [SerializeField, Min(0f)] float grabHoldDuration = 0.12f;
     [SerializeField, Min(0.01f)] float pullUpDuration = 0.55f;
     [SerializeField, Min(0.01f)] float slamDuration = 0.18f;
-    [SerializeField, Min(0.01f)] float liftHeightMultiplier = 1.25f;
     [SerializeField, Min(0f)] float minLiftHeight = 0.75f;
-    [SerializeField, Min(0f)] float maxLiftHeight = 2.25f;
     [SerializeField, Min(0f)] float abovePiecePadding = 0.15f;
     [SerializeField, Min(0f)] float fallbackCapturedPieceHeight = 1f;
     [SerializeField] float moveDuration = 1f;
@@ -165,65 +160,55 @@ public class ChessPieceMotion : MonoBehaviour
 
         Bounds attackerBounds = ResolveWorldBounds(gameObject, out bool hasAttackerBounds);
         float attackerHeight = hasAttackerBounds ? Mathf.Max(0.01f, attackerBounds.size.y) : fallbackCapturedPieceHeight;
-        float referenceVisualHeight = Mathf.Max(attackerHeight, capturedPieceHeight);
-        float computedCaptureArcHeight = Mathf.Max(minCaptureArcHeight, referenceVisualHeight * captureArcHeightMultiplier, captureMoveArcHeight);
-        float computedLiftHeight = Mathf.Clamp(capturedPieceHeight * liftHeightMultiplier, minLiftHeight, maxLiftHeight);
+        float attackerHalfHeight = attackerHeight * 0.5f;
+        float minimumLift = Mathf.Max(minLiftHeight, capturedPieceHeight * 0.1f);
+        float safeYFromCaptured = hasBounds
+            ? capturedBounds.max.y + attackerHalfHeight + abovePiecePadding
+            : endPos.y + capturedPieceHeight + attackerHalfHeight + abovePiecePadding;
+        float safeYFromStart = startPos.y + minimumLift;
+        float safeY = Mathf.Max(safeYFromCaptured, safeYFromStart);
+
         Vector3 targetBottom = hasBounds
             ? new Vector3(endPos.x, capturedBounds.min.y, endPos.z)
             : endPos;
-        Vector3 strikeStart = targetBottom + (Vector3.up * (capturedPieceHeight + abovePiecePadding));
-        Vector3 liftTarget = strikeStart + (Vector3.up * computedLiftHeight);
+        Vector3 safeStartAbove = new Vector3(startPos.x, safeY, startPos.z);
+        Vector3 safeTargetAbove = new Vector3(endPos.x, safeY, endPos.z);
 
-        if (!IsFinite(strikeStart) || !IsFinite(liftTarget) || !IsFinite(targetBottom))
+        safeStartAbove = SanitizePosition(safeStartAbove, startPos);
+        safeTargetAbove = SanitizePosition(safeTargetAbove, safeStartAbove);
+        targetBottom = SanitizePosition(targetBottom, endPos);
+
+        if (!IsFinite(safeStartAbove) || !IsFinite(safeTargetAbove) || !IsFinite(targetBottom))
         {
             Debug.LogWarning("[ChessPieceMotion] Invalid capture motion positions detected. Falling back to standard move.", this);
             await PlayArcMotionAsync(startPos, endPos, duration);
             return;
         }
+
         if (debugLogs)
         {
-            Debug.Log($"[ChessPieceMotion] Capture motion start. Piece={name}, VisualHeight={referenceVisualHeight:0.###}, ArcHeight={computedCaptureArcHeight:0.###}, ImpactThreshold={captureImpactNormalizedTime:0.###}", this);
+            Debug.Log($"[ChessPieceMotion] Capture motion start. Piece={name}, SafeY={safeY:0.###}, ImpactThreshold={captureImpactNormalizedTime:0.###}", this);
         }
 
-        await PlaySegmentAsync(startPos, strikeStart, grabDuration);
+        await PlaySegmentAsync(startPos, safeStartAbove, grabDuration);
         transform.rotation = baseRotation;
         if (grabHoldDuration > 0f)
         {
             await AwaitSeconds(grabHoldDuration);
         }
 
-        await PlayCaptureLiftAsync(strikeStart, liftTarget, pullUpDuration, computedCaptureArcHeight);
+        await PlaySegmentAsync(safeStartAbove, safeTargetAbove, pullUpDuration);
+
         if (debugLogs)
         {
             Debug.Log($"[ChessPieceMotion] Slam phase started. Piece={name}, From={fromTile?.TileName}, To={toTile?.TileName}, Capture=True", this);
         }
 
-        await PlayCaptureSlamAsync(liftTarget, targetBottom, slamDuration, onCaptureImpact, debugLogs);
+        await PlayCaptureSlamAsync(safeTargetAbove, targetBottom, slamDuration, onCaptureImpact, debugLogs);
 
         transform.position = targetBottom;
     }
 
-
-    async Task PlayCaptureLiftAsync(Vector3 from, Vector3 to, float duration, float arcHeight)
-    {
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, duration));
-            float eased = Mathf.SmoothStep(0f, 1f, t);
-
-            Vector3 pos = Vector3.Lerp(from, to, eased);
-            float arc = Mathf.Sin(eased * Mathf.PI);
-            pos.y += Mathf.Pow(Mathf.Max(0f, arc), 0.85f) * arcHeight;
-
-            transform.position = SanitizePosition(pos, to);
-            transform.rotation = baseRotation * BuildTilt(eased * 0.85f);
-            await AwaitNextFrame();
-        }
-
-        transform.position = to;
-    }
 
     async Task PlayCaptureSlamAsync(Vector3 from, Vector3 to, float duration, Action<float> onCaptureImpact, bool debugLogs)
     {
