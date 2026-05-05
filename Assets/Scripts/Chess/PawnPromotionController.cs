@@ -3,6 +3,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class PawnPromotionController : MonoBehaviour
 {
+    static readonly PieceType[] AllowedPromotionTypes = { PieceType.Queen, PieceType.Rook, PieceType.Bishop, PieceType.Knight };
     #region Singleton
 
     public static PawnPromotionController Instance { get; private set; }
@@ -165,19 +166,97 @@ public class PawnPromotionController : MonoBehaviour
             return;
         }
 
-        ChessBoard board = ChessBoard.Instance != null ? ChessBoard.Instance : FindFirstObjectByType<ChessBoard>();
-        bool moved = board != null && board.MovePiece(pendingMove.FromTile, pendingMove.ToTile, promotionType);
-        if (!moved)
+        if (!IsValidPromotionType(promotionType))
         {
-            Debug.LogWarning("[PawnPromotionController] Promotion move finalization failed.");
+            Debug.LogWarning($"[PawnPromotionController] Rejected invalid promotion type '{promotionType}' while promotion is pending.");
+            if (CanRetryPendingPromotion())
+            {
+                TryShowPromotionSelector();
+                return;
+            }
+
+            CancelPendingPromotion("promotion type was invalid and pending references are no longer safe to retry");
+            return;
         }
 
-        isPromotionPending = false;
-        pendingMove = default;
-        ChessPauseManager.GetOrCreate().NotifyRoundActionFinished();
-        ChessCursorStateCoordinator.SetTacticalCursorOverride(false);
-        selection3d?.Hide();
+        if (TryFinalizePendingPromotion(promotionType))
+        {
+            ClearPendingState();
+            return;
+        }
+
+        string pawnName = pendingMove.FromTile != null && pendingMove.FromTile.CurrentPiece != null
+            ? pendingMove.FromTile.CurrentPiece.name
+            : "<missing pawn>";
+        string fromName = pendingMove.FromTile != null ? pendingMove.FromTile.TileName : "<null>";
+        string toName = pendingMove.ToTile != null ? pendingMove.ToTile.TileName : "<null>";
+        Debug.LogWarning($"[PawnPromotionController] Promotion move finalization failed. Pawn={pawnName}, From={fromName}, To={toName}, Type={promotionType}");
+
+        if (CanRetryPendingPromotion())
+        {
+            TryShowPromotionSelector();
+            return;
+        }
+
+        CancelPendingPromotion("finalization failed and pending references are no longer valid");
     }
+
+    bool IsValidPromotionType(PieceType promotionType)
+    {
+        for (int i = 0; i < AllowedPromotionTypes.Length; i++)
+        {
+            if (AllowedPromotionTypes[i] == promotionType)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool TryFinalizePendingPromotion(PieceType promotionType)
+    {
+        ChessBoard board = ChessBoard.Instance != null ? ChessBoard.Instance : FindFirstObjectByType<ChessBoard>();
+        return board != null && board.MovePiece(pendingMove.FromTile, pendingMove.ToTile, promotionType);
+    }
+
+    bool CanRetryPendingPromotion()
+    {
+        if (!isPromotionPending || pendingMove.FromTile == null || pendingMove.ToTile == null)
+        {
+            return false;
+        }
+
+        ChessPiece pawn = pendingMove.FromTile.CurrentPiece;
+        return pawn != null && pawn.Type == PieceType.Pawn && pawn.Team == pendingMove.Team && selection3d != null;
+    }
+
+    void TryShowPromotionSelector()
+    {
+        EnsureSelectionControllers();
+        if (selection3d == null)
+        {
+            CancelPendingPromotion("promotion selector is unavailable for retry");
+            return;
+        }
+
+        selectionUi?.Hide();
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(true);
+        selection3d.Show(pendingMove.Team, OnPromotionSelected);
+        if (selection3d.IsSelecting)
+        {
+            return;
+        }
+
+        CancelPendingPromotion("promotion selector could not be displayed for retry");
+    }
+
+    void CancelPendingPromotion(string reason)
+    {
+        Debug.LogWarning($"[PawnPromotionController] Promotion cancelled: {reason}.");
+        ClearPendingState();
+    }
+
 
     #endregion
 }

@@ -7,6 +7,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class ChessBoard : MonoBehaviour
 {
+    static readonly PieceType[] ValidPromotionTypes = { PieceType.Queen, PieceType.Rook, PieceType.Bishop, PieceType.Knight };
     const string BoardObjectName = "ChessBoard";
     const int BoardSize = 8;
     const string BlackPieceFolder = "Assets/Prefabs/ChessPieces/Black";
@@ -975,6 +976,12 @@ public class ChessBoard : MonoBehaviour
         if (moveData.IsPromotion)
         {
             PieceType targetPromotion = promotionPiece ?? moveData.PromotionPieceType;
+            if (!IsValidPromotionType(targetPromotion))
+            {
+                Debug.LogWarning($"[ChessBoard] Rejected invalid promotion type '{targetPromotion}' for move {from.TileName}->{to.TileName}.");
+                return false;
+            }
+
             animatedPiece = PromotePawn(movingPiece, targetPromotion);
             if (animatedPiece == null)
             {
@@ -1493,6 +1500,12 @@ public class ChessBoard : MonoBehaviour
             return pawn;
         }
 
+        if (!IsValidPromotionType(promotionType))
+        {
+            Debug.LogWarning($"[ChessBoard] PromotePawn rejected invalid promotion type '{promotionType}'.");
+            return null;
+        }
+
         ChessTile promotionTile = pawn.CurrentTile;
         GameObject prefab = LoadPiecePrefab(pawn.Team, promotionType);
         if (prefab == null)
@@ -1524,6 +1537,19 @@ public class ChessBoard : MonoBehaviour
         }
 
         return promotedPiece;
+    }
+
+    static bool IsValidPromotionType(PieceType promotionType)
+    {
+        for (int i = 0; i < ValidPromotionTypes.Length; i++)
+        {
+            if (ValidPromotionTypes[i] == promotionType)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     #endregion
