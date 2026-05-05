@@ -118,5 +118,11 @@ public static class ChessMasterCanvas
         {
             Debug.LogWarning($"[ChessRuntimeBootstrap] Found duplicate: EventSystem count={systems.Length}");
         }
+
+        EventSystem primary = systems[0];
+        if (primary != null && primary.GetComponent<InputSystemUIInputModule>() == null)
+        {
+            primary.gameObject.AddComponent<InputSystemUIInputModule>();
+        }
     }
 }

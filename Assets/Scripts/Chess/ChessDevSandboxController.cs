@@ -140,9 +140,20 @@ public class ChessDevSandboxController : MonoBehaviour
         OpenDevMenuFromGameplay(!isOpen);
     }
 
+    public bool EnsureDevPanelReady()
+    {
+        EnsurePanelView();
+        EnsurePanelParentAndCenter();
+        return devPanelRoot != null && devPanelRoot.GetComponent<ChessDevSandboxPanelView>() != null;
+    }
+
     public void OpenDevMenuFromPauseMenu()
     {
         openedFromPauseMenu = true;
+        if (enableDevMenuDebugLogs)
+        {
+            Debug.Log("[ChessDevSandboxController] Dev menu opened from pause.", this);
+        }
         SetOpenState(true);
     }
 
@@ -351,6 +362,10 @@ public class ChessDevSandboxController : MonoBehaviour
         if (existingView != null)
         {
             devPanelRoot = existingView.gameObject;
+            if (enableDevMenuDebugLogs)
+            {
+                Debug.Log("[ChessDevSandboxController] Existing ChessDevPanel found via panel view.", this);
+            }
             return devPanelRoot;
         }
 
@@ -369,6 +384,10 @@ public class ChessDevSandboxController : MonoBehaviour
             }
 
             devPanelRoot = candidate;
+            if (enableDevMenuDebugLogs)
+            {
+                Debug.Log("[ChessDevSandboxController] Existing ChessDevPanel found.", this);
+            }
             return devPanelRoot;
         }
 
@@ -377,7 +396,7 @@ public class ChessDevSandboxController : MonoBehaviour
         devPanelRoot.transform.SetParent(canvas.transform, false);
         if (enableDevMenuDebugLogs)
         {
-            Debug.Log("[ChessDevSandboxController] Created fallback ChessDevPanel under main canvas.", this);
+            Debug.Log("[ChessDevSandboxController] ChessDevPanel created because missing.", this);
         }
         return devPanelRoot;
     }
@@ -413,7 +432,7 @@ public class ChessDevSandboxController : MonoBehaviour
 
         if (rect.sizeDelta.x < 50f || rect.sizeDelta.y < 50f)
         {
-            rect.sizeDelta = new Vector2(700f, 500f);
+            rect.sizeDelta = new Vector2(850f, 600f);
         }
 
         LayoutRebuilder.ForceRebuildLayoutImmediate(rect);

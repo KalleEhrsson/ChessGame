@@ -268,6 +268,11 @@ public class ChessPauseMenuUI : MonoBehaviour
 
         EnsureMenuButtons(existingPanel != null ? existingPanel : FindChildByName(pauseMenuRoot.transform, "PauseMenuPanel"));
         WireButtons();
+
+        if (enablePauseDebugLogs)
+        {
+            Debug.Log("[ChessPauseMenuUI] Pause menu rebuilt and DevMenuButton ensured.", this);
+        }
     }
 
 
@@ -455,8 +460,18 @@ public class ChessPauseMenuUI : MonoBehaviour
             Debug.Log("[ChessPauseMenuUI] Dev Menu button clicked.", this);
         }
 
+        pauseManager ??= ChessPauseManager.GetOrCreate();
+        sandbox ??= ChessDevSandboxController.Instance;
+
         if (sandbox == null || pauseManager == null || !pauseManager.IsPaused)
         {
+            Debug.LogWarning("[ChessPauseMenuUI] Dev menu unavailable while paused.", this);
+            return;
+        }
+
+        if (!sandbox.EnsureDevPanelReady())
+        {
+            Debug.LogWarning("[ChessPauseMenuUI] Dev Menu button clicked but ChessDevPanel could not be resolved.", this);
             return;
         }
 
