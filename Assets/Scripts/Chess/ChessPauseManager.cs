@@ -106,7 +106,14 @@ public class ChessPauseManager : MonoBehaviour
 
         if (sandbox != null && sandbox.IsOpen)
         {
-            sandbox.SetOpenFromPauseMenu(false);
+            if (sandbox.OpenedFromPauseMenu && pauseMenuUi != null)
+            {
+                sandbox.ReturnToPauseMenuFromDevMenu();
+                pauseMenuUi.ShowPauseMenuFromDevMenu();
+                return;
+            }
+
+            sandbox.OpenDevMenuFromGameplay(false);
             return;
         }
 
