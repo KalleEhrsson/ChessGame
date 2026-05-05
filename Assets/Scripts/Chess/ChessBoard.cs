@@ -1111,7 +1111,8 @@ public class ChessBoard : MonoBehaviour
         bool isCapture = moveData.IsCapture;
         ChessPiece capturedPiece = moveData.IsCapture && moveData.CaptureTile != null ? moveData.CaptureTile.CurrentPiece : null;
 
-        Vector3 startWorldPosition = GetSafePiecePosition(movingPiece, from, Vector3.zero);
+        Vector3 startWorldPosition = GetMoveStartWorldPosition(movingPiece, from);
+        Vector3 endWorldPosition = GetGroundedTilePositionForMove(movingPiece, to, startWorldPosition);
         if (moveData.IsCastle && moveData.CastleRookFrom != null && moveData.CastleRookTo != null)
         {
             ChessPiece rook = moveData.CastleRookFrom.CurrentPiece;
@@ -1146,7 +1147,11 @@ public class ChessBoard : MonoBehaviour
             }
         }
 
-        Vector3 endWorldPosition = GetSafePiecePosition(animatedPiece, to, startWorldPosition);
+        if (animatedPiece != movingPiece)
+        {
+            endWorldPosition = GetGroundedTilePositionForMove(animatedPiece, to, endWorldPosition);
+            animatedPiece.transform.position = startWorldPosition;
+        }
 
         if (Application.isPlaying)
         {
@@ -1154,6 +1159,12 @@ public class ChessBoard : MonoBehaviour
             {
                 Debug.LogError($"[ChessBoard] Invalid move animation position. Piece={animatedPiece.name}, From={from.TileName}, To={to.TileName}, Start={startWorldPosition}, End={endWorldPosition}");
                 return false;
+            }
+
+            if (debugMoveAnimationLogs)
+            {
+                LogMoveAnimation(
+                    $"Queued {(isCapture ? "capture" : "move")} animation. Piece={animatedPiece.name}, From={from.TileName}, To={to.TileName}, Start={startWorldPosition}, End={endWorldPosition}, LogicalTileSetBeforeAnimation=True");
             }
 
             _ = StartMoveAnimationAsync(animatedPiece, from, to, startWorldPosition, endWorldPosition, isCapture, capturedPiece, pendingHumanPromotion);
@@ -1252,7 +1263,17 @@ public class ChessBoard : MonoBehaviour
         }
 
         await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture, capturedPiece, fromTile, toTile, debugMoveAnimationLogs, ResolveCaptureAtImpact);
-        piece.SnapToTile();
+
+        bool snapped = TrySnapPieceToTile(piece, toTile);
+        if (!snapped)
+        {
+            piece.SnapToTile();
+        }
+
+        if (debugMoveAnimationLogs)
+        {
+            LogMoveAnimation($"Final snap completed. Piece={piece.name}, Tile={toTile?.TileName}, Position={piece.transform.position}");
+        }
 
         if (!isCapture || capturedPiece == null || captureResolved)
         {
@@ -1770,6 +1791,33 @@ public class ChessBoard : MonoBehaviour
 
     #endregion
     
+    Vector3 GetMoveStartWorldPosition(ChessPiece piece, ChessTile fromTile)
+    {
+        Vector3 fallback = fromTile != null ? fromTile.transform.position : Vector3.zero;
+        if (piece == null)
+        {
+            return fallback;
+        }
+
+        Vector3 visualPosition = piece.transform.position;
+        if (IsFinite(visualPosition))
+        {
+            return visualPosition;
+        }
+
+        return GetGroundedTilePositionForMove(piece, fromTile, fallback);
+    }
+
+    Vector3 GetGroundedTilePositionForMove(ChessPiece piece, ChessTile tile, Vector3 fallback)
+    {
+        if (piece != null && tile != null && TryGetColliderGroundedTilePosition(piece, tile, out Vector3 groundedPosition) && IsFinite(groundedPosition))
+        {
+            return groundedPosition;
+        }
+
+        return GetSafePiecePosition(piece, tile, fallback);
+    }
+
     Vector3 GetSafePiecePosition(ChessPiece piece, ChessTile tile, Vector3 fallback)
     {
         if (piece != null && IsFinite(piece.transform.position))
