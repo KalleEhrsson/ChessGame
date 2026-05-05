@@ -1898,7 +1898,7 @@ public class ChessBoard : MonoBehaviour
             }
 
             Bounds colliderBounds = tileCollider.bounds;
-            if (!IsFinite(colliderBounds))
+            if (!IsFinite(colliderBounds.center) || !IsFinite(colliderBounds.size))
             {
                 continue;
             }
@@ -1960,7 +1960,7 @@ public class ChessBoard : MonoBehaviour
             }
 
             Bounds rendererBounds = tileRenderer.bounds;
-            if (!IsFinite(rendererBounds))
+            if (!IsFinite(rendererBounds.center) || !IsFinite(rendererBounds.size))
             {
                 continue;
             }
@@ -2007,7 +2007,7 @@ public class ChessBoard : MonoBehaviour
             }
 
             Bounds rendererBounds = tileRenderer.bounds;
-            if (!IsFinite(rendererBounds) || !IsFinite(rendererBounds.size.y))
+            if (!IsFinite(rendererBounds.center) || !IsFinite(rendererBounds.size) || !IsFinite(rendererBounds.size.y))
             {
                 continue;
             }
