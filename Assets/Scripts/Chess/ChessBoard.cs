@@ -814,6 +814,60 @@ public class ChessBoard : MonoBehaviour
         halfMoveClock = Mathf.Max(0, halfMove);
         fullMoveNumber = Mathf.Max(1, fullMove);
     }
+
+    #region Dev Preset Sync
+
+    public void RebuildRuntimeStateAfterDevPreset()
+    {
+        AutoSetupBoard();
+
+        ChessTile[] allTiles = GetAllTiles();
+        for (int i = 0; i < allTiles.Length; i++)
+        {
+            ChessTile tile = allTiles[i];
+            if (tile == null)
+            {
+                continue;
+            }
+
+            ChessPiece tilePiece = tile.CurrentPiece;
+            if (tilePiece == null)
+            {
+                continue;
+            }
+
+            if (tilePiece.CurrentTile != tile)
+            {
+                tile.SetCurrentPiece(null);
+            }
+        }
+
+        ChessPiece[] allPieces = GetAllPieces();
+        for (int i = 0; i < allPieces.Length; i++)
+        {
+            ChessPiece piece = allPieces[i];
+            if (piece == null)
+            {
+                continue;
+            }
+
+            ChessTile tile = piece.CurrentTile;
+            if (tile == null)
+            {
+                if (Application.isPlaying) Destroy(piece.gameObject); else DestroyImmediate(piece.gameObject);
+                continue;
+            }
+
+            if (tile.CurrentPiece != piece)
+            {
+                piece.SetTile(tile);
+            }
+
+            piece.transform.position = tile.transform.position;
+        }
+    }
+
+    #endregion
     
     public bool TryGetTeamFacingDirection(PieceTeam team, out Vector3 direction)
     {
@@ -902,6 +956,7 @@ public class ChessBoard : MonoBehaviour
     {
         if (from == null || to == null)
         {
+            Debug.LogWarning($"[ChessBoard] MovePiece rejected: null endpoint. From={from?.TileName ?? "<null>"}, To={to?.TileName ?? "<null>"}");
             return false;
         }
 
@@ -913,12 +968,14 @@ public class ChessBoard : MonoBehaviour
         ChessPauseManager pauseManager = ChessPauseManager.GetOrCreate();
         if (pauseManager.IsPauseRequested)
         {
+            Debug.LogWarning($"[ChessBoard] MovePiece blocked by pause request. From={from.TileName}, To={to.TileName}, Turn={turnManager?.GetCurrentTurn().ToString() ?? "<unknown>"}");
             return false;
         }
 
         ChessPiece movingPiece = from.CurrentPiece;
         if (movingPiece == null)
         {
+            Debug.LogWarning($"[ChessBoard] MovePiece rejected: no piece on source tile {from.TileName}.");
             return false;
         }
 
@@ -928,17 +985,20 @@ public class ChessBoard : MonoBehaviour
 
         if (gameStateController != null && !gameStateController.IsGameplayActive())
         {
+            Debug.LogWarning($"[ChessBoard] MovePiece blocked because gameplay is not active. State={gameStateController.CurrentState}, From={from.TileName}, To={to.TileName}");
             return false;
         }
 
         if (turnManager != null && movingPiece.Team != turnManager.GetCurrentTurn())
         {
+            Debug.LogWarning($"[ChessBoard] MovePiece rejected by turn. Piece={movingPiece.name}, Team={movingPiece.Team}, Type={movingPiece.Type}, From={from.TileName}, To={to.TileName}, CurrentTurn={turnManager.GetCurrentTurn()}");
             return false;
         }
 
         ChessMoveData moveData = default;
         if (moveValidator != null && !moveValidator.TryGetLegalMove(movingPiece, to, out moveData, promotionPiece))
         {
+            Debug.LogWarning($"[ChessBoard] MovePiece rejected by legal move validation. Piece={movingPiece.name}, Team={movingPiece.Team}, Type={movingPiece.Type}, From={from.TileName}, To={to.TileName}, Turn={turnManager?.GetCurrentTurn().ToString() ?? "<unknown>"}, GameActive={(gameStateController != null && gameStateController.IsGameplayActive())}");
             return false;
         }
         else if (moveValidator == null)
