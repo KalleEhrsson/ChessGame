@@ -885,7 +885,7 @@ public class ChessBoard : MonoBehaviour
                 piece.SetTile(tile);
             }
 
-            piece.transform.position = tile.transform.position;
+            piece.SnapToTile();
         }
     }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -32,6 +33,7 @@ public class PromotionSelectionUI : MonoBehaviour
     readonly Dictionary<PieceType, Button> buttonsByType = new();
     RectTransform popupRoot;
     RectTransform popupPanel;
+    CanvasGroup popupCanvasGroup;
     Action<PieceType> selectionCallback;
 
     public bool IsVisible => popupRoot != null && popupRoot.gameObject.activeSelf;
@@ -63,15 +65,17 @@ public class PromotionSelectionUI : MonoBehaviour
     void EnsureBuilt()
     {
         Canvas canvas = ChessMasterCanvas.GetOrCreateCanvas();
+        EnsureEventSystemSupportsInputSystem();
         Transform existingRoot = canvas.transform.Find(PopupRootName);
         if (existingRoot != null)
         {
             popupRoot = existingRoot as RectTransform;
             popupPanel = popupRoot.Find(PopupPanelName) as RectTransform;
+            popupCanvasGroup = popupRoot.GetComponent<CanvasGroup>() ?? popupRoot.gameObject.AddComponent<CanvasGroup>();
         }
         else
         {
-            GameObject rootObject = new(PopupRootName, typeof(RectTransform), typeof(Image));
+            GameObject rootObject = new(PopupRootName, typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
             popupRoot = rootObject.GetComponent<RectTransform>();
             popupRoot.SetParent(canvas.transform, false);
             popupRoot.anchorMin = Vector2.zero;
@@ -82,6 +86,8 @@ public class PromotionSelectionUI : MonoBehaviour
             Image blocker = rootObject.GetComponent<Image>();
             blocker.color = new Color(0f, 0f, 0f, 0.45f);
             blocker.raycastTarget = true;
+
+            popupCanvasGroup = rootObject.GetComponent<CanvasGroup>();
         }
 
         if (popupPanel == null)
@@ -179,11 +185,26 @@ public class PromotionSelectionUI : MonoBehaviour
         }
     }
 
+    static void EnsureEventSystemSupportsInputSystem()
+    {
+        EventSystem current = EventSystem.current;
+        if (current != null && current.GetComponent<InputSystemUIInputModule>() == null)
+        {
+            current.gameObject.AddComponent<InputSystemUIInputModule>();
+        }
+    }
+
     void SetVisible(bool visible)
     {
         if (popupRoot != null)
         {
             popupRoot.gameObject.SetActive(visible);
+            if (popupCanvasGroup != null)
+            {
+                popupCanvasGroup.interactable = visible;
+                popupCanvasGroup.blocksRaycasts = visible;
+                popupCanvasGroup.alpha = visible ? 1f : 0f;
+            }
         }
     }
 
