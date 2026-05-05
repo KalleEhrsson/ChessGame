@@ -107,22 +107,53 @@ public class ChessPiece : MonoBehaviour
             return;
         }
 
-        Vector3 targetPosition = CurrentTile.transform.position;
-        targetPosition.y = ResolvePlacementY(CurrentTile, targetPosition.y);
-
-        if (!IsFinite(targetPosition))
-        {
-            float fallbackY = IsFinite(CurrentTile.transform.position.y) ? CurrentTile.transform.position.y : 0f;
-            targetPosition = new Vector3(CurrentTile.transform.position.x, fallbackY, CurrentTile.transform.position.z);
-            Debug.LogWarning($"[ChessPiece] Computed invalid snap position for '{name}'. Falling back to tile position.", this);
-        }
-
-        transform.position = targetPosition;
+        GroundOnTile(CurrentTile);
 
         if (faceOpponentSide)
         {
             RotateTowardOpponentSide();
         }
+    }
+
+    public bool GroundOnTile(ChessTile tile)
+    {
+        if (tile == null)
+        {
+            return false;
+        }
+
+        Vector3 tileCenter = tile.transform.position;
+        if (!IsFinite(tileCenter))
+        {
+            tileCenter = new Vector3(0f, 0f, 0f);
+        }
+
+        transform.position = new Vector3(tileCenter.x, tileCenter.y, tileCenter.z);
+
+        bool hasTileSurface = TryResolveTileSurfaceY(tile, out float tileSurfaceY);
+        bool hasPieceBounds = TryGetPieceBounds(out Bounds pieceBounds);
+
+        if (hasTileSurface && hasPieceBounds && IsFinite(pieceBounds.min.y))
+        {
+            float verticalCorrection = tileSurfaceY - pieceBounds.min.y;
+            if (IsFinite(verticalCorrection))
+            {
+                transform.position += Vector3.up * verticalCorrection;
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[ChessPiece] Grounding fallback for piece='{name}', tile='{tile.name}', pieceBoundsFound={hasPieceBounds}, tileSurfaceFound={hasTileSurface}.", this);
+        }
+
+        if (!IsFinite(transform.position))
+        {
+            float fallbackY = IsFinite(tileCenter.y) ? tileCenter.y : 0f;
+            transform.position = new Vector3(tileCenter.x, fallbackY, tileCenter.z);
+            Debug.LogWarning($"[ChessPiece] Computed invalid grounded position for '{name}'. Falling back to tile center.", this);
+        }
+
+        return hasTileSurface && hasPieceBounds;
     }
 
     public void ClearTileReference()
@@ -193,48 +224,12 @@ public class ChessPiece : MonoBehaviour
         transform.rotation = targetRotation;
     }
     
-    float ResolvePlacementY(ChessTile tile, float fallbackY)
+    bool TryResolveTileSurfaceY(ChessTile tile, out float tileSurfaceY)
     {
-        float boardTop = ResolveTileTopY(tile, fallbackY);
-        if (!IsFinite(boardTop))
-        {
-            return fallbackY;
-        }
-
-        if (!TryGetPieceBounds(out Bounds pieceBounds))
-        {
-            return boardTop;
-        }
-
-        if (!IsFinite(pieceBounds.min.y) || !IsFinite(transform.position.y))
-        {
-            return boardTop;
-        }
-
-        float bottomOffset = transform.position.y - pieceBounds.min.y;
-        if (!IsFinite(bottomOffset))
-        {
-            return boardTop;
-        }
-
-        return boardTop + bottomOffset;
-    }
-
-    float ResolveTileTopY(ChessTile tile, float fallbackY)
-    {
+        tileSurfaceY = 0f;
         if (tile == null)
         {
-            return fallbackY;
-        }
-
-        Renderer tileRenderer = tile.GetComponent<Renderer>();
-        if (tileRenderer != null)
-        {
-            float rendererTop = tileRenderer.bounds.max.y;
-            if (IsFinite(rendererTop))
-            {
-                return rendererTop;
-            }
+            return false;
         }
 
         Collider tileCollider = tile.GetComponent<Collider>();
@@ -243,48 +238,36 @@ public class ChessPiece : MonoBehaviour
             float colliderTop = tileCollider.bounds.max.y;
             if (IsFinite(colliderTop))
             {
-                return colliderTop;
+                tileSurfaceY = colliderTop;
+                return true;
             }
         }
 
-        return fallbackY;
+        Renderer tileRenderer = tile.GetComponent<Renderer>();
+        if (tileRenderer != null)
+        {
+            float rendererTop = tileRenderer.bounds.max.y;
+            if (IsFinite(rendererTop))
+            {
+                tileSurfaceY = rendererTop;
+                return true;
+            }
+        }
+
+        float fallbackY = tile.transform.position.y;
+        if (IsFinite(fallbackY))
+        {
+            tileSurfaceY = fallbackY;
+            return true;
+        }
+
+        return false;
     }
 
     bool TryGetPieceBounds(out Bounds bounds)
     {
         bounds = default;
         bool hasBounds = false;
-
-        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            Renderer renderer = renderers[i];
-            if (renderer == null || !renderer.enabled)
-            {
-                continue;
-            }
-
-            Bounds rendererBounds = renderer.bounds;
-            if (!IsFinite(rendererBounds))
-            {
-                continue;
-            }
-
-            if (!hasBounds)
-            {
-                bounds = rendererBounds;
-                hasBounds = true;
-            }
-            else
-            {
-                bounds.Encapsulate(rendererBounds);
-            }
-        }
-
-        if (hasBounds)
-        {
-            return true;
-        }
 
         Collider[] colliders = GetComponentsInChildren<Collider>(true);
         for (int i = 0; i < colliders.Length; i++)
@@ -309,6 +292,37 @@ public class ChessPiece : MonoBehaviour
             else
             {
                 bounds.Encapsulate(colliderBounds);
+            }
+        }
+
+        if (hasBounds)
+        {
+            return true;
+        }
+
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null || !renderer.enabled)
+            {
+                continue;
+            }
+
+            Bounds rendererBounds = renderer.bounds;
+            if (!IsFinite(rendererBounds))
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = rendererBounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(rendererBounds);
             }
         }
 
