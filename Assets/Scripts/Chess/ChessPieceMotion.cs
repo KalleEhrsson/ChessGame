@@ -56,7 +56,17 @@ public class ChessPieceMotion : MonoBehaviour
 
     void OnDisable()
     {
+        if (!isAnimating)
+        {
+            return;
+        }
+
         isAnimating = false;
+        activeAnimations = Mathf.Max(0, activeAnimations - 1);
+        if (activeAnimations == 0)
+        {
+            AnyMotionStateChanged?.Invoke(false);
+        }
     }
 
     #endregion

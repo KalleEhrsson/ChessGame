@@ -265,7 +265,29 @@ public class ChessBoard : MonoBehaviour
 
     public void RestartMatch()
     {
+        Debug.Log("[ChessBoard] Restarting match with full runtime reset.");
+        Time.timeScale = 1f;
+
+        ChessPauseManager.GetOrCreate().ResetPauseState();
+        ChessPauseMenuUI.GetOrCreate().Hide();
+        ChessDevSandboxController.Instance?.OpenDevMenuFromGameplay(false);
+        ChessResignUiController.GetOrCreate().ResetForNewGame();
+        ChessWinScreenUI.GetOrCreate().Hide();
+        PawnPromotionController.GetOrCreate().ClearPendingState();
+
+        ChessTileHighlighter.GetOrCreate().ClearAllHighlights();
+        ChessSelectionController.GetOrCreate().Deselect();
+        ChessTileHoverController.GetOrCreate().ClearHover();
+        ChessCameraController.GetOrCreate().ExitTacticalView();
+        ChessCursorStateCoordinator.SetTacticalCursorOverride(false);
+        ChessCursorStateCoordinator.SetPauseCursorOverride(false);
+
+        ChessTurnManager turnManager = ChessTurnManager.GetOrCreate();
+        StockfishService stockfishService = StockfishService.GetOrCreate();
+        stockfishService?.CancelThinking();
+
         SpawnStartingPosition();
+        _ = turnManager.HandleDebugBoardSyncAsync(ChessFenBuilder.BuildFen(this, PieceTeam.White), true, string.Empty);
     }
 
     [ContextMenu("Rebuild Board")]
