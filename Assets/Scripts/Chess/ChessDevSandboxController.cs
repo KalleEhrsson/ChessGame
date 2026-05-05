@@ -25,6 +25,7 @@ public class ChessDevSandboxController : MonoBehaviour
     readonly IReadOnlyList<ChessBoardPreset> presets = ChessBoardPresetLibrary.GetPresets();
 
     bool isOpen;
+    bool openedFromPauseMenu;
     SandboxMode currentMode;
     PieceTeam selectedTeam = PieceTeam.White;
     PieceType selectedPieceType = PieceType.Queen;
@@ -36,6 +37,7 @@ public class ChessDevSandboxController : MonoBehaviour
     #region Properties
 
     public bool IsOpen => isOpen;
+    public bool OpenedFromPauseMenu => openedFromPauseMenu;
     public SandboxMode Mode => currentMode;
     public PieceTeam SelectedTeam => selectedTeam;
     public PieceType SelectedPieceType => selectedPieceType;
@@ -130,10 +132,28 @@ public class ChessDevSandboxController : MonoBehaviour
 
     public void ToggleOpen()
     {
-        SetOpenFromPauseMenu(!isOpen);
+        OpenDevMenuFromGameplay(!isOpen);
     }
 
-    public void SetOpenFromPauseMenu(bool open)
+    public void OpenDevMenuFromPauseMenu()
+    {
+        openedFromPauseMenu = true;
+        SetOpenState(true);
+    }
+
+    public void ReturnToPauseMenuFromDevMenu()
+    {
+        openedFromPauseMenu = false;
+        SetOpenState(false);
+    }
+
+    public void OpenDevMenuFromGameplay(bool open)
+    {
+        openedFromPauseMenu = false;
+        SetOpenState(open);
+    }
+
+    void SetOpenState(bool open)
     {
         isOpen = open;
 
@@ -145,7 +165,6 @@ public class ChessDevSandboxController : MonoBehaviour
 
         currentMode = SandboxMode.None;
         moveSourceTile = null;
-
     }
 
     public void SetMode(SandboxMode mode)

@@ -27,6 +27,7 @@ public class ChessDevSandboxPanelView : MonoBehaviour
     Button presetLoadButton;
     TMP_InputField fenInput;
     Button importFenButton;
+    Button devMenuCloseButton;
 
     ChessDevSandboxController controller;
 
@@ -57,6 +58,9 @@ public class ChessDevSandboxPanelView : MonoBehaviour
         v.padding = new RectOffset(12, 12, 12, 12); v.spacing = 8f; v.childControlHeight = false;
         panel.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
+        devMenuCloseButton = AddButton(panel, "Close", out _);
+        devMenuCloseButton.name = "DevMenuCloseButton";
+
         resetBoardButton = AddButton(panel, "Reset Board", out _);
         clearBoardButton = AddButton(panel, "Clear Board", out _);
         exportFenButton = AddButton(panel, "Export FEN", out _);
@@ -84,6 +88,7 @@ public class ChessDevSandboxPanelView : MonoBehaviour
 
     void BindEvents()
     {
+        devMenuCloseButton.onClick.AddListener(OnCloseClicked);
         resetBoardButton.onClick.AddListener(() => controller.ResetBoard());
         clearBoardButton.onClick.AddListener(() => controller.ClearBoard());
         exportFenButton.onClick.AddListener(() => controller.ExportFen());
@@ -101,6 +106,23 @@ public class ChessDevSandboxPanelView : MonoBehaviour
         presetLoadButton.onClick.AddListener(() => controller.LoadSelectedPreset());
         fenInput.onValueChanged.AddListener(controller.SetFenBuffer);
         importFenButton.onClick.AddListener(() => controller.ImportFen());
+    }
+
+    void OnCloseClicked()
+    {
+        if (controller == null)
+        {
+            return;
+        }
+
+        if (controller.OpenedFromPauseMenu)
+        {
+            ChessPauseMenuUI.GetOrCreate().ShowPauseMenuFromDevMenu();
+            controller.ReturnToPauseMenuFromDevMenu();
+            return;
+        }
+
+        controller.OpenDevMenuFromGameplay(false);
     }
 
     void Refresh()
