@@ -26,6 +26,10 @@ public class ChessBoard : MonoBehaviour
     [Tooltip("Auto-populated black piece prefabs used when spawning the starting position.")]
     [SerializeField] GameObject[] blackPiecePrefabs = Array.Empty<GameObject>();
 
+    [Header("Piece Placement")]
+    [Tooltip("How far piece bottoms are inset below the tile surface when grounded.")]
+    [SerializeField, Min(0f)] float pieceGroundingInset = 0.02f;
+
     [Header("Broken Piece Capture FX")]
     [Tooltip("Registry that maps intact pieces to their broken-piece prefabs.")]
     [SerializeField] BrokenPiecePrefabRegistry brokenPiecePrefabRegistry;
@@ -371,7 +375,7 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
-        float verticalCorrection = tileSurfaceY - pieceBottomY;
+        float verticalCorrection = tileSurfaceY - pieceBottomY - pieceGroundingInset;
         if (!IsFinite(verticalCorrection))
         {
             Debug.LogWarning($"[ChessBoard] SnapPieceToTile failed. Piece='{piece.name}', Tile='{tile.name}', Reason=invalid vertical correction.");
