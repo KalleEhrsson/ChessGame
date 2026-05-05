@@ -72,11 +72,14 @@ public class ChessPiece : MonoBehaviour
         HasMoved = false;
     }
 
-    public void SetTile(ChessTile tile)
+    public void SetTile(ChessTile tile, bool updateTransform = true)
     {
         if (CurrentTile == tile)
         {
-            SnapToTile();
+            if (updateTransform)
+            {
+                SnapToTile();
+            }
             return;
         }
 
@@ -97,7 +100,10 @@ public class ChessPiece : MonoBehaviour
             CurrentTile.SetCurrentPiece(this);
         }
 
-        SnapToTile();
+        if (updateTransform)
+        {
+            SnapToTile();
+        }
     }
 
     public void SnapToTile()
