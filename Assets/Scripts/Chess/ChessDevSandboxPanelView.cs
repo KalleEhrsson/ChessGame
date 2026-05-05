@@ -49,10 +49,10 @@ public class ChessDevSandboxPanelView : MonoBehaviour
         if (transform.childCount > 0) return;
 
         RectTransform panel = CreateRect("Panel", transform);
-        panel.anchorMin = panel.anchorMax = new Vector2(0f, 1f);
-        panel.pivot = new Vector2(0f, 1f);
-        panel.anchoredPosition = new Vector2(20f, -20f);
-        panel.sizeDelta = new Vector2(520f, 0f);
+        panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 0.5f);
+        panel.pivot = new Vector2(0.5f, 0.5f);
+        panel.anchoredPosition = Vector2.zero;
+        panel.sizeDelta = new Vector2(700f, 500f);
         panel.gameObject.AddComponent<Image>().color = new Color(0.08f, 0.08f, 0.1f, 0.95f);
         var v = panel.gameObject.AddComponent<VerticalLayoutGroup>();
         v.padding = new RectOffset(12, 12, 12, 12); v.spacing = 8f; v.childControlHeight = false;
@@ -117,8 +117,7 @@ public class ChessDevSandboxPanelView : MonoBehaviour
 
         if (controller.OpenedFromPauseMenu)
         {
-            ChessPauseMenuUI.GetOrCreate().ShowPauseMenuFromDevMenu();
-            controller.ReturnToPauseMenuFromDevMenu();
+            ChessPauseMenuUI.GetOrCreate().CloseDevMenuToPause();
             return;
         }
 
