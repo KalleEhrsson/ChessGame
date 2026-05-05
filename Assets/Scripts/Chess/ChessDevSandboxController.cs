@@ -249,6 +249,39 @@ public class ChessDevSandboxController : MonoBehaviour
 
     }
 
+    public async void LoadPresetAndReturnToGameplay()
+    {
+        RefreshDependencies();
+        if (boardTools == null || presets.Count == 0)
+        {
+            return;
+        }
+
+        bool success = await boardTools.LoadPresetAsync(presets[presetIndex]);
+        if (!success)
+        {
+            return;
+        }
+
+        fenBuffer = boardTools.ExportFen();
+        ReturnToGameplayAfterPresetLoad();
+    }
+
+    void ReturnToGameplayAfterPresetLoad()
+    {
+        openedFromPauseMenu = false;
+        SetOpenState(false);
+
+        ChessPauseMenuUI pauseMenuUi = ChessPauseMenuUI.GetOrCreate();
+        pauseMenuUi?.Hide();
+
+        ChessPauseManager pauseManager = ChessPauseManager.GetOrCreate();
+        pauseManager?.RequestResume();
+
+        Time.timeScale = 1f;
+        ChessCursorStateCoordinator.SetPauseCursorOverride(false);
+    }
+
     public void SetSideToMove(PieceTeam team)
     {
         RefreshDependencies();

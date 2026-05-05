@@ -103,7 +103,7 @@ public class ChessDevSandboxPanelView : MonoBehaviour
         pieceCycleButton.onClick.AddListener(() => { int n=((int)controller.SelectedPieceType+1)%Enum.GetValues(typeof(PieceType)).Length; controller.SetSelectedPieceType((PieceType)n); });
         presetPrevButton.onClick.AddListener(() => controller.SetPresetIndex(controller.PresetIndex - 1));
         presetNextButton.onClick.AddListener(() => controller.SetPresetIndex(controller.PresetIndex + 1));
-        presetLoadButton.onClick.AddListener(() => controller.LoadSelectedPreset());
+        presetLoadButton.onClick.AddListener(() => controller.LoadPresetAndReturnToGameplay());
         fenInput.onValueChanged.AddListener(controller.SetFenBuffer);
         importFenButton.onClick.AddListener(() => controller.ImportFen());
     }
