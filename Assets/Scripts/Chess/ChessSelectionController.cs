@@ -32,6 +32,8 @@ public class ChessSelectionController : MonoBehaviour
     #region Variables
 
     ChessPiece selectedPiece;
+    ChessTile selectedTile;
+    ChessBoard board;
     readonly List<ChessTile> moveTiles = new(32);
     readonly List<ChessTile> captureTiles = new(32);
     ChessTurnManager turnManager;
@@ -81,6 +83,8 @@ public class ChessSelectionController : MonoBehaviour
         }
 
         selectedPiece = piece;
+        selectedTile = piece.CurrentTile;
+        SnapSelectedPieceToTrackedTile();
         selectedPiece.SetSelected(true);
     }
 
@@ -146,10 +150,12 @@ public class ChessSelectionController : MonoBehaviour
     {
         if (selectedPiece != null)
         {
+            SnapSelectedPieceToTrackedTile();
             selectedPiece.SetSelected(false);
         }
 
         selectedPiece = null;
+        selectedTile = null;
         moveTiles.Clear();
         captureTiles.Clear();
     }
@@ -163,6 +169,38 @@ public class ChessSelectionController : MonoBehaviour
     {
         return selectedPiece;
     }
+
+    void SnapSelectedPieceToTrackedTile()
+    {
+        if (selectedPiece == null)
+        {
+            return;
+        }
+
+        ChessTile tile = selectedPiece.CurrentTile != null ? selectedPiece.CurrentTile : selectedTile;
+        if (tile == null)
+        {
+            return;
+        }
+
+        board ??= ChessBoard.Instance;
+        if (board == null)
+        {
+            board = FindFirstObjectByType<ChessBoard>();
+        }
+
+        if (board != null)
+        {
+            board.TrySnapPieceToTile(selectedPiece, tile);
+        }
+        else
+        {
+            selectedPiece.SnapToTile();
+        }
+
+        selectedTile = tile;
+    }
+
 
     #endregion
 }
