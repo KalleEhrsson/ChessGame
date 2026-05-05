@@ -204,6 +204,12 @@ public class ChessBoardStateTools
 
     async System.Threading.Tasks.Task<bool> RebuildStateAndSyncAi(string reason)
     {
+        board?.RebuildRuntimeStateAfterDevPreset();
+        ChessSelectionController.GetOrCreate().Deselect();
+        PawnPromotionController.GetOrCreate().ClearPendingState();
+        ChessTileHoverController hover = Object.FindFirstObjectByType<ChessTileHoverController>();
+        hover?.ClearHover();
+
         if (!TryBuildFenFromCurrentBoard(out string fen, out string error))
         {
             lastValidationError = error;
@@ -211,7 +217,7 @@ public class ChessBoardStateTools
             return false;
         }
         lastValidationError = string.Empty;
-        Debug.Log($"[ChessBoardStateTools] Debug state applied: {reason}");
+        Debug.Log($"[ChessBoardStateTools] Debug state applied: {reason}. FEN={fen}");
         return turnManager != null && await turnManager.HandleDebugBoardSyncAsync(fen, true, string.Empty);
     }
 
