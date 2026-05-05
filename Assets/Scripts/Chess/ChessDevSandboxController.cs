@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public class ChessDevSandboxController : MonoBehaviour
@@ -26,6 +27,8 @@ public class ChessDevSandboxController : MonoBehaviour
 
     bool isOpen;
     bool openedFromPauseMenu;
+    [SerializeField] bool enableDevMenuDebugLogs;
+    [SerializeField] GameObject devPanelRoot;
     SandboxMode currentMode;
     PieceTeam selectedTeam = PieceTeam.White;
     PieceType selectedPieceType = PieceType.Queen;
@@ -116,14 +119,16 @@ public class ChessDevSandboxController : MonoBehaviour
 
     void EnsurePanelView()
     {
-        ChessDevSandboxPanelView existingView = FindFirstObjectByType<ChessDevSandboxPanelView>(FindObjectsInactive.Include);
-        if (existingView != null)
+        GameObject panel = ResolveDevPanelRoot();
+        if (panel == null)
         {
             return;
         }
 
-        GameObject panelHost = new("ChessDevPanel");
-        panelHost.AddComponent<ChessDevSandboxPanelView>();
+        if (!panel.TryGetComponent(out ChessDevSandboxPanelView _))
+        {
+            panel.AddComponent<ChessDevSandboxPanelView>();
+        }
     }
 
     #endregion
@@ -160,7 +165,17 @@ public class ChessDevSandboxController : MonoBehaviour
         if (isOpen)
         {
             EnsurePanelView();
+            EnsurePanelParentAndCenter();
+            if (devPanelRoot != null)
+            {
+                devPanelRoot.SetActive(true);
+            }
             return;
+        }
+
+        if (devPanelRoot != null)
+        {
+            devPanelRoot.SetActive(false);
         }
 
         currentMode = SandboxMode.None;
@@ -291,6 +306,85 @@ public class ChessDevSandboxController : MonoBehaviour
     #endregion
 
     #region Internals
+
+    GameObject ResolveDevPanelRoot()
+    {
+        if (devPanelRoot != null)
+        {
+            return devPanelRoot;
+        }
+
+        ChessDevSandboxPanelView existingView = FindFirstObjectByType<ChessDevSandboxPanelView>(FindObjectsInactive.Include);
+        if (existingView != null)
+        {
+            devPanelRoot = existingView.gameObject;
+            return devPanelRoot;
+        }
+
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < allObjects.Length; i++)
+        {
+            GameObject candidate = allObjects[i];
+            if (candidate == null || candidate.name != "ChessDevPanel")
+            {
+                continue;
+            }
+
+            if (!candidate.scene.IsValid())
+            {
+                continue;
+            }
+
+            devPanelRoot = candidate;
+            return devPanelRoot;
+        }
+
+        Canvas canvas = ChessMasterCanvas.GetOrCreateCanvas();
+        devPanelRoot = new GameObject("ChessDevPanel", typeof(RectTransform));
+        devPanelRoot.transform.SetParent(canvas.transform, false);
+        if (enableDevMenuDebugLogs)
+        {
+            Debug.Log("[ChessDevSandboxController] Created fallback ChessDevPanel under main canvas.", this);
+        }
+        return devPanelRoot;
+    }
+
+    void EnsurePanelParentAndCenter()
+    {
+        GameObject panel = ResolveDevPanelRoot();
+        if (panel == null)
+        {
+            return;
+        }
+
+        Canvas canvas = ChessMasterCanvas.GetOrCreateCanvas();
+        if (panel.transform.parent != canvas.transform)
+        {
+            panel.transform.SetParent(canvas.transform, false);
+            if (enableDevMenuDebugLogs)
+            {
+                Debug.Log("[ChessDevSandboxController] Reparented ChessDevPanel to main canvas.", this);
+            }
+        }
+
+        RectTransform rect = panel.GetComponent<RectTransform>();
+        if (rect == null)
+        {
+            rect = panel.AddComponent<RectTransform>();
+        }
+
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+
+        if (rect.sizeDelta.x < 50f || rect.sizeDelta.y < 50f)
+        {
+            rect.sizeDelta = new Vector2(700f, 500f);
+        }
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+    }
 
     void RefreshDependencies()
     {

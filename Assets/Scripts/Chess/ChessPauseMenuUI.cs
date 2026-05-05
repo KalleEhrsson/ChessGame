@@ -430,10 +430,31 @@ public class ChessPauseMenuUI : MonoBehaviour
         Show();
     }
 
+    public void CloseDevMenuToPause()
+    {
+        if (sandbox == null)
+        {
+            return;
+        }
+
+        sandbox.ReturnToPauseMenuFromDevMenu();
+        Show();
+
+        if (enablePauseDebugLogs)
+        {
+            Debug.Log("[ChessPauseMenuUI] Dev menu closed back to pause menu.", this);
+        }
+    }
+
     void OnResumeClicked() => pauseManager?.RequestResume();
 
     void OnDevMenuClicked()
     {
+        if (enablePauseDebugLogs)
+        {
+            Debug.Log("[ChessPauseMenuUI] Dev Menu button clicked.", this);
+        }
+
         if (sandbox == null || pauseManager == null || !pauseManager.IsPaused)
         {
             return;
