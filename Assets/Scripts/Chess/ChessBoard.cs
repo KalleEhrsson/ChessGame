@@ -361,6 +361,10 @@ public class ChessBoard : MonoBehaviour
         return TryGetColliderGroundedTilePosition(piece, tile, out Vector3 groundedPosition) && ApplyGroundedPosition(piece, groundedPosition);
     }
 
+    const float MaxReasonableVerticalCorrection = 5f;
+    const float MaxTileColliderHeightMultiplier = 3f;
+    const float MaxTileColliderHeightAbsolute = 0.5f;
+
     bool TryGetColliderGroundedTilePosition(ChessPiece piece, ChessTile tile, out Vector3 groundedPosition)
     {
         groundedPosition = piece != null ? piece.transform.position : Vector3.zero;
@@ -380,7 +384,7 @@ public class ChessBoard : MonoBehaviour
         piece.transform.position = new Vector3(tileCenter.x, originalPosition.y, tileCenter.z);
 
         bool hasPieceBottom = piece.TryGetBottomY(out float pieceBottomY) && IsFinite(pieceBottomY);
-        bool hasTileSurface = TryResolveTileSurfaceY(tile, out float tileSurfaceY);
+        bool hasTileSurface = TryResolveTileSurfaceY(tile, out float tileSurfaceY, out string tileSurfaceSource);
 
         if (!hasPieceBottom)
         {
@@ -402,6 +406,24 @@ public class ChessBoard : MonoBehaviour
             Debug.LogWarning($"[ChessBoard] SnapPieceToTile failed. Piece='{piece.name}', Tile='{tile.name}', Reason=invalid vertical correction.");
             piece.transform.position = originalPosition;
             return false;
+        }
+
+        if (Mathf.Abs(verticalCorrection) > MaxReasonableVerticalCorrection)
+        {
+            bool hasRendererSurface = TryResolveTileRendererSurfaceY(tile, out float rendererSurfaceY);
+            if (hasRendererSurface)
+            {
+                float rendererCorrection = rendererSurfaceY - pieceBottomY - pieceGroundingInset;
+                Debug.LogWarning(
+                    $"[ChessBoard] SnapPieceToTile detected extreme correction. Piece='{piece.name}', Tile='{tile.name}', " +
+                    $"TileSurfaceSource='{tileSurfaceSource}', TileSurfaceY={tileSurfaceY:0.###}, PieceBottomSource='non-trigger collider/renderer', PieceBottomY={pieceBottomY:0.###}, " +
+                    $"Correction={verticalCorrection:0.###}, RendererSurfaceY={rendererSurfaceY:0.###}, RendererCorrection={rendererCorrection:0.###}. Using renderer fallback.");
+
+                if (IsFinite(rendererCorrection))
+                {
+                    verticalCorrection = rendererCorrection;
+                }
+            }
         }
 
         groundedPosition = piece.transform.position + Vector3.up * verticalCorrection;
@@ -1795,43 +1817,163 @@ public class ChessBoard : MonoBehaviour
         return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
-    static bool TryResolveTileSurfaceY(ChessTile tile, out float tileSurfaceY)
+    static bool TryResolveTileSurfaceY(ChessTile tile, out float tileSurfaceY, out string surfaceSource)
     {
         tileSurfaceY = 0f;
+        surfaceSource = "none";
         if (tile == null)
         {
             return false;
         }
 
-        Collider tileCollider = tile.GetComponent<Collider>();
-        if (tileCollider != null)
+        if (TryResolveTileRendererSurfaceY(tile, out float rendererSurfaceY))
         {
-            float colliderTop = tileCollider.bounds.max.y;
-            if (IsFinite(colliderTop))
+            tileSurfaceY = rendererSurfaceY;
+            surfaceSource = "tile-renderer";
+            return true;
+        }
+
+        Collider[] tileColliders = tile.GetComponentsInChildren<Collider>(true);
+        float bestColliderY = float.NegativeInfinity;
+        bool foundColliderSurface = false;
+        float tileRendererHeight = TryGetTileRendererHeight(tile, out float rendererHeight) ? rendererHeight : 0f;
+        float maxReasonableColliderHeight = tileRendererHeight > 0f
+            ? Mathf.Max(MaxTileColliderHeightAbsolute, tileRendererHeight * MaxTileColliderHeightMultiplier)
+            : MaxTileColliderHeightAbsolute;
+
+        for (int i = 0; i < tileColliders.Length; i++)
+        {
+            Collider tileCollider = tileColliders[i];
+            if (tileCollider == null || !tileCollider.enabled || tileCollider.isTrigger)
             {
-                tileSurfaceY = colliderTop;
-                return true;
+                continue;
+            }
+
+            Bounds colliderBounds = tileCollider.bounds;
+            if (!IsFinite(colliderBounds))
+            {
+                continue;
+            }
+
+            if (!IsFinite(colliderBounds.size.y) || colliderBounds.size.y > maxReasonableColliderHeight)
+            {
+                continue;
+            }
+
+            float colliderTop = colliderBounds.max.y;
+            if (!IsFinite(colliderTop))
+            {
+                continue;
+            }
+
+            if (!foundColliderSurface || colliderTop > bestColliderY)
+            {
+                bestColliderY = colliderTop;
+                foundColliderSurface = true;
             }
         }
 
-        Renderer tileRenderer = tile.GetComponent<Renderer>();
-        if (tileRenderer != null)
+        if (foundColliderSurface)
         {
-            float rendererTop = tileRenderer.bounds.max.y;
-            if (IsFinite(rendererTop))
-            {
-                tileSurfaceY = rendererTop;
-                return true;
-            }
+            tileSurfaceY = bestColliderY;
+            surfaceSource = "tile-collider";
+            return true;
         }
 
         float fallbackY = tile.transform.position.y;
         if (IsFinite(fallbackY))
         {
             tileSurfaceY = fallbackY;
+            surfaceSource = "tile-transform";
+            Debug.LogWarning($"[ChessBoard] Using tile transform Y fallback for surface resolution. Tile='{tile.name}', Y={fallbackY:0.###}.");
             return true;
         }
 
         return false;
+    }
+
+    static bool TryResolveTileRendererSurfaceY(ChessTile tile, out float rendererSurfaceY)
+    {
+        rendererSurfaceY = 0f;
+        if (tile == null)
+        {
+            return false;
+        }
+
+        Renderer[] tileRenderers = tile.GetComponentsInChildren<Renderer>(true);
+        bool foundRenderer = false;
+        float highestSurface = float.NegativeInfinity;
+        for (int i = 0; i < tileRenderers.Length; i++)
+        {
+            Renderer tileRenderer = tileRenderers[i];
+            if (tileRenderer == null || !tileRenderer.enabled)
+            {
+                continue;
+            }
+
+            Bounds rendererBounds = tileRenderer.bounds;
+            if (!IsFinite(rendererBounds))
+            {
+                continue;
+            }
+
+            float rendererTop = rendererBounds.max.y;
+            if (!IsFinite(rendererTop))
+            {
+                continue;
+            }
+
+            if (!foundRenderer || rendererTop > highestSurface)
+            {
+                highestSurface = rendererTop;
+                foundRenderer = true;
+            }
+        }
+
+        if (!foundRenderer)
+        {
+            return false;
+        }
+
+        rendererSurfaceY = highestSurface;
+        return true;
+    }
+
+    static bool TryGetTileRendererHeight(ChessTile tile, out float rendererHeight)
+    {
+        rendererHeight = 0f;
+        if (tile == null)
+        {
+            return false;
+        }
+
+        Renderer[] tileRenderers = tile.GetComponentsInChildren<Renderer>(true);
+        bool foundRenderer = false;
+        float maxHeight = 0f;
+        for (int i = 0; i < tileRenderers.Length; i++)
+        {
+            Renderer tileRenderer = tileRenderers[i];
+            if (tileRenderer == null || !tileRenderer.enabled)
+            {
+                continue;
+            }
+
+            Bounds rendererBounds = tileRenderer.bounds;
+            if (!IsFinite(rendererBounds) || !IsFinite(rendererBounds.size.y))
+            {
+                continue;
+            }
+
+            maxHeight = Mathf.Max(maxHeight, rendererBounds.size.y);
+            foundRenderer = true;
+        }
+
+        if (!foundRenderer)
+        {
+            return false;
+        }
+
+        rendererHeight = maxHeight;
+        return IsFinite(rendererHeight);
     }
 }
