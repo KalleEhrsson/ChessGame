@@ -29,6 +29,8 @@ public class ChessPauseMenuUI : MonoBehaviour
     TMP_Text statusText;
     TMP_Text footerHintText;
 
+    bool hasLoggedDevButtonBuild;
+
     enum RootResolution { Assigned, AutoFound, FallbackCreated }
 
     public bool IsVisible => pauseMenuRoot != null && pauseMenuRoot.activeSelf;
@@ -283,29 +285,109 @@ public class ChessPauseMenuUI : MonoBehaviour
             return;
         }
 
-        EnsureButtonExists(panel, "ResumeButton", "Resume");
-        EnsureButtonExists(panel, "DevMenuButton", "Dev Menu");
-        EnsureButtonExists(panel, "ResignButton", "Resign");
-        EnsureButtonExists(panel, "RestartButton", "Restart");
-        EnsureButtonExists(panel, "MainMenuButton", "Main Menu");
-        EnsureButtonExists(panel, "QuitButton", "Quit");
+        Transform buttonContainer = ResolvePauseButtonContainer(panel);
 
-        SetSiblingIfFound(panel, "ResumeButton", 1);
-        SetSiblingIfFound(panel, "DevMenuButton", 2);
-        SetSiblingIfFound(panel, "ResignButton", 3);
-        SetSiblingIfFound(panel, "RestartButton", 4);
-        SetSiblingIfFound(panel, "MainMenuButton", 5);
-        SetSiblingIfFound(panel, "QuitButton", 6);
+        EnsureButtonExists(buttonContainer, "ResumeButton", "Resume");
+        EnsureButtonExists(buttonContainer, "DevMenuButton", "Dev Menu");
+        EnsureButtonExists(buttonContainer, "ResignButton", "Resign");
+        EnsureButtonExists(buttonContainer, "RestartButton", "Restart");
+        EnsureButtonExists(buttonContainer, "MainMenuButton", "Main Menu");
+        EnsureButtonExists(buttonContainer, "QuitButton", "Quit");
+
+        SetSiblingIfFound(buttonContainer, "ResumeButton", 0);
+        SetSiblingIfFound(buttonContainer, "DevMenuButton", 1);
+        SetSiblingIfFound(buttonContainer, "ResignButton", 2);
+        SetSiblingIfFound(buttonContainer, "RestartButton", 3);
+        SetSiblingIfFound(buttonContainer, "MainMenuButton", 4);
+        SetSiblingIfFound(buttonContainer, "QuitButton", 5);
+
+        EnsureDevMenuButtonVisibility(buttonContainer);
+    }
+
+    Transform ResolvePauseButtonContainer(Transform panel)
+    {
+        Transform explicitContainer = FindChildByName(panel, "PauseMenuButtons");
+        if (explicitContainer != null)
+        {
+            return explicitContainer;
+        }
+
+        if (panel.GetComponent<VerticalLayoutGroup>() != null)
+        {
+            return panel;
+        }
+
+        for (int i = 0; i < panel.childCount; i++)
+        {
+            Transform child = panel.GetChild(i);
+            if (child.GetComponent<VerticalLayoutGroup>() != null)
+            {
+                return child;
+            }
+        }
+
+        GameObject container = new("PauseMenuButtons", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        container.transform.SetParent(panel, false);
+
+        VerticalLayoutGroup layout = container.GetComponent<VerticalLayoutGroup>();
+        layout.childAlignment = TextAnchor.UpperCenter;
+        layout.spacing = 16f;
+        layout.childControlHeight = false;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
+
+        ContentSizeFitter fitter = container.GetComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        return container.transform;
     }
 
     void EnsureButtonExists(Transform panel, string objectName, string text)
     {
-        if (FindChildByName(panel, objectName) != null)
+        Transform existing = FindChildByName(pauseMenuRoot.transform, objectName);
+        if (existing != null)
         {
+            if (existing.parent != panel)
+            {
+                existing.SetParent(panel, false);
+            }
+
+            existing.gameObject.SetActive(true);
+            TMP_Text label = existing.GetComponentInChildren<TMP_Text>(true);
+            if (label != null)
+            {
+                label.text = text;
+            }
             return;
         }
 
         CreateButton(panel, objectName, text);
+    }
+
+    void EnsureDevMenuButtonVisibility(Transform buttonContainer)
+    {
+        Transform devMenuTransform = FindChildByName(buttonContainer, "DevMenuButton");
+        if (devMenuTransform == null)
+        {
+            return;
+        }
+
+        devMenuTransform.gameObject.SetActive(true);
+        RectTransform rect = devMenuTransform.GetComponent<RectTransform>();
+        if (rect != null && rect.sizeDelta.sqrMagnitude <= 0f)
+        {
+            rect.sizeDelta = new Vector2(0f, 64f);
+        }
+
+        Button button = devMenuTransform.GetComponent<Button>();
+        TMP_Text label = devMenuTransform.GetComponentInChildren<TMP_Text>(true);
+        bool hasListener = button != null && button.onClick != null;
+
+        if (!hasLoggedDevButtonBuild)
+        {
+            Debug.Log($"[ChessPauseMenuUI] DevMenuButton ready (parent={devMenuTransform.parent.name}, activeSelf={devMenuTransform.gameObject.activeSelf}, interactable={button != null && button.interactable}, listenerBound={hasListener}, text='{label?.text}')", this);
+            hasLoggedDevButtonBuild = true;
+        }
     }
 
     static void SetSiblingIfFound(Transform parent, string name, int index)
