@@ -39,8 +39,14 @@ public class ChessResignUiController : MonoBehaviour
     ChessTurnManager turnManager;
     ChessSelectionController selectionController;
     ChessWinScreenUI winScreen;
+    ChessPauseMenuUI pauseMenuUi;
+    ChessPauseManager pauseManager;
+    ChessDevSandboxController devSandbox;
+    PawnPromotionController promotionController;
+    StockfishService stockfishService;
     Canvas rootCanvas;
     GameObject confirmPanel;
+    bool openedFromPauseMenu;
 
     #endregion
 
@@ -97,6 +103,11 @@ public class ChessResignUiController : MonoBehaviour
         turnManager = ChessTurnManager.GetOrCreate();
         selectionController = ChessSelectionController.GetOrCreate();
         winScreen = ChessWinScreenUI.GetOrCreate();
+        pauseMenuUi = ChessPauseMenuUI.GetOrCreate();
+        pauseManager = ChessPauseManager.GetOrCreate();
+        devSandbox = ChessDevSandboxController.Instance;
+        promotionController = PawnPromotionController.GetOrCreate();
+        stockfishService = StockfishService.GetOrCreate();
         gameStateController.GameEnded -= OnGameEnded;
         gameStateController.GameEnded += OnGameEnded;
     }
@@ -130,7 +141,7 @@ public class ChessResignUiController : MonoBehaviour
         yesButton.onClick.AddListener(ConfirmResign);
 
         Button cancelButton = CreateActionButton(confirmPanel.transform, "CancelButton", "Cancel", new Vector2(105f, -74f));
-        cancelButton.onClick.AddListener(CloseConfirm);
+        cancelButton.onClick.AddListener(CloseConfirmToOrigin);
     }
 
     #endregion
@@ -139,7 +150,10 @@ public class ChessResignUiController : MonoBehaviour
 
     public void OpenConfirmFromPauseMenu()
     {
+        openedFromPauseMenu = true;
+        pauseMenuUi?.Hide();
         OpenConfirm();
+        Debug.Log("[ChessResignUiController] Resign requested from pause.");
     }
 
     public bool IsConfirmOpen()
@@ -149,7 +163,7 @@ public class ChessResignUiController : MonoBehaviour
 
     public void CloseConfirmFromPauseMenu()
     {
-        CloseConfirm();
+        CloseConfirmToOrigin();
     }
 
     void OpenConfirm()
@@ -159,6 +173,7 @@ public class ChessResignUiController : MonoBehaviour
             return;
         }
 
+        confirmPanel?.transform.SetAsLastSibling();
         confirmPanel?.SetActive(true);
     }
 
@@ -167,16 +182,37 @@ public class ChessResignUiController : MonoBehaviour
         confirmPanel?.SetActive(false);
     }
 
+    void CloseConfirmToOrigin()
+    {
+        CloseConfirm();
+        if (openedFromPauseMenu && pauseManager != null && pauseManager.IsPauseRequested)
+        {
+            pauseMenuUi?.ShowPauseMenuFromDevMenu();
+            Debug.Log("[ChessResignUiController] Resign cancelled back to pause.");
+        }
+
+        openedFromPauseMenu = false;
+    }
+
     void ConfirmResign()
     {
         CloseConfirm();
+        openedFromPauseMenu = false;
+        pauseMenuUi?.Hide();
+        devSandbox?.OpenDevMenuFromGameplay(false);
+        promotionController?.ClearPendingState();
+        stockfishService?.CancelThinking();
         gameStateController?.ResignCurrentPlayer();
     }
 
     void OnGameEnded(ChessGameEndResult result)
     {
         CloseConfirm();
+        openedFromPauseMenu = false;
+        pauseMenuUi?.Hide();
         selectionController?.Deselect();
+        promotionController?.ClearPendingState();
+        devSandbox?.OpenDevMenuFromGameplay(false);
         RefreshButtonState();
 
         string title;
@@ -199,6 +235,11 @@ public class ChessResignUiController : MonoBehaviour
 
         if (result.WinningTeam.HasValue)
         {
+            if (result.FinalState == ChessGameState.Resignation)
+            {
+                Debug.Log($"[ChessResignUiController] Resign confirmed, winner = {result.WinningTeam.Value}.");
+            }
+
             winScreen?.ShowWin(title, result.Reason, $"{result.WinningTeam.Value} wins");
             return;
         }

@@ -464,9 +464,15 @@ public class ChessPauseMenuUI : MonoBehaviour
         sandbox.OpenDevMenuFromPauseMenu();
     }
 
+    public void RequestResignFromPauseMenu()
+    {
+        Hide();
+        resignUi?.OpenConfirmFromPauseMenu();
+    }
+
     void OnResignClicked()
     {
-        resignUi?.OpenConfirmFromPauseMenu();
+        RequestResignFromPauseMenu();
     }
 
     void OnRestartClicked()
