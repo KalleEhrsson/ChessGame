@@ -346,6 +346,49 @@ public class ChessBoard : MonoBehaviour
         return piece;
     }
 
+    public bool TrySnapPieceToTile(ChessPiece piece, ChessTile tile)
+    {
+        if (piece == null || tile == null)
+        {
+            Debug.LogWarning($"[ChessBoard] SnapPieceToTile failed. Piece='{piece?.name ?? "<null>"}', Tile='{tile?.name ?? "<null>"}', Reason=missing piece or tile.");
+            return false;
+        }
+
+        Vector3 tileCenter = tile.transform.position;
+        if (!IsFinite(tileCenter))
+        {
+            Debug.LogWarning($"[ChessBoard] SnapPieceToTile failed. Piece='{piece.name}', Tile='{tile.name}', Reason=invalid tile center.");
+            return false;
+        }
+
+        piece.transform.position = new Vector3(tileCenter.x, tileCenter.y, tileCenter.z);
+
+        bool hasTileSurface = TryResolveTileSurfaceY(tile, out float tileSurfaceY);
+        bool hasPieceBottom = piece.TryGetBottomY(out float pieceBottomY);
+        if (!hasTileSurface || !hasPieceBottom || !IsFinite(pieceBottomY))
+        {
+            Debug.LogWarning($"[ChessBoard] SnapPieceToTile fallback. Piece='{piece.name}', Tile='{tile.name}', Reason={(hasTileSurface ? "no piece bounds" : "no tile surface")}.");
+            return false;
+        }
+
+        float verticalCorrection = tileSurfaceY - pieceBottomY;
+        if (!IsFinite(verticalCorrection))
+        {
+            Debug.LogWarning($"[ChessBoard] SnapPieceToTile failed. Piece='{piece.name}', Tile='{tile.name}', Reason=invalid vertical correction.");
+            return false;
+        }
+
+        piece.transform.position += Vector3.up * verticalCorrection;
+        if (!IsFinite(piece.transform.position))
+        {
+            Debug.LogWarning($"[ChessBoard] SnapPieceToTile failed. Piece='{piece.name}', Tile='{tile.name}', Reason=invalid final position.");
+            piece.transform.position = new Vector3(tileCenter.x, tileCenter.y, tileCenter.z);
+            return false;
+        }
+
+        return true;
+    }
+
 
     public bool TryGetPiecePrefab(PieceTeam team, PieceType type, out GameObject prefab)
     {
@@ -1171,6 +1214,7 @@ public class ChessBoard : MonoBehaviour
         }
 
         await motion.PlayMoveAsync(startWorldPosition, endWorldPosition, isCapture, capturedPiece, fromTile, toTile, debugMoveAnimationLogs, ResolveCaptureAtImpact);
+        piece.SnapToTile();
 
         if (!isCapture || capturedPiece == null || captureResolved)
         {
@@ -1685,5 +1729,45 @@ public class ChessBoard : MonoBehaviour
     static bool IsFinite(float value)
     {
         return !float.IsNaN(value) && !float.IsInfinity(value);
+    }
+
+    static bool TryResolveTileSurfaceY(ChessTile tile, out float tileSurfaceY)
+    {
+        tileSurfaceY = 0f;
+        if (tile == null)
+        {
+            return false;
+        }
+
+        Collider tileCollider = tile.GetComponent<Collider>();
+        if (tileCollider != null)
+        {
+            float colliderTop = tileCollider.bounds.max.y;
+            if (IsFinite(colliderTop))
+            {
+                tileSurfaceY = colliderTop;
+                return true;
+            }
+        }
+
+        Renderer tileRenderer = tile.GetComponent<Renderer>();
+        if (tileRenderer != null)
+        {
+            float rendererTop = tileRenderer.bounds.max.y;
+            if (IsFinite(rendererTop))
+            {
+                tileSurfaceY = rendererTop;
+                return true;
+            }
+        }
+
+        float fallbackY = tile.transform.position.y;
+        if (IsFinite(fallbackY))
+        {
+            tileSurfaceY = fallbackY;
+            return true;
+        }
+
+        return false;
     }
 }
