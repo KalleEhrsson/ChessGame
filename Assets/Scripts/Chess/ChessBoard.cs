@@ -358,6 +358,18 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
+        return TryGetColliderGroundedTilePosition(piece, tile, out Vector3 groundedPosition) && ApplyGroundedPosition(piece, groundedPosition);
+    }
+
+    bool TryGetColliderGroundedTilePosition(ChessPiece piece, ChessTile tile, out Vector3 groundedPosition)
+    {
+        groundedPosition = piece != null ? piece.transform.position : Vector3.zero;
+        if (piece == null || tile == null)
+        {
+            return false;
+        }
+
+        Vector3 originalPosition = piece.transform.position;
         Vector3 tileCenter = tile.transform.position;
         if (!IsFinite(tileCenter))
         {
@@ -365,13 +377,22 @@ public class ChessBoard : MonoBehaviour
             return false;
         }
 
-        piece.transform.position = new Vector3(tileCenter.x, tileCenter.y, tileCenter.z);
+        piece.transform.position = new Vector3(tileCenter.x, originalPosition.y, tileCenter.z);
 
+        bool hasPieceBottom = piece.TryGetBottomY(out float pieceBottomY) && IsFinite(pieceBottomY);
         bool hasTileSurface = TryResolveTileSurfaceY(tile, out float tileSurfaceY);
-        bool hasPieceBottom = piece.TryGetBottomY(out float pieceBottomY);
-        if (!hasTileSurface || !hasPieceBottom || !IsFinite(pieceBottomY))
+
+        if (!hasPieceBottom)
         {
-            Debug.LogWarning($"[ChessBoard] SnapPieceToTile fallback. Piece='{piece.name}', Tile='{tile.name}', Reason={(hasTileSurface ? "no piece bounds" : "no tile surface")}.");
+            Debug.LogWarning($"[ChessBoard] SnapPieceToTile fallback. Piece='{piece.name}', Tile='{tile.name}', Reason=no collider/renderer bounds.");
+            piece.transform.position = originalPosition;
+            return false;
+        }
+
+        if (!hasTileSurface)
+        {
+            Debug.LogWarning($"[ChessBoard] SnapPieceToTile fallback. Piece='{piece.name}', Tile='{tile.name}', Reason=no tile surface.");
+            piece.transform.position = originalPosition;
             return false;
         }
 
@@ -379,17 +400,23 @@ public class ChessBoard : MonoBehaviour
         if (!IsFinite(verticalCorrection))
         {
             Debug.LogWarning($"[ChessBoard] SnapPieceToTile failed. Piece='{piece.name}', Tile='{tile.name}', Reason=invalid vertical correction.");
+            piece.transform.position = originalPosition;
             return false;
         }
 
-        piece.transform.position += Vector3.up * verticalCorrection;
-        if (!IsFinite(piece.transform.position))
+        groundedPosition = piece.transform.position + Vector3.up * verticalCorrection;
+        piece.transform.position = originalPosition;
+        return IsFinite(groundedPosition);
+    }
+
+    bool ApplyGroundedPosition(ChessPiece piece, Vector3 groundedPosition)
+    {
+        if (piece == null || !IsFinite(groundedPosition))
         {
-            Debug.LogWarning($"[ChessBoard] SnapPieceToTile failed. Piece='{piece.name}', Tile='{tile.name}', Reason=invalid final position.");
-            piece.transform.position = new Vector3(tileCenter.x, tileCenter.y, tileCenter.z);
             return false;
         }
 
+        piece.transform.position = groundedPosition;
         return true;
     }
 
@@ -1093,11 +1120,11 @@ public class ChessBoard : MonoBehaviour
                 return false;
             }
 
-            rook.SetTile(moveData.CastleRookTo);
+            rook.SetTile(moveData.CastleRookTo, false);
             rook.MarkMoved();
         }
 
-        movingPiece.SetTile(to);
+        movingPiece.SetTile(to, false);
         movingPiece.MarkMoved();
         UpdateSpecialStateAfterMove(movingPiece, moveData, capturedPiece != null);
 
@@ -1686,7 +1713,7 @@ public class ChessBoard : MonoBehaviour
         }
 
         promotedPiece.SetIdentity(pawn.Team, promotionType);
-        promotedPiece.SetTile(promotionTile);
+        promotedPiece.SetTile(promotionTile, false);
         promotedPiece.MarkMoved();
 
         pawn.SetTile(null);

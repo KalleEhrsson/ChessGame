@@ -313,15 +313,15 @@ public class ChessMoveValidator : MonoBehaviour
 
         if (state.CapturedPiece != null)
         {
-            state.CapturedPiece.SetTile(null);
+            state.CapturedPiece.SetTile(null, false);
         }
 
         if (state.RookPiece != null)
         {
-            state.RookPiece.SetTile(state.RookToTile);
+            state.RookPiece.SetTile(state.RookToTile, false);
         }
 
-        movingPiece.SetTile(move.ToTile);
+        movingPiece.SetTile(move.ToTile, false);
         return state;
     }
 
@@ -329,17 +329,17 @@ public class ChessMoveValidator : MonoBehaviour
     {
         if (state.MovingPiece != null)
         {
-            state.MovingPiece.SetTile(state.FromTile);
+            state.MovingPiece.SetTile(state.FromTile, false);
         }
 
         if (state.CapturedPiece != null)
         {
-            state.CapturedPiece.SetTile(state.CaptureTile);
+            state.CapturedPiece.SetTile(state.CaptureTile, false);
         }
 
         if (state.RookPiece != null)
         {
-            state.RookPiece.SetTile(state.RookFromTile);
+            state.RookPiece.SetTile(state.RookFromTile, false);
         }
     }
 
